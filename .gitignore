@@ -1,0 +1,9 @@
+/target
+Cargo.lock.bak
+.env
+.env.local
+/data
+*.db
+*.db-shm
+*.db-wal
+.DS_Store

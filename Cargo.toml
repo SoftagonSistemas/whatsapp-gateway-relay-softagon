@@ -1,0 +1,50 @@
+[package]
+name = "softagon-relay"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+description = "Open-source, self-hosted WhatsApp messaging gateway built with Rust"
+license = "Apache-2.0"
+
+[features]
+default = []
+whisper = ["dep:whisper-rs"]
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+axum = { version = "0.8", features = ["multipart", "macros"] }
+base64 = "0.22"
+bytes = "1"
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+futures = "0.3"
+hex = "0.4"
+hmac = "0.12"
+http = "1"
+object_store = { version = "0.14", features = ["aws"] }
+rand = "0.9"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+rubato = "5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.9", features = ["runtime-tokio", "sqlite", "migrate", "chrono", "uuid"] }
+subtle = "2"
+symphonia = { version = "0.6", features = ["ogg", "pcm", "wav"] }
+symphonia-opus = "0.1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["trace", "limit", "cors", "request-id", "sensitive-headers"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+url = "2"
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+whatsapp-rust = { version = "0.7", default-features = false, features = ["sqlite-storage", "tokio-transport", "tokio-runtime", "ureq-client", "tokio-native", "signal"] }
+whisper-rs = { version = "0.16", optional = true }
+
+[dev-dependencies]
+serde_yaml_ng = "0.10"
+tempfile = "3"
+tokio-util = "0.7"

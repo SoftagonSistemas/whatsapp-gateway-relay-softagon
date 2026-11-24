@@ -1,0 +1,24 @@
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: softagon/relay:dev
+    container_name: softagon-relay
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - relay-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  relay-data:

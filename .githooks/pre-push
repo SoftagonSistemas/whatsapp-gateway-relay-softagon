@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[pre-push] Checking formatting..."
+cargo fmt --check
+
+echo "[pre-push] Running clippy..."
+cargo clippy --all-targets -- -D warnings
+
+echo "[pre-push] Running test suite..."
+cargo test
+
+if [[ "${PRE_PUSH_DOCKER_BUILD:-0}" == "1" ]]; then
+  echo "[pre-push] Building Docker image (PRE_PUSH_DOCKER_BUILD=1)..."
+  docker build -t softagon/relay:pre-push .
+fi
+
+echo "[pre-push] All checks passed!"

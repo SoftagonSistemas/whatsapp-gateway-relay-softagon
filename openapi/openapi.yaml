@@ -1,0 +1,738 @@
+openapi: 3.2.1
+info:
+  title: Softagon Relay API
+  version: 0.1.0
+  summary: Open-source, self-hosted WhatsApp messaging gateway
+  description: |
+    Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
+    sending and receiving text/media messages, managing signed webhook subscriptions,
+    and retrieving asynchronous local Whisper voice-note transcriptions.
+
+    Webhook delivery is **at least once**; consumers should deduplicate using `X-Relay-Event-Id`.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+    description: Liveness and readiness diagnostics
+  - name: Sessions
+    description: WhatsApp session lifecycle and pairing
+  - name: Messages
+    description: Outbound and inbound WhatsApp messages
+  - name: Transcriptions
+    description: Asynchronous local speech-to-text transcription
+  - name: Webhooks
+    description: Signed webhook subscription management
+paths:
+  /v1/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Liveness and readiness check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /v1/sessions:
+    get:
+      tags: [Sessions]
+      operationId: listSessions
+      summary: List all WhatsApp sessions
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sessions]
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Sessions]
+      operationId: createSession
+      summary: Create and start a new WhatsApp session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/sessions/{session_id}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: getSession
+      summary: Get session details
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/qr:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: getSessionQr
+      summary: Obtain pairing QR data
+      responses:
+        "200":
+          description: Current pairing QR payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionQrResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/status:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: getSessionStatus
+      summary: Get session connection state
+      responses:
+        "200":
+          description: Current connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/logout:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Sessions]
+      operationId: logoutSession
+      summary: Disconnect and log out a WhatsApp session
+      responses:
+        "200":
+          description: Session logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [session_id, status]
+                properties:
+                  session_id:
+                    type: string
+                  status:
+                    type: string
+                    example: logged_out
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/messages/text:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      tags: [Messages]
+      operationId: sendTextMessage
+      summary: Send a text message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendTextRequest"
+      responses:
+        "201":
+          description: Text message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /v1/sessions/{session_id}/messages/media:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      tags: [Messages]
+      operationId: sendMediaMessage
+      summary: Send an image, video, audio, or document message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMediaRequest"
+      responses:
+        "201":
+          description: Media message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /v1/messages/{message_id}:
+    parameters:
+      - $ref: "#/components/parameters/MessageId"
+    get:
+      tags: [Messages]
+      operationId: getMessage
+      summary: Retrieve message state and details
+      responses:
+        "200":
+          description: Message details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/messages/{message_id}/transcription:
+    parameters:
+      - $ref: "#/components/parameters/MessageId"
+    get:
+      tags: [Transcriptions]
+      operationId: getMessageTranscription
+      summary: Retrieve transcription result for an audio message
+      responses:
+        "200":
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transcription"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Transcriptions]
+      operationId: requestMessageTranscription
+      summary: Request or retry transcription for an audio message
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestTranscriptionBody"
+      responses:
+        "202":
+          description: Transcription queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transcription"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /v1/webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: listWebhooks
+      summary: List configured webhook subscriptions
+      responses:
+        "200":
+          description: Webhook subscriptions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [webhooks]
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Webhook"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Webhooks]
+      operationId: createWebhook
+      summary: Create a webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookRequest"
+      responses:
+        "201":
+          description: Webhook created (includes generated secret once)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/webhooks/{webhook_id}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookId"
+    get:
+      tags: [Webhooks]
+      operationId: getWebhook
+      summary: Get a webhook subscription
+      responses:
+        "200":
+          description: Webhook subscription details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Webhooks]
+      operationId: updateWebhook
+      summary: Update a webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWebhookRequest"
+      responses:
+        "200":
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Webhooks]
+      operationId: deleteWebhook
+      summary: Delete a webhook subscription
+      responses:
+        "204":
+          description: Webhook deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+webhooks:
+  relayEvent:
+    post:
+      summary: Signed Softagon Relay webhook delivery
+      description: |
+        Delivered with `X-Relay-Event-Id`, `X-Relay-Event-Type`, `X-Relay-Timestamp`,
+        and `X-Relay-Signature: sha256=<hex(HMAC-SHA256(secret, "{timestamp}.{body}"))>`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookEventEnvelope"
+      responses:
+        "200":
+          description: Webhook acknowledged
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key configured via `RELAY_API_KEY`
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+    MessageId:
+      name: message_id
+      in: path
+      required: true
+      schema:
+        type: string
+    WebhookId:
+      name: webhook_id
+      in: path
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Optional client-generated key to deduplicate outbound sends
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource conflict or idempotency key mismatch
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Rate limit or queue capacity exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    HealthResponse:
+      type: object
+      required: [status, database, media_storage, transcription_enabled, transcription_available]
+      properties:
+        status:
+          type: string
+          example: ok
+        database:
+          type: string
+          example: ok
+        media_storage:
+          type: string
+          example: local
+        transcription_enabled:
+          type: boolean
+        transcription_available:
+          type: boolean
+        active_sessions:
+          type: integer
+    CreateSessionRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        transcription_language:
+          type: ["string", "null"]
+          description: Optional ISO language override (e.g. "en", "pt")
+    Session:
+      type: object
+      required: [id, name, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        phone_number:
+          type: ["string", "null"]
+        jid:
+          type: ["string", "null"]
+        transcription_language:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SessionQrResponse:
+      type: object
+      required: [session_id, qr]
+      properties:
+        session_id:
+          type: string
+        qr:
+          type: ["object", "null"]
+          properties:
+            code:
+              type: string
+            expires_at:
+              type: string
+              format: date-time
+    SessionStatusResponse:
+      type: object
+      required: [session_id, status]
+      properties:
+        session_id:
+          type: string
+        status:
+          type: string
+        phone_number:
+          type: ["string", "null"]
+        jid:
+          type: ["string", "null"]
+    SendTextRequest:
+      type: object
+      required: [to, text]
+      properties:
+        to:
+          type: string
+          description: Phone number in E.164/digits or WhatsApp JID
+        text:
+          type: string
+    SendMediaRequest:
+      type: object
+      required: [to, media_type, mime_type, data_base64]
+      properties:
+        to:
+          type: string
+        media_type:
+          type: string
+          enum: [image, video, audio, document]
+        mime_type:
+          type: string
+        filename:
+          type: ["string", "null"]
+        caption:
+          type: ["string", "null"]
+        data_base64:
+          type: string
+          description: Base64-encoded media bytes
+    Message:
+      type: object
+      required: [id, session_id, direction, chat_jid, message_type, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        external_id:
+          type: ["string", "null"]
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        chat_jid:
+          type: string
+        sender_jid:
+          type: ["string", "null"]
+        message_type:
+          type: string
+          enum: [text, image, video, audio, document]
+        text_body:
+          type: ["string", "null"]
+        caption:
+          type: ["string", "null"]
+        media_id:
+          type: ["string", "null"]
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TranscriptionSegment:
+      type: object
+      required: [start_ms, end_ms, text]
+      properties:
+        start_ms:
+          type: integer
+        end_ms:
+          type: integer
+        text:
+          type: string
+    Transcription:
+      type: object
+      required: [status, engine, model, segments]
+      properties:
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, unsupported]
+        text:
+          type: ["string", "null"]
+        language:
+          type: ["string", "null"]
+        engine:
+          type: string
+        model:
+          type: string
+        duration_ms:
+          type: ["integer", "null"]
+        processing_ms:
+          type: ["integer", "null"]
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptionSegment"
+        error:
+          type: ["string", "null"]
+    RequestTranscriptionBody:
+      type: object
+      properties:
+        language:
+          type: ["string", "null"]
+    CreateWebhookRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+        secret:
+          type: ["string", "null"]
+          description: Optional HMAC signing secret; generated automatically if omitted
+        session_id:
+          type: ["string", "null"]
+          description: Optional session ID filter; null receives events for all sessions
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - "*"
+              - session.status
+              - message.received
+              - message.sent
+              - message.ack
+              - message.transcription.completed
+              - message.transcription.failed
+              - group.updated
+        enabled:
+          type: boolean
+          default: true
+        description:
+          type: ["string", "null"]
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        secret:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+        description:
+          type: ["string", "null"]
+    Webhook:
+      type: object
+      required: [id, url, events, enabled, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        secret:
+          type: ["string", "null"]
+          description: Only returned upon creation
+        session_id:
+          type: ["string", "null"]
+        events:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+        description:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WebhookEventEnvelope:
+      type: object
+      required: [id, type, session_id, timestamp, data]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - session.status
+            - message.received
+            - message.sent
+            - message.ack
+            - message.transcription.completed
+            - message.transcription.failed
+            - group.updated
+        session_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        data:
+          type: object
