@@ -103,6 +103,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
     assert_eq!(status, "connected");
 
     sessions.logout_session(&sess.id).await.unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     let (rec_after, status_after) = sessions.get_status(&sess.id).await.unwrap();
     assert_eq!(status_after, "logged_out");
     assert_eq!(rec_after.status_reason.as_deref(), Some("logout"));
