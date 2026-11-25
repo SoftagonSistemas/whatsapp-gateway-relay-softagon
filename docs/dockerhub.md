@@ -1,13 +1,15 @@
 # Softagon Relay — Self-Hosted WhatsApp API Gateway in Rust (Docker)
 
 **What is Softagon Relay?**  
-**Softagon Relay** (`softagon/relay`) is an open-source, self-hosted **WhatsApp Web HTTP API gateway** built in **Rust** by **Softagon Sistemas**. It runs as a single **~51 MB Docker container** with embedded **SQLite (WAL)**, optional **S3-compatible media storage** (AWS S3, Cloudflare R2, MinIO), **HMAC-SHA256 signed webhooks** with persistent outbox retries, **OpenAPI 3.2.1 + Scalar** documentation, and **offline multilingual voice-note transcription** powered by `whisper.cpp`.
+**Softagon Relay** (`softagon/relay`) is an open-source, self-hosted **WhatsApp Web HTTP API gateway** built in **Rust** by **[Softagon Sistemas](https://softagon.com.br)**. It runs as a single **~52 MB Docker container** with an embedded **Raycast-style Web Console** (`/console`, 4 languages: PT-BR/EN/ES/FR), embedded **SQLite (WAL)**, optional **S3-compatible media storage** (AWS S3, Cloudflare R2, MinIO), **HMAC-SHA256 signed webhooks** with persistent outbox retries, **OpenAPI 3.2.1 + Scalar** documentation, and **offline multilingual voice-note transcription** powered by `whisper.cpp`.
 
 Unlike multi-service Node.js or Python WhatsApp gateways that require PostgreSQL, Redis, RabbitMQ, or Chromium, Softagon Relay requires **zero external infrastructure** to start.
 
 - **Docker Image:** `softagon/relay:latest` (`linux/amd64`, non-root UID `10001`)
-- **Source Code & Documentation:** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon
-- **API Contract:** OpenAPI 3.2.1 (`/openapi.yaml`) + Scalar Interactive Docs (`/docs`)
+- **Official Website & Contact:** https://softagon.com.br
+- **Source Code (GitHub):** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon
+- **User Documentation (with screenshots):** [Português (BR)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/pt-BR/README.md) · [English](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/en/README.md) · [Español](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/es/README.md) · [Français](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/fr/README.md)
+- **Web Console & API Contract:** `/console` (or `/manager`) · OpenAPI 3.2.1 (`/openapi.yaml`) · Scalar Interactive Docs (`/docs`)
 - **License:** Apache-2.0
 
 ---
@@ -83,7 +85,7 @@ Expected response:
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.1.0
+    image: softagon/relay:0.2.0
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -167,9 +169,9 @@ Every webhook request includes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.1.0`) |
-| `0.1` | `linux/amd64` | Latest `0.1.x` release |
-| `0.1.0` | `linux/amd64` | Pinned immutable release |
+| `latest` | `linux/amd64` | Latest stable release (`0.2.0`) |
+| `0.2` | `linux/amd64` | Latest `0.2.x` release |
+| `0.2.0` | `linux/amd64` | Pinned immutable release (includes Raycast-style `/console` UI) |
 
 ---
 
@@ -182,8 +184,10 @@ All routes except `GET /v1/health` require `Authorization: Bearer <RELAY_API_KEY
 | `GET` | `/v1/health` | Public liveness & readiness probe |
 | `GET` / `POST` | `/v1/sessions` | List or create WhatsApp sessions |
 | `GET` | `/v1/sessions/{session_id}` | Get session metadata |
-| `GET` | `/v1/sessions/{session_id}/qr` | Get pairing QR code |
+| `DELETE` | `/v1/sessions/{session_id}` | Delete a disconnected session (`409` if connected) |
+| `GET` | `/v1/sessions/{session_id}/qr` · `/qr.svg` | Get pairing QR code (JSON or SVG) |
 | `GET` | `/v1/sessions/{session_id}/status` | Get live connection state |
+| `POST` | `/v1/sessions/{session_id}/reconnect` | Restart and start a fresh QR cycle |
 | `POST` | `/v1/sessions/{session_id}/logout` | Disconnect and unlink device |
 | `POST` | `/v1/sessions/{session_id}/messages/text` | Send text message (supports `Idempotency-Key`) |
 | `POST` | `/v1/sessions/{session_id}/messages/media` | Send image, video, audio, or document |

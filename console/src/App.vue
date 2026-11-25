@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useTheme } from './composables/useTheme';
@@ -16,6 +16,10 @@ const { isAuthenticated } = useAuth();
 const { sessions } = useSessions();
 
 const showShortcuts = ref(false);
+const docsUrl = computed(
+  () =>
+    `https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/${locale.value}/README.md`,
+);
 
 setUnauthorizedHandler(() => {
   if (router.currentRoute.value.name !== 'login') {
@@ -64,6 +68,10 @@ useGlobalHotkeys({
     <router-view />
     <footer v-if="isAuthenticated" class="app-brand-footer">
       <span>{{ $t('common.bySoftagon') }}</span>
+      <span aria-hidden="true">·</span>
+      <a :href="docsUrl" target="_blank" rel="noopener">
+        {{ $t('common.userDocs') }}
+      </a>
       <span aria-hidden="true">·</span>
       <a
         href="https://softagon.com.br"

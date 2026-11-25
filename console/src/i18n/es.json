@@ -9,10 +9,11 @@
     "toDark": "Activar modo oscuro",
     "search": "Buscar o escribir un número…",
     "bySoftagon": "Desarrollado por Softagon Sistemas",
-    "talkToUs": "Visita softagon.com.br · Contáctanos"
+    "talkToUs": "Visita softagon.com.br · Contáctanos",
+    "userDocs": "Documentación"
   },
   "home": {
-    "eyebrow": "Gateway de WhatsApp · v0.1.0",
+    "eyebrow": "Gateway de WhatsApp · v0.2.0",
     "h1": "¿Qué quieres hacer?",
     "sub": "Escribe un número de WhatsApp para conectarlo. O busca cualquier sesión, acción o evento.",
     "paletteLabel": "Barra de comandos",

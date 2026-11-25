@@ -9,10 +9,11 @@
     "toDark": "Passer en mode sombre",
     "search": "Rechercher ou saisir un numéro…",
     "bySoftagon": "Développé par Softagon Sistemas",
-    "talkToUs": "Visitez softagon.com.br · Contactez-nous"
+    "talkToUs": "Visitez softagon.com.br · Contactez-nous",
+    "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "Passerelle WhatsApp · v0.1.0",
+    "eyebrow": "Passerelle WhatsApp · v0.2.0",
     "h1": "Que voulez-vous faire ?",
     "sub": "Saisissez un numéro WhatsApp pour le connecter. Ou recherchez une session, une action ou un événement.",
     "paletteLabel": "Barre de commandes",

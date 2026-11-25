@@ -12,7 +12,7 @@
 
 Softagon Relay is a lightweight gateway designed to connect applications to WhatsApp Web through a versioned HTTP API, webhooks and persistent events. It is intended to run as a single Docker container, with SQLite as its embedded database, optional S3-compatible media storage and local speech-to-text processing.
 
-> **Project status:** V1 (Milestones 1–6) implemented and published as `softagon/relay:0.1.0` on [Docker Hub](https://hub.docker.com/r/softagon/relay). Benchmark validation (Milestone 7) is ongoing.
+> **Project status:** **v0.2.0** published on [Docker Hub](https://hub.docker.com/r/softagon/relay) with embedded Raycast-style Web Console (`/console`), SQLite WAL, Local/S3 media, signed webhooks, OpenAPI 3.2.1, and local Whisper transcription.
 
 ---
 

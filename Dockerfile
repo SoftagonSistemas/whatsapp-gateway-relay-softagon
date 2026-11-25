@@ -30,7 +30,7 @@ RUN cargo build --release --features whisper
 
 FROM debian:bookworm-slim AS runtime
 
-ARG VERSION=0.1.0
+ARG VERSION=0.2.0
 ARG REVISION=dev
 ARG CREATED=unknown
 

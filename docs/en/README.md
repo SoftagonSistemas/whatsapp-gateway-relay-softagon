@@ -31,14 +31,42 @@ Use the repository's [compose.yaml](../../compose.yaml) (`read_only: true`, `cap
 
 ---
 
-## 2. Web Console (`/console`)
+## 2. Web Console Visual Guide (`/console`)
 
-Designed for keyboard-first productivity:
-- **Login (`/console/login`):** single `RELAY_API_KEY` field (no usernames or passwords).
-- **Command Bar (`/console`):** type any WhatsApp phone number (e.g. `+1 415 555 2671` or `87 99200-5656`) and press `↵` to create the session and show the live SVG QR Code.
-- **Sessions (`/console/sessions`):** copy ID/JID, send test messages with international validation, reconnect/regenerate QR, log out, or delete disconnected sessions.
-- **Webhooks (`/console/events`):** create, toggle, and delete webhook subscriptions with automatic HMAC secret generation.
-- **API Reference (`/console/api`):** generated live from `/openapi.yaml` with cURL, JavaScript, Python, and PHP snippets plus live execution (`⌘↵`/`Ctrl+↵`).
+The embedded Web Console is designed in a **Raycast-inspired** keyboard-first layout, supporting instant language switching (**PT / EN / ES / FR**) and **Light / Dark** themes.
+
+### 2.1 Sign In (`/console/login`)
+Enter only the key configured in `RELAY_API_KEY` (no username or email required). It is sent as a `Bearer` token and can optionally be remembered in your browser.
+
+![Softagon Relay Login Screen in English](../images/en/login.png)
+
+### 2.2 Home & Command Bar (`/console`)
+Check live server health (`Healthy · N sessions`), jump to your sessions list with one click, or type any WhatsApp phone number (with automatic international formatting & validation) and press `↵` to start pairing.
+
+![Softagon Relay Home and Command Bar in English](../images/en/home.png)
+
+### 2.3 Connect a New Number via QR Code (`/console/connect`)
+Once the session is created, a live SVG QR code appears with an automatic refresh countdown (press `r` to regenerate immediately). On your phone, open **WhatsApp → Linked devices → Link a device** and scan. The linked device appears as **Softagon Relay**.
+
+![Softagon Relay QR Code Pairing Screen in English](../images/en/connect.png)
+
+### 2.4 Session Management & Test Messaging (`/console/sessions`)
+Manage all connected WhatsApp accounts from one place:
+- Copy session **ID** and **JID** in one click.
+- Click **Send message** to send a live test message with international phone validation and automatic mobile digit resolution (BR/MX/AR).
+- Open **Actions (`⌘K` / `Ctrl+K`)** to restart, reconnect, log out, or **delete disconnected sessions** (connected sessions are protected against accidental deletion).
+
+![Softagon Relay Session Management Screen in English](../images/en/session.png)
+
+### 2.5 Events & Webhooks (`/console/events`)
+Register webhook URLs to receive real-time events (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay automatically generates an HMAC-SHA256 signing secret and lets you toggle or delete subscriptions.
+
+![Softagon Relay Events and Webhooks Screen in English](../images/en/events.png)
+
+### 2.6 Interactive API Reference (`/console/api`)
+Generated live from `/openapi.yaml` (OpenAPI 3.2.1). Filter endpoints, copy ready-to-use **cURL, JavaScript, Python, and PHP** snippets, and execute real requests against your instance (`⌘↵` / `Ctrl+↵`).
+
+![Softagon Relay Interactive API Reference in English](../images/en/api.png)
 
 ### Keyboard Shortcuts
 | Shortcut | Action |

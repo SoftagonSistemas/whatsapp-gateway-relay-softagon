@@ -29,6 +29,10 @@ const keyInput = ref<HTMLInputElement | null>(null);
 const hostLabel = computed(() =>
   typeof window !== 'undefined' ? window.location.host : 'localhost',
 );
+const docsUrl = computed(
+  () =>
+    `https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/${locale.value}/README.md`,
+);
 const themeLabel = computed(() => (isDark.value ? t('common.toLight') : t('common.toDark')));
 const showLabel = computed(() => (show.value ? t('login.hide') : t('login.show')));
 
@@ -112,7 +116,7 @@ onMounted(() => {
       <section aria-labelledby="lg-h" class="login-card">
         <form class="login-form pad-sm" @submit.prevent="onSubmit">
           <div class="login-head">
-            <span class="badge-pill cyan">Relay · v0.1.0</span>
+            <span class="badge-pill cyan">Relay · v0.2.0</span>
             <h1 id="lg-h" class="login-h1">{{ t('login.h1') }}</h1>
             <p class="login-sub">{{ t('login.sub') }}</p>
           </div>
@@ -193,6 +197,15 @@ onMounted(() => {
           <span>·</span>
           <span>{{ healthOnline === false ? 'offline' : t('login.online') }}</span>
         </span>
+        <span aria-hidden="true">·</span>
+        <a
+          :href="docsUrl"
+          target="_blank"
+          rel="noopener"
+          class="docs-link"
+        >
+          {{ t('common.userDocs') }}
+        </a>
         <span aria-hidden="true">·</span>
         <a
           href="https://softagon.com.br"

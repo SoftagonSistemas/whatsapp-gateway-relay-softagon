@@ -31,14 +31,42 @@ Use o [compose.yaml](../../compose.yaml) do repositório (`read_only: true`, `ca
 
 ---
 
-## 2. Console Web (`/console`)
+## 2. Guia Visual do Console Web (`/console`)
 
-Projetado para ser usado até sem mouse:
-- **Login (`/console/login`):** apenas a chave `RELAY_API_KEY` (sem usuário/senha).
-- **Barra de comando (`/console`):** digite qualquer número de WhatsApp (ex.: `87 99200-5656` ou `+351 912 345 678`) e pressione `↵` para criar a sessão e abrir o QR Code SVG ao vivo.
-- **Sessões (`/console/sessions`):** copie ID/JID, envie mensagem de teste com validação internacional, reinicie/reconecte, faça logout ou exclua sessões desconectadas.
-- **Webhooks (`/console/events`):** crie, ative/desative e remova assinaturas de webhook com geração automática de segredo HMAC.
-- **Referência da API (`/console/api`):** gerada dinamicamente do `/openapi.yaml`, com exemplos em cURL, JavaScript, Python e PHP e execução real (`⌘↵`/`Ctrl+↵`).
+O Console Web foi desenhado no estilo **Raycast** para operação rápida — inclusive sem mouse — com alternância instantânea de idioma (**PT / EN / ES / FR**) e tema (**Claro / Escuro**).
+
+### 2.1 Login (`/console/login`)
+Informe apenas a chave definida em `RELAY_API_KEY` (não há usuário nem e-mail). A chave é enviada como `Bearer` token e, opcionalmente, lembrada no navegador.
+
+![Tela de Login do Softagon Relay em Português](../images/pt-BR/login.png)
+
+### 2.2 Início e Barra de Comando (`/console`)
+Na tela inicial você vê o status do servidor em tempo real (`Saudável · N sessões`), acessa a lista de sessões com um clique ou digita diretamente qualquer número de WhatsApp (com máscara e validação internacional automática) e pressiona `↵` para iniciar o pareamento.
+
+![Tela Inicial e Barra de Comando do Softagon Relay em Português](../images/pt-BR/home.png)
+
+### 2.3 Conectar Novo Número via QR Code (`/console/connect`)
+Ao criar a sessão, o QR Code SVG aparece ao vivo com contador de renovação automática (pressione `r` para gerar um novo QR imediatamente). No celular, abra **WhatsApp → Aparelhos conectados → Conectar aparelho** e aponte a câmera. O dispositivo aparece listado como **Softagon Relay**.
+
+![Tela de Pareamento por QR Code do Softagon Relay em Português](../images/pt-BR/connect.png)
+
+### 2.4 Gerenciamento de Sessões e Envio de Teste (`/console/sessions`)
+Gerencie todas as suas conexões em um só lugar:
+- Copie **ID** e **JID** da sessão com um clique.
+- Clique em **Enviar mensagem** para testar o envio diretamente pela interface (com validação internacional e resolução automática do 9º dígito para Brasil, México e Argentina).
+- Use o menu **Ações (`⌘K` / `Ctrl+K`)** para reiniciar, reconectar, fazer logout ou **excluir sessões desconectadas** (sessões conectadas são protegidas contra exclusão acidental).
+
+![Tela de Gerenciamento de Sessão do Softagon Relay em Português](../images/pt-BR/session.png)
+
+### 2.5 Eventos e Webhooks (`/console/events`)
+Cadastre URLs para receber eventos em tempo real (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). O Relay gera automaticamente um segredo HMAC-SHA256 e permite ativar, pausar ou remover assinaturas.
+
+![Tela de Eventos e Webhooks do Softagon Relay em Português](../images/pt-BR/events.png)
+
+### 2.6 Referência Interativa da API (`/console/api`)
+Gerada dinamicamente a partir do contrato `/openapi.yaml` (OpenAPI 3.2.1), permite filtrar endpoints, copiar exemplos prontos em **cURL, JavaScript, Python e PHP** e executar chamadas reais contra o servidor (`⌘↵` / `Ctrl+↵`).
+
+![Referência Interativa da API do Softagon Relay em Português](../images/pt-BR/api.png)
 
 ### Atalhos de teclado
 | Atalho | Ação |
