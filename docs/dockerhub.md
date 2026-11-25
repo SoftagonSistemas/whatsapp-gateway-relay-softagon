@@ -115,7 +115,7 @@ All `/v1/*` routes except `GET /v1/health` require `Authorization: Bearer <RELAY
 
 ### Local MCP Server (`v0.3.0`)
 - **STDIO (default local mode):** `softagon-relay mcp --stdio` (logs routed to `stderr`)
-- **Streamable HTTP:** `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` (loopback-only `127.0.0.1:8091/mcp`, `Origin` validation, Bearer auth, destructive tools blocked by default, audited in SQLite `mcp_audit_log`).
+- **Streamable HTTP:** `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` (binds to `127.0.0.1:8091/mcp` by default; in Docker behind `-p 127.0.0.1:8091:8091`, opt in with `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true`; always enforces loopback `Host`/`Origin` validation, Bearer auth, destructive tools blocked by default, and SQLite audit in `mcp_audit_log`).
 
 ---
 
