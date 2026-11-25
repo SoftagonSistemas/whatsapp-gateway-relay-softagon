@@ -62,6 +62,43 @@ useGlobalHotkeys({
 <template>
   <div class="rt" :data-theme="theme" :lang="locale">
     <router-view />
+    <footer v-if="isAuthenticated" class="app-brand-footer">
+      <span>{{ $t('common.bySoftagon') }}</span>
+      <span aria-hidden="true">·</span>
+      <a
+        href="https://softagon.com.br"
+        target="_blank"
+        rel="noopener"
+        title="Softagon Sistemas — Soluções em Engenharia de Software, IA e WhatsApp"
+      >
+        {{ $t('common.talkToUs') }}
+      </a>
+    </footer>
     <ShortcutsModal v-if="showShortcuts" @close="showShortcuts = false" />
   </div>
 </template>
+
+<style scoped>
+.app-brand-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--sunken);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app-brand-footer a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-brand-footer a:hover {
+  text-decoration: underline;
+}
+</style>

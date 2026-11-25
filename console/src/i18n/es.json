@@ -7,7 +7,9 @@
     "language": "Idioma",
     "toLight": "Activar modo claro",
     "toDark": "Activar modo oscuro",
-    "search": "Buscar o escribir un número…"
+    "search": "Buscar o escribir un número…",
+    "bySoftagon": "Desarrollado por Softagon Sistemas",
+    "talkToUs": "Visita softagon.com.br · Contáctanos"
   },
   "home": {
     "eyebrow": "Gateway de WhatsApp · v0.1.0",

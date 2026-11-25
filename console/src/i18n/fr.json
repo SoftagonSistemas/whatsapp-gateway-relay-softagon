@@ -7,7 +7,9 @@
     "language": "Langue",
     "toLight": "Passer en mode clair",
     "toDark": "Passer en mode sombre",
-    "search": "Rechercher ou saisir un numéro…"
+    "search": "Rechercher ou saisir un numéro…",
+    "bySoftagon": "Développé par Softagon Sistemas",
+    "talkToUs": "Visitez softagon.com.br · Contactez-nous"
   },
   "home": {
     "eyebrow": "Passerelle WhatsApp · v0.1.0",

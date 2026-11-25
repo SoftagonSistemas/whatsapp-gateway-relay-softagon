@@ -7,7 +7,9 @@
     "language": "Language",
     "toLight": "Switch to light mode",
     "toDark": "Switch to dark mode",
-    "search": "Search or type a number…"
+    "search": "Search or type a number…",
+    "bySoftagon": "Built by Softagon Sistemas",
+    "talkToUs": "Visit softagon.com.br · Contact us"
   },
   "home": {
     "eyebrow": "WhatsApp gateway · v0.1.0",

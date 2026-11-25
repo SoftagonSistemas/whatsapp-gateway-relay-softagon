@@ -193,8 +193,15 @@ onMounted(() => {
           <span>·</span>
           <span>{{ healthOnline === false ? 'offline' : t('login.online') }}</span>
         </span>
-        <a href="/docs" target="_blank" rel="noopener" class="docs-link">
-          {{ t('common.docs') }}
+        <span aria-hidden="true">·</span>
+        <a
+          href="https://softagon.com.br"
+          target="_blank"
+          rel="noopener"
+          class="docs-link"
+          title="Softagon Sistemas — Engenharia de Software, IA e Automação WhatsApp"
+        >
+          {{ t('common.bySoftagon') }} (softagon.com.br)
         </a>
       </div>
     </main>
