@@ -30,7 +30,7 @@ Open **`http://localhost:8080/console`** (or `/manager`), paste the printed `REL
 - **Embedded Raycast-style Web Console (`/console`):** keyboard-first Vue 3 UI (`⌘K`/`Ctrl+K`), Light/Dark theme, 4 languages (`pt-BR`, `en`, `es`, `fr`), live SVG QR pairing, test messaging, webhook management, and live OpenAPI runner.
 - **Native Local MCP Server (`v0.3.0`, `rmcp`):** connects local AI agents (Claude Desktop, Cursor, Antigravity, VS Code) directly to the internal `RelayService` without going through HTTP REST:
   - **STDIO** (default local mode): `softagon-relay mcp --stdio` (logs routed to `stderr`).
-  - **Streamable HTTP**: `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` — loopback-only (`127.0.0.1`), `Origin` validation (anti-DNS rebinding), Bearer auth, destructive tools blocked by default, and SQLite audit log (`mcp_audit_log`).
+  - **Streamable HTTP**: `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` — binds to `127.0.0.1` by default (Docker opt-in: `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true` behind `-p 127.0.0.1:8091:8091`), `Origin` validation (anti-DNS rebinding), Bearer auth, destructive tools blocked by default, and SQLite audit log (`mcp_audit_log`).
 - **Versioned HTTP API (`/v1`) + OpenAPI 3.2.1:** available at `/openapi.json`, `/openapi.yaml`, and `/docs` (Scalar).
 - **Signed Webhooks (HMAC-SHA256):** persistent SQLite outbox with exponential backoff + jitter and stable UUIDv7 event IDs.
 - **Offline Multilingual Voice-Note Transcription:** pure-Rust OGG/Opus decoding (`symphonia` + `symphonia-opus` + `rubato`, no FFmpeg) + `whisper.cpp` (lazy-loaded on demand and unloaded after idle timeout).

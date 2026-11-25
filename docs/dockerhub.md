@@ -33,7 +33,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 
 | Scenario | Measured Value | Notes |
 |---|---|---|
-| **Image Size (`linux/amd64`)** | **55.0 MB** | `docker image inspect`: Rust binary, Vue 3 Console, SQLite, S3 client, Opus decoder, `rmcp`, and `whisper.cpp` |
+| **Image Size (`linux/amd64`)** | **~55 MB compressed (Docker Hub)** | Rust binary, Vue 3 Console, SQLite, S3 client, Opus decoder, `rmcp`, and `whisper.cpp` |
 | **Boot / Idle (0 paired sessions)** | **~4–5 MiB RAM** | Right after startup, before pairing any WhatsApp session |
 | **1 Paired WhatsApp Session (steady state)** | **~38 MiB RAM · ~0.1–0.2% CPU** | 1 real WhatsApp account connected via WebSocket |
 | **During Whisper `base` Transcription** | **~212–338 MiB RAM** | Model loads lazily on incoming voice note and unloads after `180s` idle (~100 MiB RSS after unload) |
@@ -123,7 +123,7 @@ All `/v1/*` routes except `GET /v1/health` require `Authorization: Bearer <RELAY
 
 | Variable | Default | Description |
 |---|---|---|
-| `RELAY_API_KEY` | *(required)* | Bearer API key. Startup fails if empty or set to the example placeholder. |
+| `RELAY_API_KEY` | *(required)* | Bearer API key. Startup fails if empty, shorter than 16 characters, a known placeholder, or an unexpanded `${…}`/`<…>` template. Generate with `openssl rand -hex 32`. |
 | `APP_HOST` / `APP_PORT` | `0.0.0.0` / `8080` | Bind host and port |
 | `RUST_LOG` | `info` | Structured JSON log level (`error`, `warn`, `info`, `debug`) |
 | `DATA_DIR` | `/data` | Persistent volume root |
