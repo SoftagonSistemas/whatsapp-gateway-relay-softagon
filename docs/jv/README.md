@@ -39,17 +39,17 @@ Konsol Wèb dirancang nganggo tata letak keyboard-first **gaya Raycast**, ndhuku
 ### 2.1 Mlebu (`/console/login`)
 Lebokaké mung kunci sing diatur ing `RELAY_API_KEY` (ora perlu jeneng panganggo utawa email). Kunci dikirim minangka token `Bearer` lan bisa disimpen ing browser sampeyan.
 
-![Layar Mlebu Softagon Relay](../images/en/login.png)
+![Layar Mlebu Softagon Relay](../images/jv/login.png)
 
 ### 2.2 Ngarep & Bar Préntah (`/console`)
 Priksa kaséhatan sèrver langsung (`Séhat · N sèsi`), bukak dhaptar sèsi nganggo sak klik, utawa ketik nomer WhatsApp banjur pencèt `↵` kanggo miwiti nggandhèngaké.
 
-![Ngarep lan Bar Préntah Softagon Relay](../images/en/home.png)
+![Ngarep lan Bar Préntah Softagon Relay](../images/jv/home.png)
 
 ### 2.3 Sambungaké Nomer Anyar liwat Kode QR (`/console/connect`)
 Sawisé sèsi digawé, kode QR SVG langsung katon nganggo itungan mundur otomatis (pencèt `r` kanggo nggawé manèh langsung). Ing HP sampeyan, bukak **WhatsApp → Piranti kagandhèng → Gandhèngaké piranti** banjur pindai. Piranti bakal katon minangka **Softagon Relay**.
 
-![Layar Gandhèng Kode QR Softagon Relay](../images/en/connect.png)
+![Layar Gandhèng Kode QR Softagon Relay](../images/jv/connect.png)
 
 ### 2.4 Manajemèn Sèsi & Pesen Uji (`/console/sessions`)
 Atur kabèh akun WhatsApp sing nyambung saka siji panggonan:
@@ -57,17 +57,17 @@ Atur kabèh akun WhatsApp sing nyambung saka siji panggonan:
 - Klik **Kirim pesen** kanggo ngirim pesen uji langsung kanthi validasi nomer internasional.
 - Bukak **Aksi (`⌘K` / `Ctrl+K`)** kanggo miwiti manèh, nyambung manèh, metu, utawa **mbusak sèsi sing pedhot**.
 
-![Layar Manajemèn Sèsi Softagon Relay](../images/en/session.png)
+![Layar Manajemèn Sèsi Softagon Relay](../images/jv/session.png)
 
 ### 2.5 Kedadéan & Webhook (`/console/events`)
 Daftaraké URL webhook kanggo nampa kedadéan sacara real-time (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay otomatis nggawé secret HMAC-SHA256.
 
-![Layar Kedadéan lan Webhook Softagon Relay](../images/en/events.png)
+![Layar Kedadéan lan Webhook Softagon Relay](../images/jv/events.png)
 
 ### 2.6 Réferènsi API Interaktif (`/console/api`)
 Digawé langsung saka `/openapi.yaml` (uga ana ing **`/openapi.json`** kanggo agèn AI, n8n, Postman, lan SDK). Saring endpoint, salin conto **cURL, JavaScript, Python, lan PHP**, banjur lakokaké panjalukan langsung (`⌘↵` / `Ctrl+↵`).
 
-![Layar Réferènsi API Interaktif Softagon Relay](../images/en/api.png)
+![Layar Réferènsi API Interaktif Softagon Relay](../images/jv/api.png)
 
 ### Pintasan Keyboard
 | Pintasan | Aksi |

@@ -39,17 +39,17 @@ Konsol Web dibahen marhite tata letak keyboard-first **gaya Raycast**, boi mangg
 ### 2.1 Masuk (`/console/login`)
 Pamasuk holan kunci na diatur di `RELAY_API_KEY` (ndang porlu goar pangke manang email). Kunci ditongos songon token `Bearer` jala boi disimpan di browsermu.
 
-![Layar Masuk Softagon Relay](../images/en/login.png)
+![Layar Masuk Softagon Relay](../images/bbc/login.png)
 
 ### 2.2 Beranda & Bilah Parenta (`/console`)
 Pariksa hahipason server langsung (`Hipas · N sesi`), buka daftar sesi marhite sada klik, manang ketik nomor WhatsApp dung i tekan `↵` laho mamulai pahubungkon.
 
-![Beranda dohot Bilah Parenta Softagon Relay](../images/en/home.png)
+![Beranda dohot Bilah Parenta Softagon Relay](../images/bbc/home.png)
 
 ### 2.3 Pahubung Nomor na Imbaru marhite Kode QR (`/console/connect`)
 Dung sesi dibahen, kode QR SVG pintor tarida rap dohot hitungan mundur otomatis (tekan `r` laho mambahen muse). Di HP-mu, buka **WhatsApp → Perangkat tertaut → Tautkan perangkat** dung i scan. Perangkat tarida gabe **Softagon Relay**.
 
-![Layar Tautan Kode QR Softagon Relay](../images/en/connect.png)
+![Layar Tautan Kode QR Softagon Relay](../images/bbc/connect.png)
 
 ### 2.4 Manajemen Sesi & Tona Uji (`/console/sessions`)
 Atur sasude akun WhatsApp na terhubung di sada inganan:
@@ -57,17 +57,17 @@ Atur sasude akun WhatsApp na terhubung di sada inganan:
 - Klik **Tongos tona** laho manongos tona uji langsung dohot validasi nomor internasional.
 - Buka **Aksi (`⌘K` / `Ctrl+K`)** laho mamulai muse, pahubungkon muse, kaluar, manang **manesa sesi na putus**.
 
-![Layar Manajemen Sesi Softagon Relay](../images/en/session.png)
+![Layar Manajemen Sesi Softagon Relay](../images/bbc/session.png)
 
 ### 2.5 Event & Webhook (`/console/events`)
 Daftarkon URL webhook laho manjalo event sacara real-time (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay otomatis mambahen secret HMAC-SHA256.
 
-![Layar Event dohot Webhook Softagon Relay](../images/en/events.png)
+![Layar Event dohot Webhook Softagon Relay](../images/bbc/events.png)
 
 ### 2.6 Referensi API Interaktif (`/console/api`)
 Dibahen langsung sian `/openapi.yaml` (adong do muse di **`/openapi.json`** tu agen AI, n8n, Postman, dohot SDK). Saring endpoint, salin umpama **cURL, JavaScript, Python, dohot PHP**, dung i dalanhon langsung (`⌘↵` / `Ctrl+↵`).
 
-![Layar Referensi API Interaktif Softagon Relay](../images/en/api.png)
+![Layar Referensi API Interaktif Softagon Relay](../images/bbc/api.png)
 
 ### Pintasan Keyboard
 | Pintasan | Aksi |

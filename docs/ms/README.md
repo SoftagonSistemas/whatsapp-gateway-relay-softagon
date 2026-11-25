@@ -39,17 +39,17 @@ Konsol Web terbenam direka dalam susun atur keutamaan papan kekunci **berinspira
 ### 2.1 Log Masuk (`/console/login`)
 Masukkan hanya kunci yang dikonfigurasikan dalam `RELAY_API_KEY` (tiada nama pengguna atau e-mel diperlukan). Ia dihantar sebagai token `Bearer` dan boleh diingati secara pilihan dalam pelayar anda.
 
-![Skrin Log Masuk Softagon Relay](../images/en/login.png)
+![Skrin Log Masuk Softagon Relay](../images/ms/login.png)
 
 ### 2.2 Utama & Bar Arahan (`/console`)
 Semak kesihatan pelayan secara langsung (`Sihat · N sesi`), lompat ke senarai sesi dengan satu klik, atau taip sebarang nombor WhatsApp dan tekan `↵` untuk memulakan pemautan.
 
-![Utama dan Bar Arahan Softagon Relay](../images/en/home.png)
+![Utama dan Bar Arahan Softagon Relay](../images/ms/home.png)
 
 ### 2.3 Sambung Nombor Baharu melalui Kod QR (`/console/connect`)
 Setelah sesi dicipta, kod QR SVG langsung muncul dengan kira detik muat semula automatik (tekan `r` untuk menjana semula serta-merta). Pada telefon anda, buka **WhatsApp → Peranti terpaut → Pautkan peranti** dan imbas. Peranti terpaut akan dipaparkan sebagai **Softagon Relay**.
 
-![Skrin Pemautan Kod QR Softagon Relay](../images/en/connect.png)
+![Skrin Pemautan Kod QR Softagon Relay](../images/ms/connect.png)
 
 ### 2.4 Pengurusan Sesi & Mesej Ujian (`/console/sessions`)
 Urus semua akaun WhatsApp yang disambungkan dari satu tempat:
@@ -57,17 +57,17 @@ Urus semua akaun WhatsApp yang disambungkan dari satu tempat:
 - Klik **Hantar mesej** untuk menghantar mesej ujian langsung dengan pengesahan nombor antarabangsa.
 - Buka **Tindakan (`⌘K` / `Ctrl+K`)** untuk memulakan semula, menyambung semula, log keluar, atau **memadam sesi yang terputus**.
 
-![Skrin Pengurusan Sesi Softagon Relay](../images/en/session.png)
+![Skrin Pengurusan Sesi Softagon Relay](../images/ms/session.png)
 
 ### 2.5 Acara & Webhook (`/console/events`)
 Daftar URL webhook untuk menerima acara masa nyata (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay menjana rahsia tandatangan HMAC-SHA256 secara automatik.
 
-![Skrin Acara dan Webhook Softagon Relay](../images/en/events.png)
+![Skrin Acara dan Webhook Softagon Relay](../images/ms/events.png)
 
 ### 2.6 Rujukan API Interaktif (`/console/api`)
 Dijana secara langsung daripada `/openapi.yaml` (juga tersedia di **`/openapi.json`** untuk ejen AI, n8n, Postman, dan SDK). Tapis titik akhir, salin petikan kod **cURL, JavaScript, Python, dan PHP**, dan jalankan permintaan sebenar (`⌘↵` / `Ctrl+↵`).
 
-![Skrin Rujukan API Interaktif Softagon Relay](../images/en/api.png)
+![Skrin Rujukan API Interaktif Softagon Relay](../images/ms/api.png)
 
 ### Pintasan Papan Kekunci
 | Pintasan | Tindakan |

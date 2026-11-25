@@ -39,17 +39,17 @@ Konsol Web bawaannye dibikin pake tampilan keyboard-first **gaya Raycast**, bisa
 ### 2.1 Masuk (`/console/login`)
 Masukin kunci nyang udeh diatur di `RELAY_API_KEY` aje (kagak perlu username atawa email). Kuncinye dikirim jadi token `Bearer` ame bisa disimpen di browser ente.
 
-![Layar Masuk Softagon Relay](../images/en/login.png)
+![Layar Masuk Softagon Relay](../images/bew/login.png)
 
 ### 2.2 Beranda & Bilah Perintah (`/console`)
 Cek kesehatan server langsung (`Sehat · N sesi`), buka daftar sesi sekali klik, atawa ketik nomor WhatsApp terus pencet `↵` biar langsung mulai nyambungin.
 
-![Beranda dan Bilah Perintah Softagon Relay](../images/en/home.png)
+![Beranda dan Bilah Perintah Softagon Relay](../images/bew/home.png)
 
 ### 2.3 Sambungin Nomor Baru lewat Kode QR (`/console/connect`)
 Begitu sesi dibikin, kode QR SVG langsung nongol pake itungan mundur pembaruan otomatis (pencet `r` buat bikin baru langsung). Di hape ente, buka **WhatsApp → Perangkat tertaut → Tautkan perangkat** terus pindai. Perangkatnye bakal nongol pake nama **Softagon Relay**.
 
-![Layar Penautan Kode QR Softagon Relay](../images/en/connect.png)
+![Layar Penautan Kode QR Softagon Relay](../images/bew/connect.png)
 
 ### 2.4 Kelola Sesi & Kirim Pesan Tes (`/console/sessions`)
 Urus semua akun WhatsApp nyang nyambung di satu tempat:
@@ -57,17 +57,17 @@ Urus semua akun WhatsApp nyang nyambung di satu tempat:
 - Klik **Kirim pesan** buat kirim pesan tes langsung pake validasi nomor internasional.
 - Buka **Aksi (`⌘K` / `Ctrl+K`)** buat ngulang sesi, sambungin ulang, keluar, atawa **hapus sesi nyang udeh putus**.
 
-![Layar Manajemen Sesi Softagon Relay](../images/en/session.png)
+![Layar Manajemen Sesi Softagon Relay](../images/bew/session.png)
 
 ### 2.5 Event & Webhook (`/console/events`)
 Daftarin URL webhook biar dapet event secara langsung (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay otomatis bikin secret HMAC-SHA256 ame gampang buat matiin atawa hapus langganan.
 
-![Layar Event dan Webhook Softagon Relay](../images/en/events.png)
+![Layar Event dan Webhook Softagon Relay](../images/bew/events.png)
 
 ### 2.6 Referensi API Interaktif (`/console/api`)
 Dibikin langsung dari `/openapi.yaml` (ade juga di **`/openapi.json`** buat nyambung ke agen AI, n8n, Postman, ame SDK). Saring endpoint, salin contoh **cURL, JavaScript, Python, ame PHP**, terus jalanin langsung (`⌘↵` / `Ctrl+↵`).
 
-![Layar Referensi API Interaktif Softagon Relay](../images/en/api.png)
+![Layar Referensi API Interaktif Softagon Relay](../images/bew/api.png)
 
 ### Pintasan Keyboard
 | Pintasan | Aksi |

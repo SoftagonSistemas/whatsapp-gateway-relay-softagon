@@ -39,17 +39,17 @@ Konsol Web tertanam dirancang dengan tata letak keyboard-first **bergaya Raycast
 ### 2.1 Masuk (`/console/login`)
 Masukkan hanya kunci yang dikonfigurasi pada `RELAY_API_KEY` (tanpa nama pengguna atau email). Kunci dikirim sebagai token `Bearer` dan dapat disimpan secara opsional di browser Anda.
 
-![Layar Masuk Softagon Relay](../images/en/login.png)
+![Layar Masuk Softagon Relay](../images/id/login.png)
 
 ### 2.2 Beranda & Bilah Perintah (`/console`)
 Pantau kesehatan server secara langsung (`Sehat · N sesi`), buka daftar sesi dengan satu klik, atau ketik nomor WhatsApp (dengan pemformatan & validasi internasional otomatis) lalu tekan `↵` untuk mulai menautkan.
 
-![Beranda dan Bilah Perintah Softagon Relay](../images/en/home.png)
+![Beranda dan Bilah Perintah Softagon Relay](../images/id/home.png)
 
 ### 2.3 Hubungkan Nomor Baru via Kode QR (`/console/connect`)
 Setelah sesi dibuat, kode QR SVG langsung tampil dengan hitung mundur pembaruan otomatis (tekan `r` untuk membuat ulang segera). Di ponsel Anda, buka **WhatsApp → Perangkat tertaut → Tautkan perangkat** lalu pindai. Perangkat tertaut akan muncul sebagai **Softagon Relay**.
 
-![Layar Penautan Kode QR Softagon Relay](../images/en/connect.png)
+![Layar Penautan Kode QR Softagon Relay](../images/id/connect.png)
 
 ### 2.4 Manajemen Sesi & Pesan Uji (`/console/sessions`)
 Kelola seluruh akun WhatsApp yang terhubung dari satu tempat:
@@ -57,17 +57,17 @@ Kelola seluruh akun WhatsApp yang terhubung dari satu tempat:
 - Klik **Kirim pesan** untuk mengirim pesan uji langsung dengan validasi nomor internasional.
 - Buka **Aksi (`⌘K` / `Ctrl+K`)** untuk memulai ulang, menghubungkan kembali, keluar, atau **menghapus sesi yang terputus** (sesi aktif terlindungi dari penghapusan tidak sengaja).
 
-![Layar Manajemen Sesi Softagon Relay](../images/en/session.png)
+![Layar Manajemen Sesi Softagon Relay](../images/id/session.png)
 
 ### 2.5 Event & Webhook (`/console/events`)
 Daftarkan URL webhook untuk menerima event secara real-time (`message.received`, `message.sent`, `message.ack`, `session.status`, `message.transcription.completed`, `group.updated`). Relay otomatis membuat secret penandatanganan HMAC-SHA256 dan memudahkan pengaktifan atau penghapusan langganan.
 
-![Layar Event dan Webhook Softagon Relay](../images/en/events.png)
+![Layar Event dan Webhook Softagon Relay](../images/id/events.png)
 
 ### 2.6 Referensi API Interaktif (`/console/api`)
 Dihasilkan langsung dari `/openapi.yaml` (juga tersedia di **`/openapi.json`** untuk integrasi langsung dengan agen AI, n8n, Postman, dan SDK). Saring endpoint, salin potongan kode **cURL, JavaScript, Python, dan PHP**, lalu jalankan permintaan nyata ke instance Anda (`⌘↵` / `Ctrl+↵`).
 
-![Layar Referensi API Interaktif Softagon Relay](../images/en/api.png)
+![Layar Referensi API Interaktif Softagon Relay](../images/id/api.png)
 
 ### Pintasan Keyboard
 | Pintasan | Aksi |
