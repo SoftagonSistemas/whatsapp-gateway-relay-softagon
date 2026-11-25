@@ -21,6 +21,21 @@ RUN cargo build --release --features whisper
 
 FROM debian:bookworm-slim AS runtime
 
+ARG VERSION=0.1.0
+ARG REVISION=dev
+ARG CREATED=unknown
+
+LABEL org.opencontainers.image.title="Softagon Relay" \
+      org.opencontainers.image.description="Open-source, self-hosted WhatsApp Web messaging gateway built with Rust, SQLite, S3 media storage, and local Whisper transcription." \
+      org.opencontainers.image.url="https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon" \
+      org.opencontainers.image.source="https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon" \
+      org.opencontainers.image.documentation="https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon#readme" \
+      org.opencontainers.image.vendor="Softagon Sistemas" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.created="${CREATED}"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libstdc++6 \

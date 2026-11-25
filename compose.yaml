@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: softagon/relay:dev
+    image: softagon/relay:0.1.0
     container_name: softagon-relay
     restart: unless-stopped
     env_file:
