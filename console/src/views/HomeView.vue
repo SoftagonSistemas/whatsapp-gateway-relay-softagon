@@ -220,7 +220,8 @@ const allItems = computed<PaletteItem[]>(() => {
       meta: t('home.mUi'),
       icon: 'globe',
       tint: 'neutral',
-      keywords: 'idioma language portugues english espanol francais locale',
+      keywords:
+        'idioma language basa hata bahasa portugues english espanol francais indonesia betawi sunda sundanes jawa javanes batak toba melayu malaio jakarta bekasi surabaya bandung medan locale',
       run: cycleLocale,
     },
     {

@@ -8,7 +8,7 @@ Self-hosted WhatsApp Web gateway, embedded Web Console, and native local MCP Ser
 [![Release](https://img.shields.io/github/v/release/SoftagonSistemas/whatsapp-gateway-relay-softagon)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases)
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-softagon%2Frelay-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/softagon/relay)
 
-> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Quick Start (One-Line Docker Run)
 
@@ -27,7 +27,7 @@ Open **`http://localhost:8080/console`** (or `/manager`), paste the printed `REL
 ## What It Includes
 
 - **Single container, zero external databases:** native Rust binary (Tokio + Axum) with embedded **SQLite (WAL)** — no PostgreSQL, Redis, RabbitMQ, or Chromium required.
-- **Embedded Raycast-style Web Console (`/console`):** keyboard-first Vue 3 UI (`⌘K`/`Ctrl+K`), Light/Dark theme, 4 languages (`pt-BR`, `en`, `es`, `fr`), live SVG QR pairing, test messaging, webhook management, and live OpenAPI runner.
+- **Embedded Raycast-style Web Console (`/console`):** keyboard-first Vue 3 UI (`⌘K`/`Ctrl+K`), Light/Dark theme, 10 languages (`pt-BR`, `en`, `es`, `fr`, `id`, `bew`, `su`, `jv`, `bbc`, `ms`), live SVG QR pairing, test messaging, webhook management, and live OpenAPI runner.
 - **Native Local MCP Server (`v0.3.0`, `rmcp`):** connects local AI agents (Claude Desktop, Cursor, Antigravity, VS Code) directly to the internal `RelayService` without going through HTTP REST:
   - **STDIO** (default local mode): `softagon-relay mcp --stdio` (logs routed to `stderr`).
   - **Streamable HTTP**: `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` — binds to `127.0.0.1` by default (Docker opt-in: `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true` behind `-p 127.0.0.1:8091:8091`), `Origin` validation (anti-DNS rebinding), Bearer auth, destructive tools blocked by default, and SQLite audit log (`mcp_audit_log`).

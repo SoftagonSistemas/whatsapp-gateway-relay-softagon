@@ -1,6 +1,6 @@
 # Documentation Officielle — Softagon Relay (Français)
 
-> Langues : [Português (BR)](../pt-BR/README.md) · [English](../en/README.md) · [Español](../es/README.md) · **Français**
+> Langues : [Português (BR)](../pt-BR/README.md) · [English](../en/README.md) · [Español](../es/README.md) · **Français** · [Bahasa Indonesia](../id/README.md) · [Basa Betawi](../bew/README.md) · [Basa Sunda](../su/README.md) · [Basa Jawa](../jv/README.md) · [Hata Batak Toba](../bbc/README.md) · [Bahasa Melayu](../ms/README.md)
 
 **Qu'est-ce que Softagon Relay ?**  
 **Softagon Relay** est une **passerelle API HTTP WhatsApp Web open-source et auto-hébergée**, développée en **Rust** par **[Softagon Sistemas](https://softagon.com.br)**. Elle fonctionne dans un **seul conteneur Docker (~55 Mo)** avec **SQLite (WAL)** intégré, une **Console Web de style Raycast** sur `/console`, un stockage de médias **Local ou S3/R2/MinIO**, des **webhooks signés HMAC-SHA256**, **OpenAPI 3.2.1** et la **transcription locale multilingue de messages vocaux** via `whisper.cpp`.
@@ -34,7 +34,7 @@ Utilisez le fichier [compose.yaml](../../compose.yaml) du dépôt (`read_only: t
 
 ## 2. Guide Visuel de la Console Web (`/console`)
 
-La Console Web embarquée s'inspire de **Raycast** pour une utilisation fluide au clavier, avec changement instantané de langue (**PT / EN / ES / FR**) et de thème (**Clair / Sombre**).
+La Console Web embarquée s'inspire de **Raycast** pour une utilisation fluide au clavier, avec changement instantané de langue (**10 langues :** `PT / EN / ES / FR / ID / BEW / SU / JV / BTK / MS`) et de thème (**Clair / Sombre**).
 
 ### 2.1 Connexion (`/console/login`)
 Saisissez uniquement la clé configurée dans `RELAY_API_KEY` (sans identifiant ni e-mail). Elle est envoyée en jeton `Bearer` et peut être mémorisée dans le navigateur.

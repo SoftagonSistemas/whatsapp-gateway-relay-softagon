@@ -2,7 +2,16 @@
 
 All notable changes to **Softagon Relay** are documented in this file, following [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
-> **Quick links:** [English Docs](docs/en/README.md) · [Português (BR)](docs/pt-BR/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Docker Hub](https://hub.docker.com/r/softagon/relay) · [Softagon Sistemas](https://softagon.com.br)
+> **Quick links:** [English Docs](docs/en/README.md) · [Português (BR)](docs/pt-BR/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Docker Hub](https://hub.docker.com/r/softagon/relay) · [Softagon Sistemas](https://softagon.com.br)
+
+---
+
+## [Unreleased]
+
+### Added — 10-Language Web Console & Documentation (Indonesia & Region)
+- **6 new UI & documentation languages (`id`, `bew`, `su`, `jv`, `bbc`, `ms`):** added complete Web Console translations and official guides for **Bahasa Indonesia**, **Basa Betawi** (Jakarta & Bekasi), **Basa Sunda** (Bandung & Bekasi), **Basa Jawa** (Surabaya), **Hata Batak Toba** (Medan), and **Bahasa Melayu** (Medan), expanding total coverage from 4 to **10 languages**.
+- **Accessible dropdown `LanguageSwitcher`:** replaced the horizontal language pill bar in `TopBar` and `LoginView` with a compact Raycast-style listbox dropdown (`🌐`) supporting keyboard navigation and native language names.
+- **Expanded browser locale auto-detection & command palette search:** recognizes BCP 47 codes and legacy aliases (`in`, `jw`, `jav`, `btk`, `batak`, `zsm`) and indexes Indonesian/regional language and city keywords in `⌘K` / `Ctrl+K`.
 
 ---
 

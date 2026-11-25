@@ -3,8 +3,24 @@ import ptBR from './pt-BR.json';
 import en from './en.json';
 import es from './es.json';
 import fr from './fr.json';
+import id from './id.json';
+import bew from './bew.json';
+import su from './su.json';
+import jv from './jv.json';
+import bbc from './bbc.json';
+import ms from './ms.json';
 
-export type SupportedLocale = 'pt-BR' | 'en' | 'es' | 'fr';
+export type SupportedLocale =
+  | 'pt-BR'
+  | 'en'
+  | 'es'
+  | 'fr'
+  | 'id'
+  | 'bew'
+  | 'su'
+  | 'jv'
+  | 'bbc'
+  | 'ms';
 
 export const LOCALE_OPTIONS: Array<{
   code: SupportedLocale;
@@ -15,6 +31,12 @@ export const LOCALE_OPTIONS: Array<{
   { code: 'en', short: 'EN', name: 'English' },
   { code: 'es', short: 'ES', name: 'Español' },
   { code: 'fr', short: 'FR', name: 'Français' },
+  { code: 'id', short: 'ID', name: 'Bahasa Indonesia' },
+  { code: 'bew', short: 'BEW', name: 'Basa Betawi' },
+  { code: 'su', short: 'SU', name: 'Basa Sunda' },
+  { code: 'jv', short: 'JV', name: 'Basa Jawa' },
+  { code: 'bbc', short: 'BTK', name: 'Hata Batak Toba' },
+  { code: 'ms', short: 'MS', name: 'Bahasa Melayu' },
 ];
 
 const STORAGE_KEY = 'relay.lang';
@@ -26,6 +48,12 @@ function normalizeLocale(raw: string | null | undefined): SupportedLocale | null
   if (low.startsWith('en')) return 'en';
   if (low.startsWith('es')) return 'es';
   if (low.startsWith('fr')) return 'fr';
+  if (low.startsWith('id') || low === 'in' || low.startsWith('in-')) return 'id';
+  if (low.startsWith('bew')) return 'bew';
+  if (low.startsWith('su')) return 'su';
+  if (low.startsWith('jv') || low.startsWith('jw') || low.startsWith('jav')) return 'jv';
+  if (low.startsWith('bbc') || low.startsWith('btk') || low.startsWith('batak')) return 'bbc';
+  if (low.startsWith('ms') || low.startsWith('zsm')) return 'ms';
   return null;
 }
 
@@ -51,6 +79,12 @@ export const i18n = createI18n({
     en,
     es,
     fr,
+    id,
+    bew,
+    su,
+    jv,
+    bbc,
+    ms,
   },
 });
 

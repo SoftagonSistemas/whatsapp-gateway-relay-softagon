@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { Code2, LogOut, Moon, Search, Sun } from 'lucide-vue-next';
 import lockupDark from '../assets/softagon-lockup-dark.png';
 import lockupLight from '../assets/softagon-lockup-light.png';
-import { LOCALE_OPTIONS, setAppLocale, type SupportedLocale } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher.vue';
 import { useTheme } from '../composables/useTheme';
 import { useAuth } from '../composables/useAuth';
 import { useSessions } from '../composables/useSessions';
@@ -35,10 +35,6 @@ const healthPillText = computed(() => {
   // Replace the mockup's hardcoded "3" with the real active_sessions count from /v1/health
   return label.replace(/\b3\b/, formatted);
 });
-
-function pickLocale(code: SupportedLocale) {
-  setAppLocale(code);
-}
 
 function goHomeSearch() {
   router.push({ name: 'home', query: { focus: '1' } });
@@ -95,26 +91,7 @@ onMounted(() => {
         {{ healthPillText }}
       </router-link>
 
-      <div
-        role="group"
-        :aria-label="t('common.language')"
-        class="lang-group"
-      >
-        <button
-          v-for="l in LOCALE_OPTIONS"
-          :key="l.code"
-          type="button"
-          :aria-pressed="locale === l.code"
-          :lang="l.code"
-          :title="l.name"
-          :aria-label="l.name"
-          class="lang-btn"
-          :class="{ active: locale === l.code }"
-          @click="pickLocale(l.code)"
-        >
-          {{ l.short }}
-        </button>
-      </div>
+      <LanguageSwitcher />
 
       <button
         type="button"
@@ -242,33 +219,6 @@ onMounted(() => {
 
 .health-dot.offline {
   background: var(--danger);
-}
-
-.lang-group {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-
-.lang-btn {
-  min-width: 34px;
-  height: 30px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 7px;
-  cursor: pointer;
-  font: 700 12px 'Montserrat', sans-serif;
-  letter-spacing: 0.04em;
-  background: transparent;
-  color: var(--muted);
-}
-
-.lang-btn.active {
-  background: var(--sel);
-  color: var(--text);
 }
 
 @media (max-width: 640px) {

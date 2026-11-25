@@ -29,7 +29,7 @@ Before pushing, the hook automatically runs:
 - **Shared domain layer (`src/core/service.rs`):** Both the REST API (`src/api/`) and the MCP server (`src/mcp/`) must call `RelayService` directly. Do not couple MCP handlers to HTTP REST endpoints.
 - **MCP safety defaults:** STDIO is the default local transport (all logs to `stderr`). Streamable HTTP binds to loopback by default; non-loopback only with the explicit `MCP_ALLOW_CONTAINER_BIND=true` Docker opt-in, always keeping `Origin` validation and Bearer authentication. Destructive tools remain disabled by default unless `MCP_ALLOW_DESTRUCTIVE=true` and `confirm: true`.
 - **Single-container simplicity:** Avoid introducing mandatory external services (PostgreSQL, Redis, Chromium, FFmpeg).
-- **4-language Web Console:** Keep `console/src/i18n/{pt-BR,en,es,fr}.json` in sync when adding UI strings. In `vue-i18n` v11, escape literal braces containing spaces as `"{'{'}"` and `"{'}'}"`.
+- **10-language Web Console:** Keep `console/src/i18n/{pt-BR,en,es,fr,id,bew,su,jv,bbc,ms}.json` in sync when adding UI strings. In `vue-i18n` v11, escape literal braces containing spaces as `"{'{'}"` and `"{'}'}"`.
 
 ## Good Ways to Contribute
 
