@@ -2,9 +2,15 @@
 
 **Open-source, self-hosted messaging gateway built with Rust.**
 
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-softagon%2Frelay-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/softagon/relay)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
+- **Docker Hub:** <https://hub.docker.com/r/softagon/relay> (`docker pull softagon/relay:latest`)
+- **Repository:** <https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon>
+
 Softagon Relay is a lightweight gateway designed to connect applications to WhatsApp Web through a versioned HTTP API, webhooks and persistent events. It is intended to run as a single Docker container, with SQLite as its embedded database, optional S3-compatible media storage and local speech-to-text processing.
 
-> **Project status:** architecture and implementation blueprint for V1. The routes, environment variables and deployment examples in this document define the intended contract; they should not be interpreted as features already implemented until their corresponding code and tests are merged.
+> **Project status:** V1 (Milestones 1–6) implemented and published as `softagon/relay:0.1.0` on [Docker Hub](https://hub.docker.com/r/softagon/relay). Benchmark validation (Milestone 7) is ongoing.
 
 ---
 
