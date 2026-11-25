@@ -1,13 +1,13 @@
 # Softagon Relay — Self-Hosted WhatsApp API Gateway in Rust (Docker)
 
 **What is Softagon Relay?**  
-**Softagon Relay** (`softagon/relay`) is an open-source, self-hosted **WhatsApp Web HTTP API gateway** built in **Rust** by **[Softagon Sistemas](https://softagon.com.br)**. It runs as a single **~52 MB Docker container** with an embedded **Raycast-style Web Console** (`/console`, 4 languages: PT-BR/EN/ES/FR), embedded **SQLite (WAL)**, optional **S3-compatible media storage** (AWS S3, Cloudflare R2, MinIO), **HMAC-SHA256 signed webhooks** with persistent outbox retries, **OpenAPI 3.2.1 + Scalar** documentation, and **offline multilingual voice-note transcription** powered by `whisper.cpp`.
+**Softagon Relay** (`softagon/relay`) is an open-source, self-hosted **WhatsApp Web HTTP API gateway and native MCP Server (Model Context Protocol)** built in **Rust** by **[Softagon Sistemas](https://softagon.com.br)**. It runs as a single **~54 MB Docker container** with an embedded **Raycast-style Web Console** (`/console`, 4 languages: PT-BR/EN/ES/FR), **local MCP Server** (STDIO + loopback-only Streamable HTTP with `Origin` validation & SQLite audit), embedded **SQLite (WAL)**, optional **S3-compatible media storage** (AWS S3, Cloudflare R2, MinIO), **HMAC-SHA256 signed webhooks** with persistent outbox retries, **OpenAPI 3.2.1** (`/openapi.json`, `/openapi.yaml`, `/docs`), and **offline multilingual voice-note transcription** powered by `whisper.cpp`.
 
 Unlike multi-service Node.js or Python WhatsApp gateways that require PostgreSQL, Redis, RabbitMQ, or Chromium, Softagon Relay requires **zero external infrastructure** to start.
 
 - **Docker Image:** `softagon/relay:latest` (`linux/amd64`, non-root UID `10001`)
 - **Official Website & Contact:** https://softagon.com.br
-- **Source Code (GitHub):** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon
+- **Source Code & Changelog (GitHub):** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon · [CHANGELOG.md](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/CHANGELOG.md)
 - **User Documentation (with screenshots):** [Português (BR)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/pt-BR/README.md) · [English](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/en/README.md) · [Español](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/es/README.md) · [Français](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/fr/README.md)
 - **Web Console & API Contract:** `/console` (or `/manager`) · OpenAPI 3.2.1 (`/openapi.json` & `/openapi.yaml`) · Scalar Interactive Docs (`/docs`)
 - **License:** Apache-2.0
@@ -247,3 +247,13 @@ All persistent state lives in `/data`:
 
 ### Is Softagon Relay an official Meta / WhatsApp API?
 No. Softagon Relay is an independent, unofficial open-source project built on `whatsapp-rust` and is not affiliated with, authorized by, or endorsed by Meta or WhatsApp. Always review Meta's Terms of Service, deploy behind TLS (reverse proxy/ingress), and encrypt backups of `/data`.
+
+---
+
+## Roadmap: Native Desktop App (Tauri — Windows, Linux & macOS)
+
+Beyond Docker, our next major milestone is a **native Desktop edition built with Tauri** for **Windows, Linux, and macOS** — bundling the same lightweight Rust engine, Web Console, and local **MCP Server** with a system tray icon so you can connect WhatsApp to local AI agents with zero Docker setup.
+
+**Want the Desktop version or have feature requests?**  
+Open an issue on GitHub and tell us your OS and use case: https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/issues/new  
+Full release history: https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/CHANGELOG.md

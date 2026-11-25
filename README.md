@@ -7,12 +7,13 @@
 
 - **Website:** <https://softagon.com.br> (by **Softagon Sistemas**)
 - **Documentation:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md)
+- **Changelog & Roadmap:** [CHANGELOG.md](CHANGELOG.md) *(including upcoming **Tauri Desktop app** for Windows, Linux & macOS — [open an Issue](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/issues/new) if you need it!)*
 - **Docker Hub:** <https://hub.docker.com/r/softagon/relay> (`docker pull softagon/relay:latest`)
 - **Repository:** <https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon>
 
-Softagon Relay is a lightweight gateway designed to connect applications to WhatsApp Web through a versioned HTTP API, webhooks and persistent events. It is intended to run as a single Docker container, with SQLite as its embedded database, optional S3-compatible media storage and local speech-to-text processing.
+Softagon Relay is a lightweight gateway designed to connect applications and local AI agents (via **MCP**) to WhatsApp Web through a versioned HTTP API, webhooks and persistent events. It is intended to run as a single Docker container, with SQLite as its embedded database, optional S3-compatible media storage and local speech-to-text processing.
 
-> **Project status:** **v0.2.0** published on [Docker Hub](https://hub.docker.com/r/softagon/relay) with embedded Raycast-style Web Console (`/console`), SQLite WAL, Local/S3 media, signed webhooks, OpenAPI 3.2.1, and local Whisper transcription.
+> **Project status:** **v0.3.0** published on [Docker Hub](https://hub.docker.com/r/softagon/relay) with native **MCP Server** (STDIO + loopback Streamable HTTP with `Origin` validation & SQLite audit), embedded Raycast-style Web Console (`/console`), `/openapi.json` & `/openapi.yaml`, SQLite WAL, Local/S3 media, signed webhooks, and local Whisper transcription. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

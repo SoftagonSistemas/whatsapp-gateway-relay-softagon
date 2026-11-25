@@ -8,6 +8,7 @@ O **Softagon Relay** é um **gateway WhatsApp Web open-source e self-hosted** de
 - **Site Oficial & Contato:** <https://softagon.com.br>
 - **Docker Hub:** <https://hub.docker.com/r/softagon/relay> (`softagon/relay:latest`)
 - **Código-fonte (GitHub):** <https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon>
+- **Changelog & Roadmap:** [CHANGELOG.md](../../CHANGELOG.md) *(incluindo futura versão **Desktop em Tauri** para Windows, Linux e macOS — [abra uma Issue](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/issues/new) se precisar!)*
 - **Licença:** Apache-2.0
 
 ---

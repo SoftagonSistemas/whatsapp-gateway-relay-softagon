@@ -8,6 +8,7 @@
 - **Site Officiel & Contact :** <https://softagon.com.br>
 - **Docker Hub :** <https://hub.docker.com/r/softagon/relay> (`softagon/relay:latest`)
 - **Code source (GitHub) :** <https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon>
+- **Changelog & Roadmap :** [CHANGELOG.md](../../CHANGELOG.md) *(incluant la prochaine version **Desktop Tauri** pour Windows, Linux et macOS — [ouvrez une Issue](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/issues/new) si vous en avez besoin !)*
 - **Licence :** Apache-2.0
 
 ---
