@@ -31,6 +31,8 @@ pub enum SessionError {
     RateLimited(String),
     #[error("bad request: {0}")]
     BadRequest(String),
+    #[error("conflict: {0}")]
+    Conflict(String),
     #[error("engine error: {0}")]
     Engine(#[from] EngineError),
     #[error("database error: {0}")]
@@ -233,6 +235,22 @@ impl SessionManager {
             .start_session(session_id, self.event_tx.clone())
             .await?;
         self.get_session(&rec.id).await
+    }
+
+    pub async fn delete_session(&self, session_id: &str) -> Result<(), SessionError> {
+        let (rec, live_status) = self.get_status(session_id).await?;
+        if live_status == SessionConnectionState::Connected.as_str()
+            || rec.status == SessionConnectionState::Connected.as_str()
+        {
+            return Err(SessionError::Conflict(
+                "disconnect/logout the session before deleting it".into(),
+            ));
+        }
+        let _ = self.engine.stop_session(session_id).await;
+        let _ = self.engine.delete_session_data(session_id).await;
+        self.qr_cache.write().await.remove(session_id);
+        self.db.delete_session(session_id).await?;
+        Ok(())
     }
 
     pub async fn logout_session(&self, session_id: &str) -> Result<(), SessionError> {

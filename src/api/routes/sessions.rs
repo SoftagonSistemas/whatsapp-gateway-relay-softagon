@@ -143,3 +143,11 @@ pub async fn logout_session(
         status: "logged_out",
     }))
 }
+
+pub async fn delete_session(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    state.sessions.delete_session(&session_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}

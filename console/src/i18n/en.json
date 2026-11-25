@@ -310,7 +310,7 @@
     "withKey": "with your key",
     "auth": "Bearer · RELAY_API_KEY",
     "public": "Public",
-    "yourUrl": "{your URL}",
+    "yourUrl": "{'{'}your URL{'}'}",
     "hello": "Hi! All good over there?",
     "g": {
       "Health": "Health",

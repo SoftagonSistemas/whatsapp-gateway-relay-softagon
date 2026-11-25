@@ -12,6 +12,7 @@ use whatsapp_rust::download::Downloadable;
 use whatsapp_rust::prelude::*;
 use whatsapp_rust::upload::UploadOptions;
 use whatsapp_rust::wacore::download::MediaType;
+use whatsapp_rust::wacore::store::device::DevicePropsOverride;
 use whatsapp_rust::wacore::types::events::Event;
 
 use super::{
@@ -83,6 +84,49 @@ fn parse_recipient_jid(to: &str) -> Result<Jid, EngineError> {
         .map_err(|e| EngineError::InvalidRecipient(format!("invalid JID '{normalized}': {e}")))
 }
 
+/// Resolves the exact WhatsApp JID for a phone number, handling Brazilian 9th-digit variations
+/// (e.g., `5587992005656` vs `558792005656`) via `client.contacts().is_on_whatsapp(...)`.
+async fn resolve_recipient_jid(
+    client: &Arc<whatsapp_rust::Client>,
+    to: &str,
+) -> Result<Jid, EngineError> {
+    let primary = parse_recipient_jid(to)?;
+    if to.contains('@') || !primary.is_pn() {
+        return Ok(primary);
+    }
+
+    let digits = primary.user.to_string();
+    let mut candidates = vec![primary.clone()];
+
+    // Brazilian mobile numbers: 55 + 2-digit DDD + optional 9 + 8 digits
+    if digits.starts_with("55") && digits.len() == 13 && digits.as_bytes()[4] == b'9' {
+        let without_nine = format!("{}{}", &digits[..4], &digits[5..]);
+        if let Ok(alt) = Jid::from_str(&format!("{without_nine}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
+    } else if digits.starts_with("55") && digits.len() == 12 {
+        let with_nine = format!("{}9{}", &digits[..4], &digits[4..]);
+        if let Ok(alt) = Jid::from_str(&format!("{with_nine}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
+    }
+
+    match client.contacts().is_on_whatsapp(&candidates).await {
+        Ok(results) => {
+            if let Some(found) = results.into_iter().find(|r| r.is_registered) {
+                let resolved = found.pn_jid.unwrap_or(found.jid);
+                debug!(requested = %primary, resolved = %resolved, "resolved recipient JID");
+                return Ok(resolved);
+            }
+        }
+        Err(err) => {
+            warn!(error = %err, "is_on_whatsapp lookup failed; falling back to primary JID");
+        }
+    }
+
+    Ok(primary)
+}
+
 #[async_trait]
 impl WhatsAppEngine for WhatsAppRustEngine {
     async fn start_session(
@@ -121,6 +165,11 @@ impl WhatsAppEngine for WhatsAppRustEngine {
 
         let bot = Bot::builder()
             .with_backend(store)
+            .with_device_props(
+                DevicePropsOverride::new()
+                    .with_os("Softagon Relay")
+                    .with_platform_type(wa::device_props::PlatformType::CHROME),
+            )
             .on_event(move |event, client| {
                 let sid = sid_ev.clone();
                 let tx = tx_ev.clone();
@@ -178,6 +227,15 @@ impl WhatsAppEngine for WhatsAppRustEngine {
         Ok(())
     }
 
+    async fn delete_session_data(&self, session_id: &str) -> Result<(), EngineError> {
+        let db_path = self.session_db_path(session_id)?;
+        for suffix in ["", "-wal", "-shm"] {
+            let p = format!("{db_path}{suffix}");
+            let _ = std::fs::remove_file(p);
+        }
+        Ok(())
+    }
+
     async fn get_status(&self, session_id: &str) -> Result<SessionConnectionState, EngineError> {
         let guard = self.sessions.read().await;
         let Some(active) = guard.get(session_id) else {
@@ -212,7 +270,7 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             active.handle.client()
         };
 
-        let to = parse_recipient_jid(&params.to)?;
+        let to = resolve_recipient_jid(&client, &params.to).await?;
         let msg = wa::Message {
             conversation: Some(params.text),
             ..Default::default()
@@ -243,7 +301,7 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             active.handle.client()
         };
 
-        let to = parse_recipient_jid(&params.to)?;
+        let to = resolve_recipient_jid(&client, &params.to).await?;
         let media_type = match params.kind {
             MediaKind::Image => MediaType::Image,
             MediaKind::Video => MediaType::Video,

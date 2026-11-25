@@ -169,6 +169,8 @@ export function useApi() {
         `/v1/sessions/${encodeURIComponent(id)}/logout`,
         { method: 'POST' },
       ),
+    deleteSession: (id: string) =>
+      request<void>(`/v1/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     sendTextMessage: (sessionId: string, to: string, text: string, idempotencyKey?: string) =>
       request<MessageRecord>(`/v1/sessions/${encodeURIComponent(sessionId)}/messages/text`, {
         method: 'POST',

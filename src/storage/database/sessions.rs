@@ -100,4 +100,12 @@ impl Database {
         .await?;
         Ok(rows)
     }
+
+    pub async fn delete_session(&self, id: &str) -> Result<bool, DbError> {
+        let res = sqlx::query("DELETE FROM sessions WHERE id = ?1")
+            .bind(id)
+            .execute(self.pool())
+            .await?;
+        Ok(res.rows_affected() > 0)
+    }
 }

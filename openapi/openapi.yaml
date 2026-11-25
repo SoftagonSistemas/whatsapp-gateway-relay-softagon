@@ -101,6 +101,19 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Sessions]
+      operationId: deleteSession
+      summary: Delete a disconnected or logged-out session
+      responses:
+        "204":
+          description: Session deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/sessions/{session_id}/qr:
     parameters:
       - $ref: "#/components/parameters/SessionId"

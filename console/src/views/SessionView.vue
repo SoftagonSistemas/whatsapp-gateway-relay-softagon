@@ -13,6 +13,7 @@ import {
   QrCode,
   RefreshCw,
   Send,
+  Trash2,
   Webhook,
   X,
 } from 'lucide-vue-next';
@@ -46,9 +47,12 @@ const sendText = ref('');
 const sending = ref(false);
 const sendStatus = ref<{ ok: boolean; msg: string } | null>(null);
 
-// Logout confirmation
+// Logout / Delete confirmation
 const confirmLogout = ref(false);
+const confirmDelete = ref(false);
 const busyAction = ref(false);
+
+const canDelete = computed(() => !!current.value && current.value.status !== 'connected');
 
 interface SessionAction {
   id: string;
@@ -117,6 +121,26 @@ async function handleLogout() {
     confirmLogout.value = false;
     closeActions();
     await Promise.all([loadCurrent(), fetchSessions(), fetchHealth()]);
+  } finally {
+    busyAction.value = false;
+  }
+}
+
+async function handleDelete() {
+  if (!current.value || !canDelete.value) return;
+  busyAction.value = true;
+  try {
+    await api.deleteSession(current.value.id);
+    confirmDelete.value = false;
+    closeActions();
+    await Promise.all([fetchSessions(), fetchHealth()]);
+    if (sessions.value.length > 0) {
+      await router.replace({ name: 'session', params: { id: sessions.value[0].id } });
+    } else {
+      await router.replace({ name: 'home' });
+    }
+  } catch (err) {
+    detailError.value = err instanceof Error ? err.message : 'Failed to delete session';
   } finally {
     busyAction.value = false;
   }
@@ -200,14 +224,27 @@ const actionsList = computed<SessionAction[]>(() => {
         router.push({ name: 'events', query: { session_id: s.id } });
       },
     },
-    {
-      id: 'logout',
-      group: 'danger',
-      label: t('session.aOut'),
-      run: () => {
-        confirmLogout.value = true;
-      },
-    },
+    ...(s.status === 'connected'
+      ? [
+          {
+            id: 'logout',
+            group: 'danger' as const,
+            label: t('session.aOut'),
+            run: () => {
+              confirmLogout.value = true;
+            },
+          },
+        ]
+      : [
+          {
+            id: 'delete',
+            group: 'danger' as const,
+            label: 'Excluir sessão',
+            run: () => {
+              confirmDelete.value = true;
+            },
+          },
+        ]),
   ];
 });
 
@@ -471,9 +508,23 @@ onUnmounted(() => {
               <RefreshCw :size="15" aria-hidden="true" />
               <span>{{ t('session.aRst') }}</span>
             </button>
-            <button type="button" class="btn btn-danger" @click="confirmLogout = true">
+            <button
+              v-if="current.status === 'connected'"
+              type="button"
+              class="btn btn-danger"
+              @click="confirmLogout = true"
+            >
               <LogOut :size="15" aria-hidden="true" />
               <span>{{ t('session.aOut') }}</span>
+            </button>
+            <button
+              v-else-if="canDelete"
+              type="button"
+              class="btn btn-danger"
+              @click="confirmDelete = true"
+            >
+              <Trash2 :size="15" aria-hidden="true" />
+              <span>Excluir sessão</span>
             </button>
           </div>
         </section>
@@ -532,6 +583,23 @@ onUnmounted(() => {
         </button>
         <button type="button" class="btn btn-danger" :disabled="busyAction" @click="handleLogout">
           {{ t('session.aOut') }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Delete Confirmation Dialog -->
+  <div v-if="confirmDelete" class="ap-backdrop" @click.self="confirmDelete = false">
+    <div role="dialog" aria-modal="true" class="confirm-card">
+      <h2 class="card-h2" style="color: var(--danger)">Excluir sessão</h2>
+      <p style="margin: 8px 0 18px; font-size: 13.5px; color: var(--text-2)">
+        {{ current?.name }} ({{ current?.id }})
+      </p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px">
+        <button type="button" class="btn" @click="confirmDelete = false">
+          {{ t('session.close') }}
+        </button>
+        <button type="button" class="btn btn-danger" :disabled="busyAction" @click="handleDelete">
+          Excluir sessão
         </button>
       </div>
     </div>

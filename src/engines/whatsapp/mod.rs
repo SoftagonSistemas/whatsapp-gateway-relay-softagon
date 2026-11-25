@@ -159,6 +159,10 @@ pub trait WhatsAppEngine: Send + Sync {
 
     async fn logout_session(&self, session_id: &str) -> Result<(), EngineError>;
 
+    async fn delete_session_data(&self, _session_id: &str) -> Result<(), EngineError> {
+        Ok(())
+    }
+
     async fn get_status(&self, session_id: &str) -> Result<SessionConnectionState, EngineError>;
 
     async fn get_qr(&self, session_id: &str) -> Result<Option<QrPayload>, EngineError>;

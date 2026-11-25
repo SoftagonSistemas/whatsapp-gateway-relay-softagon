@@ -72,6 +72,7 @@ impl From<SessionError> for ApiError {
             SessionError::NotFound(m) | SessionError::MessageNotFound(m) => Self::NotFound(m),
             SessionError::RateLimited(m) => Self::TooManyRequests(m),
             SessionError::BadRequest(m) => Self::BadRequest(m),
+            SessionError::Conflict(m) => Self::Conflict(m),
             SessionError::Queue(QueueError::QueueFull(max)) => {
                 Self::TooManyRequests(format!("transcription queue is full (max {max})"))
             }

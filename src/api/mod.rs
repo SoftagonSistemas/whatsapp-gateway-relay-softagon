@@ -39,7 +39,7 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route(
             "/v1/sessions/{session_id}",
-            get(routes::sessions::get_session),
+            get(routes::sessions::get_session).delete(routes::sessions::delete_session),
         )
         .route(
             "/v1/sessions/{session_id}/qr",
