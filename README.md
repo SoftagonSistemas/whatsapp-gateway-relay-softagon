@@ -47,7 +47,7 @@ Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compil
 | **Boot / Idle (0 paired sessions)** | ~4–5 MiB | ~0.05% | Measured right after container start, before pairing |
 | **1 paired WhatsApp session (steady state)** | **~38 MiB** | **~0.1–0.2%** | Measured with 1 real WhatsApp account connected via WebSocket |
 | **Active voice-note transcription (`whisper` base)** | **~212–338 MiB** | Burst | Model loads lazily on incoming voice note and unloads after `180s` idle (~100 MiB RSS after unload) |
-| **Docker image size (`linux/amd64`)** | **55.0 MB** | — | `docker image inspect` (`Size`): Rust binary, Console SPA, SQLite, Opus decoder, `whisper.cpp` |
+| **Docker image size (`linux/amd64`)** | **~55 MB compressed (Docker Hub)** | — | Rust binary, Console SPA, SQLite, Opus decoder, `rmcp`, `whisper.cpp` |
 
 > *Architecture note:* Prebuilt Docker images currently publish **`linux/amd64`**. Multi-arch **`linux/arm64`** support is tracked on our roadmap (you can also build locally on ARM64 with `docker build`).
 
