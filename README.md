@@ -55,8 +55,8 @@ Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compil
 
 ## Local MCP Server (AI Agents)
 
-- **Recommended when `softagon-relay` is already running:** enable **Streamable HTTP** inside the same container (`-e MCP_HTTP_ENABLED=true -p 127.0.0.1:8091:8091`) so a single process owns the WhatsApp WebSocket and SQLite database (`http://127.0.0.1:8091/mcp`, loopback-only, `Origin` validation, `Authorization: Bearer ${RELAY_API_KEY}`).
-- **Standalone STDIO via Docker** (when no server container is running, pass `MCP_RESTORE_SESSIONS=true` to reconnect WhatsApp sessions; without it, STDIO runs read-only against SQLite without kicking an active server off WhatsApp):
+- **Recommended when `softagon-relay` is already running in Docker:** enable **Streamable HTTP** inside the same container so a single process owns the WhatsApp WebSocket and SQLite database. Publish the port only on host loopback (`-p 127.0.0.1:8091:8091`) and opt in to container bind (`-e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`) — the MCP server still enforces loopback `Host` & `Origin` checks plus `Authorization: Bearer <RELAY_API_KEY>` at `http://127.0.0.1:8091/mcp`.
+- **STDIO via Docker (safe default alongside a running server — reads SQLite without touching active WhatsApp sessions):**
 
 ```json
 {
@@ -66,15 +66,19 @@ Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compil
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
-        "-e", "MCP_RESTORE_SESSIONS=true",
+        "-e", "RELAY_API_KEY",
         "softagon/relay:latest",
         "mcp", "--stdio"
-      ]
+      ],
+      "env": {
+        "RELAY_API_KEY": "<paste-your-generated-key>"
+      }
     }
   }
 }
 ```
+
+> **Standalone STDIO (no `serve` container running):** add `"-e", "MCP_RESTORE_SESSIONS=true"` to `args` so STDIO reconnects your persisted WhatsApp sessions directly. Never set `MCP_RESTORE_SESSIONS=true` while another `softagon-relay` server is already connected to the same `/data` volume.
 
 If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries are attached to [GitHub Releases](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases).
 

@@ -6,6 +6,15 @@ Todas as mudanças relevantes do **Softagon Relay** são documentadas neste arqu
 
 ---
 
+## [0.3.4] — 2026-11-25
+
+### Correções — MCP HTTP no Docker & Snippets STDIO Seguros
+- **Suporte a MCP Streamable HTTP no Docker (`MCP_ALLOW_CONTAINER_BIND=true`):** permite escutar em `0.0.0.0:8091` dentro do container atrás de `-p 127.0.0.1:8091:8091` no host, mantendo a recusa padrão de endereços não-loopback e preservando as validações de `Host`, `Origin` e `Bearer`.
+- **Rejeição de placeholders não expandidos em `RELAY_API_KEY`:** bloqueia valores literais no formato `${...}` (como `${RELAY_API_KEY}`) e `<...>` (como `<paste-your-generated-key>`).
+- **JSON padrão do `mcp --stdio` seguro:** removido `MCP_RESTORE_SESSIONS=true` do snippet padrão (agora documentado à parte só para uso standalone) e atualizado para `"-e", "RELAY_API_KEY"` + bloco `"env"`.
+
+---
+
 ## [0.3.3] — 2026-11-25
 
 ### Correções & Documentação

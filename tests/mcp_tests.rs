@@ -80,6 +80,7 @@ impl McpTestHarness {
                 http_enabled: true,
                 http_host: "127.0.0.1".to_string(),
                 http_port: 8091,
+                allow_container_bind: false,
                 allow_destructive,
                 allowed_origins: Vec::new(),
             },
@@ -171,6 +172,18 @@ fn mcp_config_rejects_non_loopback_http_host() {
         ..McpConfig::default()
     };
     assert!(bad.bind_addr().is_err());
+
+    let container_opt_in = McpConfig {
+        http_enabled: true,
+        http_host: "0.0.0.0".to_string(),
+        http_port: 8091,
+        allow_container_bind: true,
+        ..McpConfig::default()
+    };
+    assert_eq!(
+        container_opt_in.bind_addr().unwrap().to_string(),
+        "0.0.0.0:8091"
+    );
 
     let ok = McpConfig::default();
     assert_eq!(ok.bind_addr().unwrap().to_string(), "127.0.0.1:8091");

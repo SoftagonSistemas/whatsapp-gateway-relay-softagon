@@ -58,6 +58,7 @@ pub struct McpConfig {
     pub http_enabled: bool,
     pub http_host: String,
     pub http_port: u16,
+    pub allow_container_bind: bool,
     pub allow_destructive: bool,
     pub allowed_origins: Vec<String>,
 }
@@ -68,6 +69,7 @@ impl Default for McpConfig {
             http_enabled: false,
             http_host: "127.0.0.1".to_string(),
             http_port: 8091,
+            allow_container_bind: false,
             allow_destructive: false,
             allowed_origins: Vec::new(),
         }
@@ -82,11 +84,11 @@ impl McpConfig {
                 key: "MCP_HTTP_HOST",
                 reason: format!("invalid socket address: {e}"),
             })?;
-        if !addr.ip().is_loopback() {
+        if !addr.ip().is_loopback() && !self.allow_container_bind {
             return Err(ConfigError::Invalid {
                 key: "MCP_HTTP_HOST",
                 reason: format!(
-                    "refusing to bind MCP HTTP server to non-loopback address '{}'; use 127.0.0.1 or ::1",
+                    "refusing to bind MCP HTTP server to non-loopback address '{}'; use 127.0.0.1 or ::1 (or set MCP_ALLOW_CONTAINER_BIND=true when publishing -p 127.0.0.1:8091:8091 in Docker)",
                     self.http_host
                 ),
             });
@@ -252,6 +254,16 @@ impl AppConfig {
                 ),
             });
         }
+        if (api_key.starts_with("${") && api_key.ends_with('}'))
+            || (api_key.starts_with('<') && api_key.ends_with('>'))
+        {
+            return Err(ConfigError::Invalid {
+                key: "RELAY_API_KEY",
+                reason: format!(
+                    "refusing to start with unexpanded placeholder '{api_key}'; generate a real key with `openssl rand -hex 32`"
+                ),
+            });
+        }
         if api_key.len() < MIN_API_KEY_LEN {
             return Err(ConfigError::Invalid {
                 key: "RELAY_API_KEY",
@@ -400,6 +412,7 @@ impl AppConfig {
         let mcp_http_enabled = parse_bool(&lookup, "MCP_HTTP_ENABLED", false)?;
         let mcp_http_host = lookup_or(&lookup, "MCP_HTTP_HOST", "127.0.0.1");
         let mcp_http_port = parse_u16(&lookup, "MCP_HTTP_PORT", 8091)?;
+        let mcp_allow_container_bind = parse_bool(&lookup, "MCP_ALLOW_CONTAINER_BIND", false)?;
         let mcp_allow_destructive = parse_bool(&lookup, "MCP_ALLOW_DESTRUCTIVE", false)?;
         let mcp_allowed_origins = lookup("MCP_ALLOWED_ORIGINS")
             .map(|raw| {
@@ -414,6 +427,7 @@ impl AppConfig {
             http_enabled: mcp_http_enabled,
             http_host: mcp_http_host,
             http_port: mcp_http_port,
+            allow_container_bind: mcp_allow_container_bind,
             allow_destructive: mcp_allow_destructive,
             allowed_origins: mcp_allowed_origins,
         };

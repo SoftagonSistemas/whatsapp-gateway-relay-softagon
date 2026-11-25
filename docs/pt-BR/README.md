@@ -143,15 +143,19 @@ O Softagon Relay inclui um **MCP Server (Model Context Protocol)** nativo em Rus
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
-        "-e", "MCP_RESTORE_SESSIONS=true",
+        "-e", "RELAY_API_KEY",
         "softagon/relay:latest",
         "mcp", "--stdio"
-      ]
+      ],
+      "env": {
+        "RELAY_API_KEY": "<cole-sua-chave-gerada>"
+      }
     }
   }
 }
 ```
+
+> Para uso **standalone** sem outro container `softagon-relay` rodando, adicione `"-e", "MCP_RESTORE_SESSIONS=true"` em `args`. Com o container principal rodando, prefira **Streamable HTTP** no mesmo container (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
 ---
 

@@ -46,7 +46,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.3
+    image: softagon/relay:0.3.4
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -84,9 +84,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.3`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.4`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
-| `0.3.3` | `linux/amd64` | Safe MCP STDIO worker isolation, friendly disconnect diagnostics, strict key validation, `/console` |
+| `0.3.4` | `linux/amd64` | Docker MCP HTTP container-bind opt-in, unexpanded placeholder rejection, safe STDIO snippets |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
 
@@ -136,8 +136,8 @@ All `/v1/*` routes except `GET /v1/health` require `Authorization: Bearer <RELAY
 | `TRANSCRIPTION_ENABLED` / `TRANSCRIPTION_MODEL` / `TRANSCRIPTION_LANGUAGE` | `true` / `base` / `auto` | Offline Whisper transcription settings (`tiny`, `base`, `small`, `medium`, `large`) |
 | `TRANSCRIPTION_PRELOAD` / `TRANSCRIPTION_IDLE_UNLOAD_SECONDS` | `false` / `180` | Lazy-load on first audio and unload after idle timeout |
 | `WEBHOOK_DELIVERY_TIMEOUT_SECONDS` / `WEBHOOK_MAX_ATTEMPTS` / `WEBHOOK_BACKOFF_BASE_SECONDS` | `10` / `8` / `2` | Webhook HTTP timeout and retry backoff policy |
-| `MCP_HTTP_ENABLED` / `MCP_HTTP_HOST` / `MCP_HTTP_PORT` | `false` / `127.0.0.1` / `8091` | Enable local MCP Streamable HTTP server (`/mcp`, loopback-only) |
-| `MCP_ALLOW_DESTRUCTIVE` / `MCP_ALLOWED_ORIGINS` | `false` / *(loopback)* | Allow destructive MCP tools (`logout_session`, `delete_session`) and extra Origins |
+| `MCP_HTTP_ENABLED` / `MCP_HTTP_HOST` / `MCP_HTTP_PORT` | `false` / `127.0.0.1` / `8091` | Enable local MCP Streamable HTTP server (`/mcp`, loopback-only by default) |
+| `MCP_ALLOW_CONTAINER_BIND` / `MCP_ALLOW_DESTRUCTIVE` / `MCP_ALLOWED_ORIGINS` | `false` / `false` / *(loopback)* | Opt in to `0.0.0.0` bind inside Docker behind `-p 127.0.0.1:8091:8091`, destructive tools, and extra Origins |
 
 ---
 

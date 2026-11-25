@@ -143,15 +143,19 @@ Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** 
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
-        "-e", "MCP_RESTORE_SESSIONS=true",
+        "-e", "RELAY_API_KEY",
         "softagon/relay:latest",
         "mcp", "--stdio"
-      ]
+      ],
+      "env": {
+        "RELAY_API_KEY": "<paste-your-generated-key>"
+      }
     }
   }
 }
 ```
+
+> For **standalone** STDIO (when no `serve` container is running), add `"-e", "MCP_RESTORE_SESSIONS=true"` to `args`. Alongside a running server container, prefer **Streamable HTTP** inside the same container (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
 ---
 

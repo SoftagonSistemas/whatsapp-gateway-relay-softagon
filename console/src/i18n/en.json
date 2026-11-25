@@ -13,7 +13,7 @@
     "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "WhatsApp gateway · v0.3.3",
+    "eyebrow": "WhatsApp gateway · v0.3.4",
     "h1": "What do you want to do?",
     "sub": "Type a WhatsApp number to connect it. Or search any session, action or event.",
     "paletteLabel": "Command bar",
