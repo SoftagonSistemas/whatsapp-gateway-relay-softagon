@@ -297,10 +297,14 @@ function onKeyDown(e: KeyboardEvent) {
 
 watch(sessionId, loadCurrent);
 
-onMounted(() => {
-  fetchSessions();
+onMounted(async () => {
+  await fetchSessions();
   fetchHealth();
-  loadCurrent();
+  if (!sessionId.value && sessions.value.length > 0) {
+    router.replace({ name: 'session', params: { id: sessions.value[0].id } });
+  } else {
+    loadCurrent();
+  }
   window.addEventListener('keydown', onKeyDown, true);
 });
 
@@ -356,6 +360,10 @@ onUnmounted(() => {
     <main class="detail-pane">
       <div v-if="loadingDetail" class="state-box">…</div>
       <div v-else-if="detailError" role="alert" class="state-box err">{{ detailError }}</div>
+      <div v-else-if="!current && !sessionsLoading" class="state-box">
+        <p style="margin: 0 0 14px">{{ t('home.newNumSub') }}</p>
+        <router-link to="/connect" class="btn btn-primary">{{ t('home.newNum') }}</router-link>
+      </div>
       <div v-else-if="current" class="detail-content">
         <div class="detail-head">
           <div>

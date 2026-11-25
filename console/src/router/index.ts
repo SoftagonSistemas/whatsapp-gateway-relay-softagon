@@ -26,6 +26,11 @@ export const router = createRouter({
       component: ConnectView,
     },
     {
+      path: '/sessions',
+      name: 'sessions',
+      component: SessionView,
+    },
+    {
       path: '/sessions/:id',
       name: 'session',
       component: SessionView,

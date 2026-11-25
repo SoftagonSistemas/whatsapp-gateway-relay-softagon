@@ -81,9 +81,10 @@ onMounted(() => {
     </button>
 
     <div class="topbar-actions">
-      <span
+      <router-link
         v-if="route.name === 'home'"
-        class="hide-sm health-pill"
+        to="/sessions"
+        class="hide-sm health-pill hov"
         role="status"
       >
         <span
@@ -92,7 +93,7 @@ onMounted(() => {
           :class="{ offline: healthOnline === false }"
         ></span>
         {{ healthPillText }}
-      </span>
+      </router-link>
 
       <div
         role="group"
@@ -228,6 +229,8 @@ onMounted(() => {
   border: 1px solid var(--sel-border);
   border-radius: 999px;
   padding: 6px 12px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .health-dot {
