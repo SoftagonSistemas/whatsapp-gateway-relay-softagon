@@ -103,8 +103,23 @@ async fn session_manager_handles_inbound_messages_and_logout() {
     assert_eq!(status, "connected");
 
     sessions.logout_session(&sess.id).await.unwrap();
-    let (_, status_after) = sessions.get_status(&sess.id).await.unwrap();
+    let (rec_after, status_after) = sessions.get_status(&sess.id).await.unwrap();
     assert_eq!(status_after, "logged_out");
+    assert_eq!(rec_after.status_reason.as_deref(), Some("logout"));
+
+    // Simulate WhatsApp disconnecting the device due to restriction/removal
+    db.update_session_status(&sess.id, "logged_out", None, None, Some("device_removed"))
+        .await
+        .unwrap();
+    let send_err = sessions
+        .send_text(&sess.id, "551199999999", "ping")
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(
+        send_err.contains("device_removed"),
+        "expected friendly device_removed error, got: {send_err}"
+    );
 
     let _ = shutdown_tx.send(true);
     let _ = loop_handle.await;

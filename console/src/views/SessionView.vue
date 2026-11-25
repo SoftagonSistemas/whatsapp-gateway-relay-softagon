@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import {
+  AlertTriangle,
   Check,
   Command,
   Copy,
@@ -400,6 +401,30 @@ onUnmounted(() => {
             </button>
           </div>
         </div>
+
+        <!-- Friendly Disconnection / Account Restriction Banner -->
+        <section
+          v-if="current.status === 'logged_out'"
+          role="alert"
+          class="restriction-banner"
+        >
+          <AlertTriangle :size="18" class="restriction-icon" aria-hidden="true" />
+          <div class="restriction-body">
+            <strong class="restriction-title">{{ t('session.loggedOutTitle') }}</strong>
+            <p class="restriction-desc">
+              {{
+                current.status_reason === 'account_restricted'
+                  ? t('session.restrictedDesc')
+                  : current.status_reason === 'logout'
+                    ? t('session.manualLogoutDesc')
+                    : t('session.deviceRemovedDesc')
+              }}
+            </p>
+            <span v-if="current.status_reason" class="mono restriction-code">
+              {{ current.status_reason }}
+            </span>
+          </div>
+        </section>
 
         <!-- Inline Test Message Form -->
         <section v-if="showSendForm" class="card-block">
@@ -997,6 +1022,46 @@ onUnmounted(() => {
   border-radius: 14px;
   padding: 20px;
   box-shadow: var(--shadow);
+}
+
+.restriction-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--text);
+}
+
+.restriction-icon {
+  color: var(--amber);
+  flex: none;
+  margin-top: 2px;
+}
+
+.restriction-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.restriction-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.restriction-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.restriction-code {
+  font-size: 11px;
+  color: var(--amber);
 }
 
 @media (max-width: 780px) {

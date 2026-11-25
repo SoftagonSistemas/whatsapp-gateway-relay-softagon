@@ -46,7 +46,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.1
+    image: softagon/relay:0.3.2
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -84,9 +84,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.1`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.2`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
-| `0.3.1` | `linux/amd64` | Strict API key validation, MCP Server (STDIO + loopback Streamable HTTP), `/console`, `/openapi.json` |
+| `0.3.2` | `linux/amd64` | Friendly WhatsApp disconnection/restriction status & banner, strict key validation, MCP Server, `/console` |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
 

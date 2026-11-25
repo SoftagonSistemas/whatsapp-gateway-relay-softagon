@@ -13,7 +13,7 @@
     "userDocs": "Documentación"
   },
   "home": {
-    "eyebrow": "Gateway de WhatsApp · v0.3.1",
+    "eyebrow": "Gateway de WhatsApp · v0.3.2",
     "h1": "¿Qué quieres hacer?",
     "sub": "Escribe un número de WhatsApp para conectarlo. O busca cualquier sesión, acción o evento.",
     "paletteLabel": "Barra de comandos",
@@ -242,7 +242,11 @@
     "aHook": "Configurar webhook",
     "aLang": "Idioma de la transcripción",
     "aEv": "Abrir eventos de esta sesión",
-    "aOut": "Desconectar y salir"
+    "aOut": "Desconectar y salir",
+    "loggedOutTitle": "Sesión desconectada por WhatsApp",
+    "deviceRemovedDesc": "Este dispositivo vinculado fue desconectado por WhatsApp. Esto ocurre cuando se elimina el dispositivo en el teléfono o cuando WhatsApp aplica una restricción temporal a la cuenta. Revisa la app de WhatsApp en tu teléfono antes de volver a vincular — si hay una restricción activa, espera a que termine antes de reconectar.",
+    "restrictedDesc": "WhatsApp aplicó una restricción temporal a esta cuenta. Espera a que finalice el plazo en tu teléfono antes de reconectar para evitar bloqueos adicionales.",
+    "manualLogoutDesc": "Esta sesión se cerró manualmente. Haz clic en \"Ver QR / reconectar\" cuando quieras vincularla de nuevo."
   },
   "events": {
     "title": "Eventos",

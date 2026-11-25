@@ -500,13 +500,15 @@ async fn handle_wa_event(
         Event::LoggedOut(lo) => {
             *status_cell.write().await = SessionConnectionState::LoggedOut;
             *qr_cell.write().await = None;
+            let raw_reason = format!("{:?}", lo.reason);
+            let normalized = normalize_logout_reason(&raw_reason);
             let _ = tx
                 .send(EngineEvent::StatusChanged {
                     session_id: session_id.to_string(),
                     status: SessionConnectionState::LoggedOut,
                     phone_number: None,
                     jid: None,
-                    reason: Some(format!("{:?}", lo.reason)),
+                    reason: Some(normalized),
                 })
                 .await;
         }
@@ -688,5 +690,22 @@ async fn download_media_bytes(
             warn!(error = %err, "failed to download inbound media from whatsapp");
             None
         }
+    }
+}
+
+fn normalize_logout_reason(raw: &str) -> String {
+    let lower = raw.to_ascii_lowercase();
+    if lower.contains("removed") || lower.contains("conflict") || lower.contains("replaced") {
+        "device_removed".to_string()
+    } else if lower.contains("ban")
+        || lower.contains("restrict")
+        || lower.contains("suspend")
+        || lower.contains("403")
+    {
+        "account_restricted".to_string()
+    } else if lower.contains("401") || lower.contains("unauth") || lower.contains("loggedout") {
+        "logged_out".to_string()
+    } else {
+        raw.to_string()
     }
 }

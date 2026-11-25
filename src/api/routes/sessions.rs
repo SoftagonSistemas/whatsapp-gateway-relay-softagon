@@ -32,6 +32,7 @@ pub struct SessionQrResponse {
 pub struct SessionStatusResponse {
     pub session_id: String,
     pub status: String,
+    pub status_reason: Option<String>,
     pub phone_number: Option<String>,
     pub jid: Option<String>,
 }
@@ -128,6 +129,7 @@ pub async fn get_status(
     Ok(Json(SessionStatusResponse {
         session_id: rec.id,
         status,
+        status_reason: rec.status_reason,
         phone_number: rec.phone_number,
         jid: rec.jid,
     }))

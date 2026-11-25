@@ -6,6 +6,15 @@ Todas as mudanças relevantes do **Softagon Relay** são documentadas neste arqu
 
 ---
 
+## [0.3.2] — 2026-11-25
+
+### Melhorias — Diagnóstico Amigável de Desconexão e Restrição de Conta
+- **Persistência de `status_reason` no SQLite (`migrations/0003_session_status_reason.sql`):** registra motivos normalizados (`device_removed`, `account_restricted`, `logout`, `qr_expired`) e expõe o campo em `GET /v1/sessions`, `GET /v1/sessions/{id}/status` e na ferramenta MCP `get_session_status`.
+- **Banner explicativo no Console Web (PT-BR, EN, ES, FR):** quando o WhatsApp remove o aparelho vinculado ou restringe temporariamente a conta, o Console exibe um aviso claro orientando a checar o celular e aguardar o fim da restrição antes de reconectar.
+- **Erro amigável no envio de mensagens (API REST e MCP):** tentar enviar mensagens em uma sessão `logged_out` retorna `409 Conflict` explicando o motivo (`device_removed` / `account_restricted`).
+
+---
+
 ## [0.3.1] — 2026-11-25
 
 ### Segurança & Comunidade

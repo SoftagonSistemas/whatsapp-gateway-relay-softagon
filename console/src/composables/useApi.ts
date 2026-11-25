@@ -13,6 +13,7 @@ export interface SessionRecord {
   id: string;
   name: string;
   status: string;
+  status_reason?: string | null;
   phone_number: string | null;
   jid: string | null;
   transcription_language: string | null;
@@ -31,6 +32,7 @@ export interface SessionQrResponse {
 export interface SessionStatusResponse {
   session_id: string;
   status: string;
+  status_reason?: string | null;
   phone_number: string | null;
   jid: string | null;
 }

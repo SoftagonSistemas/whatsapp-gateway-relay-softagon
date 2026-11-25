@@ -13,7 +13,7 @@
     "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "Passerelle WhatsApp · v0.3.1",
+    "eyebrow": "Passerelle WhatsApp · v0.3.2",
     "h1": "Que voulez-vous faire ?",
     "sub": "Saisissez un numéro WhatsApp pour le connecter. Ou recherchez une session, une action ou un événement.",
     "paletteLabel": "Barre de commandes",
@@ -242,7 +242,11 @@
     "aHook": "Configurer le webhook",
     "aLang": "Langue de transcription",
     "aEv": "Ouvrir les événements de la session",
-    "aOut": "Déconnecter et quitter"
+    "aOut": "Déconnecter et quitter",
+    "loggedOutTitle": "Session déconnectée par WhatsApp",
+    "deviceRemovedDesc": "Cet appareil lié a été déconnecté par WhatsApp. Cela se produit lorsque l’appareil est supprimé sur le téléphone ou lorsque WhatsApp applique une restriction temporaire au compte. Vérifiez WhatsApp sur votre téléphone avant de réappairer — en cas de restriction active, attendez la fin du délai avant de reconnecter.",
+    "restrictedDesc": "WhatsApp a appliqué une restriction temporaire à ce compte. Attendez la fin du délai affiché sur votre téléphone avant de reconnecter afin d’éviter tout blocage supplémentaire.",
+    "manualLogoutDesc": "Cette session a été déconnectée manuellement. Cliquez sur « Voir le QR / reconnecter » pour l’appairer à nouveau."
   },
   "events": {
     "title": "Événements",

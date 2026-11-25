@@ -182,6 +182,7 @@ impl RelayMcpServer {
                     "session_id": record.id,
                     "name": record.name,
                     "status": live,
+                    "status_reason": record.status_reason,
                     "phone_number": record.phone_number,
                     "jid": record.jid,
                 }))

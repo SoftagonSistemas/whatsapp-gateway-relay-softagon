@@ -229,6 +229,7 @@ impl SessionManager {
                 SessionConnectionState::Connecting.as_str(),
                 None,
                 None,
+                None,
             )
             .await?;
         self.engine
@@ -263,6 +264,7 @@ impl SessionManager {
                 SessionConnectionState::LoggedOut.as_str(),
                 None,
                 None,
+                Some("logout"),
             )
             .await?;
         let _ = self
@@ -286,7 +288,26 @@ impl SessionManager {
         to: &str,
         text: &str,
     ) -> Result<MessageRecord, SessionError> {
-        let _ = self.get_session(session_id).await?;
+        let session = self.get_session(session_id).await?;
+        if session.status == SessionConnectionState::LoggedOut.as_str() {
+            let detail = match session.status_reason.as_deref() {
+                Some("device_removed") => {
+                    "WhatsApp disconnected this linked device (device_removed). Check the WhatsApp app on your phone for any temporary account restriction before re-pairing."
+                }
+                Some("account_restricted") => {
+                    "WhatsApp temporarily restricted or suspended this account (account_restricted). Wait until the restriction expires before reconnecting."
+                }
+                Some(r) => {
+                    return Err(SessionError::Conflict(format!(
+                        "session {session_id} is logged out ({r}); reconnect before sending messages"
+                    )));
+                }
+                None => {
+                    "session is logged out; check your phone for any account restriction and reconnect before sending messages"
+                }
+            };
+            return Err(SessionError::Conflict(detail.to_string()));
+        }
         if !self.rate_limiter.check(session_id).await {
             return Err(SessionError::RateLimited(session_id.to_string()));
         }
@@ -353,7 +374,26 @@ impl SessionManager {
         caption: Option<&str>,
         data: Bytes,
     ) -> Result<MessageRecord, SessionError> {
-        let _ = self.get_session(session_id).await?;
+        let session = self.get_session(session_id).await?;
+        if session.status == SessionConnectionState::LoggedOut.as_str() {
+            let detail = match session.status_reason.as_deref() {
+                Some("device_removed") => {
+                    "WhatsApp disconnected this linked device (device_removed). Check the WhatsApp app on your phone for any temporary account restriction before re-pairing."
+                }
+                Some("account_restricted") => {
+                    "WhatsApp temporarily restricted or suspended this account (account_restricted). Wait until the restriction expires before reconnecting."
+                }
+                Some(r) => {
+                    return Err(SessionError::Conflict(format!(
+                        "session {session_id} is logged out ({r}); reconnect before sending messages"
+                    )));
+                }
+                None => {
+                    "session is logged out; check your phone for any account restriction and reconnect before sending messages"
+                }
+            };
+            return Err(SessionError::Conflict(detail.to_string()));
+        }
         if !self.rate_limiter.check(session_id).await {
             return Err(SessionError::RateLimited(session_id.to_string()));
         }
@@ -521,6 +561,7 @@ impl SessionManager {
                         status.as_str(),
                         phone_number.as_deref(),
                         jid.as_deref(),
+                        reason.as_deref(),
                     )
                     .await
                 {
