@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load DOCKERHUB_* credentials from local .env if present (and not already exported)
+if [[ -f .env ]]; then
+  while IFS='=' read -r k v; do
+    case "$k" in
+      DOCKERHUB_USERNAME|DOCKERHUB_TOKEN|DOCKERHUB_REPO)
+        if [[ -z "${!k:-}" && -n "$v" ]]; then
+          export "$k=$v"
+        fi
+        ;;
+    esac
+  done < <(grep -E '^(DOCKERHUB_USERNAME|DOCKERHUB_TOKEN|DOCKERHUB_REPO)=' .env || true)
+fi
+
 IMAGE_REPO="${DOCKERHUB_REPO:-softagon/relay}"
 VERSION="${1:-$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')}"
 MINOR_VERSION="$(echo "$VERSION" | awk -F. '{print $1"."$2}')"
@@ -8,27 +21,29 @@ REVISION="$(git rev-parse --short HEAD 2>/dev/null || echo dev)"
 CREATED="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 SHORT_DESC="Self-hosted WhatsApp Web API gateway in Rust with SQLite, S3 media, signed webhooks & local Whisper."
 
-echo "=== Building ${IMAGE_REPO} (version=${VERSION}, minor=${MINOR_VERSION}, rev=${REVISION}) ==="
+if [[ "${SYNC_OVERVIEW_ONLY:-0}" != "1" ]]; then
+  echo "=== Building ${IMAGE_REPO} (version=${VERSION}, minor=${MINOR_VERSION}, rev=${REVISION}) ==="
 
-docker build \
-  --platform linux/amd64 \
-  --build-arg VERSION="$VERSION" \
-  --build-arg REVISION="$REVISION" \
-  --build-arg CREATED="$CREATED" \
-  -t "${IMAGE_REPO}:${VERSION}" \
-  -t "${IMAGE_REPO}:${MINOR_VERSION}" \
-  -t "${IMAGE_REPO}:latest" \
-  .
+  docker build \
+    --platform linux/amd64 \
+    --build-arg VERSION="$VERSION" \
+    --build-arg REVISION="$REVISION" \
+    --build-arg CREATED="$CREATED" \
+    -t "${IMAGE_REPO}:${VERSION}" \
+    -t "${IMAGE_REPO}:${MINOR_VERSION}" \
+    -t "${IMAGE_REPO}:latest" \
+    .
 
-if [[ "${SKIP_PUSH:-0}" == "1" ]]; then
-  echo "SKIP_PUSH=1 set; skipping docker push and Docker Hub README sync."
-  exit 0
+  if [[ "${SKIP_PUSH:-0}" == "1" ]]; then
+    echo "SKIP_PUSH=1 set; skipping docker push and Docker Hub README sync."
+    exit 0
+  fi
+
+  echo "=== Pushing tags to Docker Hub ==="
+  docker push "${IMAGE_REPO}:${VERSION}"
+  docker push "${IMAGE_REPO}:${MINOR_VERSION}"
+  docker push "${IMAGE_REPO}:latest"
 fi
-
-echo "=== Pushing tags to Docker Hub ==="
-docker push "${IMAGE_REPO}:${VERSION}"
-docker push "${IMAGE_REPO}:${MINOR_VERSION}"
-docker push "${IMAGE_REPO}:latest"
 
 if [[ -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
   echo "=== Updating Docker Hub Overview (README) and description ==="
