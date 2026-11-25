@@ -21,7 +21,7 @@ import TopBar from '../components/TopBar.vue';
 import { useApi, type SessionRecord } from '../composables/useApi';
 import { useSessions } from '../composables/useSessions';
 import { MOD_KEY, isInputFocused, isMacOS } from '../composables/useHotkeys';
-import { normalizeText } from '../composables/usePhone';
+import { normalizeText, parsePhoneInput } from '../composables/usePhone';
 
 const route = useRoute();
 const router = useRouter();
@@ -46,6 +46,8 @@ const sendTo = ref('');
 const sendText = ref('');
 const sending = ref(false);
 const sendStatus = ref<{ ok: boolean; msg: string } | null>(null);
+const parsedRecipient = computed(() => parsePhoneInput(sendTo.value));
+const recipientValid = computed(() => parsedRecipient.value.isPhone || parsedRecipient.value.isJid);
 
 // Logout / Delete confirmation
 const confirmLogout = ref(false);
@@ -147,11 +149,15 @@ async function handleDelete() {
 }
 
 async function submitTestMessage() {
-  if (!current.value || !sendTo.value.trim() || !sendText.value.trim()) return;
+  if (!current.value || !recipientValid.value || !sendText.value.trim()) return;
   sending.value = true;
   sendStatus.value = null;
   try {
-    const res = await api.sendTextMessage(current.value.id, sendTo.value.trim(), sendText.value.trim());
+    const res = await api.sendTextMessage(
+      current.value.id,
+      parsedRecipient.value.digits,
+      sendText.value.trim(),
+    );
     sendStatus.value = { ok: true, msg: `${res.status} · ${res.id}` };
     sendText.value = '';
   } catch (err) {
@@ -401,8 +407,9 @@ onUnmounted(() => {
               <input
                 id="send-to"
                 v-model="sendTo"
+                type="tel"
                 class="inp form-input mono"
-                placeholder="5511999999999"
+                placeholder="+55 87 99200-5656"
                 required
               />
               <label for="send-msg" class="sr">{{ t('session.sendMsg') }}</label>
@@ -413,10 +420,16 @@ onUnmounted(() => {
                 :placeholder="t('apiReference.hello')"
                 required
               />
-              <button type="submit" class="btn btn-primary" :disabled="sending">
+              <button type="submit" class="btn btn-primary" :disabled="sending || !recipientValid">
                 {{ t('session.sendMsg') }}
               </button>
             </div>
+            <p v-if="sendTo.trim() && recipientValid" class="send-msg ok mono">
+              {{ t('connectMobile.ok') }} {{ parsedRecipient.formatted }}
+            </p>
+            <p v-else-if="sendTo.trim()" class="send-msg" style="color: var(--muted)">
+              {{ t('connectMobile.bad') }}
+            </p>
             <p
               v-if="sendStatus"
               :role="sendStatus.ok ? 'status' : 'alert'"

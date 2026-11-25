@@ -109,6 +109,28 @@ async fn resolve_recipient_jid(
         if let Ok(alt) = Jid::from_str(&format!("{with_nine}@s.whatsapp.net")) {
             candidates.push(alt);
         }
+    } else if digits.starts_with("521") && digits.len() == 13 {
+        // Mexico mobile variation (521 vs 52)
+        let alt_num = format!("52{}", &digits[3..]);
+        if let Ok(alt) = Jid::from_str(&format!("{alt_num}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
+    } else if digits.starts_with("52") && digits.len() == 12 {
+        let alt_num = format!("521{}", &digits[2..]);
+        if let Ok(alt) = Jid::from_str(&format!("{alt_num}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
+    } else if digits.starts_with("549") && digits.len() == 13 {
+        // Argentina mobile variation (549 vs 54)
+        let alt_num = format!("54{}", &digits[3..]);
+        if let Ok(alt) = Jid::from_str(&format!("{alt_num}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
+    } else if digits.starts_with("54") && digits.len() == 12 {
+        let alt_num = format!("549{}", &digits[2..]);
+        if let Ok(alt) = Jid::from_str(&format!("{alt_num}@s.whatsapp.net")) {
+            candidates.push(alt);
+        }
     }
 
     match client.contacts().is_on_whatsapp(&candidates).await {
