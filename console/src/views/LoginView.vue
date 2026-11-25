@@ -116,7 +116,7 @@ onMounted(() => {
       <section aria-labelledby="lg-h" class="login-card">
         <form class="login-form pad-sm" @submit.prevent="onSubmit">
           <div class="login-head">
-            <span class="badge-pill cyan">Relay · v0.2.0</span>
+            <span class="badge-pill cyan">Relay · v0.2.1</span>
             <h1 id="lg-h" class="login-h1">{{ t('login.h1') }}</h1>
             <p class="login-sub">{{ t('login.sub') }}</p>
           </div>

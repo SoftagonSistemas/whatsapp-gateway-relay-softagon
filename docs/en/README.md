@@ -64,7 +64,7 @@ Register webhook URLs to receive real-time events (`message.received`, `message.
 ![Softagon Relay Events and Webhooks Screen in English](../images/en/events.png)
 
 ### 2.6 Interactive API Reference (`/console/api`)
-Generated live from `/openapi.yaml` (OpenAPI 3.2.1). Filter endpoints, copy ready-to-use **cURL, JavaScript, Python, and PHP** snippets, and execute real requests against your instance (`⌘↵` / `Ctrl+↵`).
+Generated live from `/openapi.yaml` (also available as **`/openapi.json`** for direct AI agent, n8n, Postman, and SDK integration). Filter endpoints, copy ready-to-use **cURL, JavaScript, Python, and PHP** snippets, and execute real requests against your instance (`⌘↵` / `Ctrl+↵`).
 
 ![Softagon Relay Interactive API Reference in English](../images/en/api.png)
 

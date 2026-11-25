@@ -13,7 +13,7 @@
     "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "Passerelle WhatsApp · v0.2.0",
+    "eyebrow": "Passerelle WhatsApp · v0.2.1",
     "h1": "Que voulez-vous faire ?",
     "sub": "Saisissez un numéro WhatsApp pour le connecter. Ou recherchez une session, une action ou un événement.",
     "paletteLabel": "Barre de commandes",
@@ -297,6 +297,8 @@
   "apiReference": {
     "endpoints": "Endpoints",
     "filter": "Filtrer les endpoints…",
+    "specTitle": "OpenAPI (IA / SDK)",
+    "copySpecUrl": "Copier l’URL",
     "noMatch": "Aucun endpoint trouvé.",
     "copy": "Copier",
     "params": "Paramètres",

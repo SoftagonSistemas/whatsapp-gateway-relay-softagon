@@ -93,6 +93,7 @@ pub fn build_router(state: AppState) -> Router {
         protected_v1
             .route("/docs", get(docs::scalar_docs))
             .route("/openapi.yaml", get(docs::openapi_yaml))
+            .route("/openapi.json", get(docs::openapi_json))
     } else {
         protected_v1
     }
@@ -112,7 +113,8 @@ pub fn build_router(state: AppState) -> Router {
     if state.config.docs_enabled && state.config.docs_public {
         public = public
             .route("/docs", get(docs::scalar_docs))
-            .route("/openapi.yaml", get(docs::openapi_yaml));
+            .route("/openapi.yaml", get(docs::openapi_yaml))
+            .route("/openapi.json", get(docs::openapi_json));
     }
 
     public

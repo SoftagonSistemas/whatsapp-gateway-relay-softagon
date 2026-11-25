@@ -73,6 +73,14 @@ useGlobalHotkeys({
         {{ $t('common.userDocs') }}
       </a>
       <span aria-hidden="true">·</span>
+      <a href="/openapi.json" target="_blank" rel="noopener" class="mono">
+        openapi.json
+      </a>
+      <span aria-hidden="true">·</span>
+      <a href="/openapi.yaml" target="_blank" rel="noopener" class="mono">
+        openapi.yaml
+      </a>
+      <span aria-hidden="true">·</span>
       <a
         href="https://softagon.com.br"
         target="_blank"

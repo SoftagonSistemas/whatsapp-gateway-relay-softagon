@@ -64,7 +64,7 @@ Enregistrez vos URLs pour recevoir les événements en temps réel (`message.rec
 ![Écran des événements et webhooks Softagon Relay en Français](../images/fr/events.png)
 
 ### 2.6 Référence Interactive de l'API (`/console/api`)
-Générée en direct depuis `/openapi.yaml` (OpenAPI 3.2.1). Filtrez les routes, copiez les exemples prêts à l'emploi en **cURL, JavaScript, Python et PHP** et exécutez des appels réels (`⌘↵` / `Ctrl+↵`).
+Générée en direct depuis `/openapi.yaml` (également disponible en **`/openapi.json`** pour une intégration directe avec les agents IA, n8n, Postman et SDK). Filtrez les routes, copiez les exemples prêts à l'emploi en **cURL, JavaScript, Python et PHP** et exécutez des appels réels (`⌘↵` / `Ctrl+↵`).
 
 ![Référence interactive de l'API Softagon Relay en Français](../images/fr/api.png)
 

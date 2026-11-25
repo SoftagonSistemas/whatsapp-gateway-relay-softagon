@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import yaml from 'js-yaml';
-import { Check, Copy, Play, Shield, Unlock } from 'lucide-vue-next';
+import { Check, Copy, ExternalLink, Play, Shield, Unlock } from 'lucide-vue-next';
 import TopBar from '../components/TopBar.vue';
 import { useApi } from '../composables/useApi';
 import { useAuth } from '../composables/useAuth';
@@ -44,6 +44,17 @@ const filter = ref(typeof route.query.tag === 'string' ? route.query.tag : '');
 const selectedId = ref<string>('');
 const codeLang = ref<'curl' | 'js' | 'python' | 'php'>('curl');
 const copiedPath = ref(false);
+const copiedSpecUrl = ref(false);
+
+async function copyOpenApiJsonUrl() {
+  try {
+    await navigator.clipboard.writeText(`${baseUrl.value}/openapi.json`);
+    copiedSpecUrl.value = true;
+    setTimeout(() => (copiedSpecUrl.value = false), 1800);
+  } catch {
+    // ignore clipboard errors
+  }
+}
 
 // Live execution state
 const paramValues = ref<Record<string, string>>({});
@@ -372,6 +383,32 @@ onUnmounted(() => {
         :placeholder="t('apiReference.filter')"
       />
 
+      <div class="spec-box">
+        <div class="spec-head">
+          <span class="spec-title">{{ t('apiReference.specTitle') }}</span>
+          <button
+            type="button"
+            class="spec-copy"
+            :title="t('apiReference.copySpecUrl')"
+            @click="copyOpenApiJsonUrl"
+          >
+            <Check v-if="copiedSpecUrl" :size="12" aria-hidden="true" />
+            <Copy v-else :size="12" aria-hidden="true" />
+            <span>{{ copiedSpecUrl ? t('connect.copied') : t('apiReference.copySpecUrl') }}</span>
+          </button>
+        </div>
+        <div class="spec-links">
+          <a href="/openapi.json" target="_blank" rel="noopener" class="spec-pill mono">
+            <span>openapi.json</span>
+            <ExternalLink :size="11" aria-hidden="true" />
+          </a>
+          <a href="/openapi.yaml" target="_blank" rel="noopener" class="spec-pill mono">
+            <span>openapi.yaml</span>
+            <ExternalLink :size="11" aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+
       <div v-if="loading" class="side-msg">…</div>
       <div v-else-if="loadError" role="alert" class="side-msg err">{{ loadError }}</div>
       <div v-else-if="groupedEndpoints.length === 0" class="side-msg">
@@ -531,6 +568,74 @@ onUnmounted(() => {
   background: var(--surface);
   color: var(--text);
   font-size: 13px;
+}
+
+.spec-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.spec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.spec-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.spec-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.spec-copy:hover {
+  background: var(--tint-cyan);
+}
+
+.spec-links {
+  display: flex;
+  gap: 6px;
+}
+
+.spec-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--sunken);
+  color: var(--text-2);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.spec-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .side-groups {

@@ -9,7 +9,7 @@ Unlike multi-service Node.js or Python WhatsApp gateways that require PostgreSQL
 - **Official Website & Contact:** https://softagon.com.br
 - **Source Code (GitHub):** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon
 - **User Documentation (with screenshots):** [Português (BR)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/pt-BR/README.md) · [English](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/en/README.md) · [Español](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/es/README.md) · [Français](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/fr/README.md)
-- **Web Console & API Contract:** `/console` (or `/manager`) · OpenAPI 3.2.1 (`/openapi.yaml`) · Scalar Interactive Docs (`/docs`)
+- **Web Console & API Contract:** `/console` (or `/manager`) · OpenAPI 3.2.1 (`/openapi.json` & `/openapi.yaml`) · Scalar Interactive Docs (`/docs`)
 - **License:** Apache-2.0
 
 ---
@@ -85,7 +85,7 @@ Expected response:
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.2.0
+    image: softagon/relay:0.2.1
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -169,9 +169,9 @@ Every webhook request includes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.2.0`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.2.1`) |
 | `0.2` | `linux/amd64` | Latest `0.2.x` release |
-| `0.2.0` | `linux/amd64` | Pinned immutable release (includes Raycast-style `/console` UI) |
+| `0.2.1` | `linux/amd64` | Pinned immutable release (includes `/console`, `/openapi.json`, and 4-lang docs) |
 
 ---
 
@@ -195,7 +195,7 @@ All routes except `GET /v1/health` require `Authorization: Bearer <RELAY_API_KEY
 | `GET` / `POST` | `/v1/messages/{message_id}/transcription` | Fetch or retry voice-note transcription |
 | `GET` / `POST` | `/v1/webhooks` | List or create webhook subscriptions |
 | `GET` / `PATCH` / `DELETE` | `/v1/webhooks/{webhook_id}` | Inspect, update, or remove a webhook |
-| `GET` | `/docs` · `/openapi.yaml` | Scalar API Reference & OpenAPI 3.2.1 spec |
+| `GET` | `/docs` · `/openapi.json` · `/openapi.yaml` | Scalar API Reference & OpenAPI 3.2.1 spec (JSON/YAML) |
 
 ---
 

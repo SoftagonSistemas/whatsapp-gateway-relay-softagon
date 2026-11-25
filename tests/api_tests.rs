@@ -445,6 +445,29 @@ async fn console_spa_serves_and_redirects_root_and_manager() {
         .await;
     assert_eq!(status_spa, StatusCode::OK);
     assert!(body_spa.as_str().unwrap_or("").contains("<div id=\"app\">"));
+
+    let (status_json_unauth, _) = app
+        .request(
+            Request::builder()
+                .uri("/openapi.json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_json_unauth, StatusCode::UNAUTHORIZED);
+
+    let (status_json, body_json) = app
+        .request(
+            Request::builder()
+                .uri("/openapi.json")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_json, StatusCode::OK);
+    assert_eq!(body_json["openapi"], "3.2.1");
+    assert!(body_json["paths"]["/v1/health"].is_object());
 }
 
 #[test]

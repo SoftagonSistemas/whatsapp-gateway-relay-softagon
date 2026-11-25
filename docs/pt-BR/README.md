@@ -64,7 +64,7 @@ Cadastre URLs para receber eventos em tempo real (`message.received`, `message.s
 ![Tela de Eventos e Webhooks do Softagon Relay em Português](../images/pt-BR/events.png)
 
 ### 2.6 Referência Interativa da API (`/console/api`)
-Gerada dinamicamente a partir do contrato `/openapi.yaml` (OpenAPI 3.2.1), permite filtrar endpoints, copiar exemplos prontos em **cURL, JavaScript, Python e PHP** e executar chamadas reais contra o servidor (`⌘↵` / `Ctrl+↵`).
+Gerada dinamicamente a partir do contrato `/openapi.yaml` (também disponível em **`/openapi.json`** para integração direta com agentes de IA, n8n, Postman e SDKs), permite filtrar endpoints, copiar exemplos prontos em **cURL, JavaScript, Python e PHP** e executar chamadas reais contra o servidor (`⌘↵` / `Ctrl+↵`).
 
 ![Referência Interativa da API do Softagon Relay em Português](../images/pt-BR/api.png)
 

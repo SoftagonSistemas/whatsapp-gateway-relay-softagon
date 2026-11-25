@@ -13,7 +13,7 @@
     "userDocs": "Documentación"
   },
   "home": {
-    "eyebrow": "Gateway de WhatsApp · v0.2.0",
+    "eyebrow": "Gateway de WhatsApp · v0.2.1",
     "h1": "¿Qué quieres hacer?",
     "sub": "Escribe un número de WhatsApp para conectarlo. O busca cualquier sesión, acción o evento.",
     "paletteLabel": "Barra de comandos",
@@ -297,6 +297,8 @@
   "apiReference": {
     "endpoints": "Endpoints",
     "filter": "Filtrar endpoints…",
+    "specTitle": "OpenAPI (IA / SDK)",
+    "copySpecUrl": "Copiar URL",
     "noMatch": "No se encontraron endpoints.",
     "copy": "Copiar",
     "params": "Parámetros",
