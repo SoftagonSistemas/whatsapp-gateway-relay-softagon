@@ -54,8 +54,8 @@ Saatos sési didamel, kode QR SVG langsung némbongan kalayan itungan mundur oto
 ### 2.4 Manajemén Sési & Pesen Uji (`/console/sessions`)
 Atur sadaya akun WhatsApp anu nyambung ti hiji tempat:
 - Salin **ID** sareng **JID** sési ku sakali klik.
-- Klik **Kirim pesen** pikeun ngirim pesen uji langsung kalayan validasi nomer internasional.
-- Buka **Aksi (`⌘K` / `Ctrl+K`)** pikeun ngamimitian deui, nyambungkeun deui, kaluar, atawa **ngahapus sési anu pegat**.
+- Klik **Kirim pesen** pikeun ngirim pesen uji langsung kalayan validasi nomer internasional sareng résolusi otomatis digit sélulér pikeun Brasil, Méksiko, sareng Argéntina (BR/MX/AR).
+- Buka **Aksi (`⌘K` / `Ctrl+K`)** pikeun ngamimitian deui, nyambungkeun deui, kaluar, atawa **ngahapus sési anu pegat** (sési anu nyambung ditangtayungan supados henteu kahapus teu kahaja).
 
 ![Layar Manajemén Sési Softagon Relay](../images/su/session.png)
 

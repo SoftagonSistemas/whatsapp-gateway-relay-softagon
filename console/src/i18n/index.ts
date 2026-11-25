@@ -100,6 +100,14 @@ export function setAppLocale(locale: SupportedLocale) {
   }
 }
 
+export const APP_VERSION = __APP_VERSION__;
+
+export function formatSessionStatus(status: string, t: (key: string) => string): string {
+  const key = `session.status.${status}`;
+  const translated = t(key);
+  return translated === key ? status : translated;
+}
+
 if (typeof document !== 'undefined') {
   document.documentElement.lang = initialLocale;
 }

@@ -54,8 +54,8 @@ Dung sesi dibahen, kode QR SVG pintor tarida rap dohot hitungan mundur otomatis 
 ### 2.4 Manajemen Sesi & Tona Uji (`/console/sessions`)
 Atur sasude akun WhatsApp na terhubung di sada inganan:
 - Salin **ID** dohot **JID** sesi marhite sada klik.
-- Klik **Tongos tona** laho manongos tona uji langsung dohot validasi nomor internasional.
-- Buka **Aksi (`⌘K` / `Ctrl+K`)** laho mamulai muse, pahubungkon muse, kaluar, manang **manesa sesi na putus**.
+- Klik **Tongos tona** laho manongos tona uji langsung dohot validasi nomor internasional dohot resolusi otomatis digit seluler tu Brasil, Meksiko, dohot Argentina (BR/MX/AR).
+- Buka **Aksi (`⌘K` / `Ctrl+K`)** laho mamulai muse, pahubungkon muse, kaluar, manang **manesa sesi na putus** (sesi na terhubung dijaga asa unang tarsesa so sengaja).
 
 ![Layar Manajemen Sesi Softagon Relay](../images/bbc/session.png)
 

@@ -6,6 +6,7 @@ import { Eye, EyeOff, Info, KeyRound, Moon, Sun } from 'lucide-vue-next';
 import lockupDark from '../assets/softagon-lockup-dark.png';
 import lockupLight from '../assets/softagon-lockup-light.png';
 import LanguageSwitcher from '../components/LanguageSwitcher.vue';
+import { APP_VERSION } from '../i18n';
 import { useTheme } from '../composables/useTheme';
 import { useAuth } from '../composables/useAuth';
 import { ApiError, useApi } from '../composables/useApi';
@@ -97,7 +98,7 @@ onMounted(() => {
       <section aria-labelledby="lg-h" class="login-card">
         <form class="login-form pad-sm" @submit.prevent="onSubmit">
           <div class="login-head">
-            <span class="badge-pill cyan">Relay · v0.3.4</span>
+            <span class="badge-pill cyan">Relay · v{{ APP_VERSION }}</span>
             <h1 id="lg-h" class="login-h1">{{ t('login.h1') }}</h1>
             <p class="login-sub">{{ t('login.sub') }}</p>
           </div>

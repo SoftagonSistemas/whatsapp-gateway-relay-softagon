@@ -6,12 +6,19 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
-## [Unreleased]
+## [0.3.5] — 2026-11-25
 
-### Added — 10-Language Web Console & Documentation (Indonesia & Region)
-- **6 new UI & documentation languages (`id`, `bew`, `su`, `jv`, `bbc`, `ms`):** added complete Web Console translations and official guides for **Bahasa Indonesia**, **Basa Betawi** (Jakarta & Bekasi), **Basa Sunda** (Bandung & Bekasi), **Basa Jawa** (Surabaya), **Hata Batak Toba** (Medan), and **Bahasa Melayu** (Medan), expanding total coverage from 4 to **10 languages**.
-- **Accessible dropdown `LanguageSwitcher`:** replaced the horizontal language pill bar in `TopBar` and `LoginView` with a compact Raycast-style listbox dropdown (`🌐`) supporting keyboard navigation and native language names.
+### Added — 10-Language Web Console, Localized Visual Docs & Automated Checks
+- **6 new UI & documentation languages (`id`, `bew`, `su`, `jv`, `bbc`, `ms`):** added complete Web Console translations, official guides, and **60 localized screenshots** (`docs/images/{pt-BR,en,es,fr,id,bew,su,jv,bbc,ms}/*.png`) plus an updated `demo.gif` for **Bahasa Indonesia**, **Basa Betawi** (Jakarta & Bekasi), **Basa Sunda** (Bandung & Bekasi), **Basa Jawa** (Surabaya), **Hata Batak Toba** (Medan), and **Bahasa Melayu** (Medan), expanding total coverage from 4 to **10 languages**.
+- **Accessible dropdown `LanguageSwitcher`:** replaced the horizontal language pill bar in `TopBar` and `LoginView` with a compact Raycast-style listbox dropdown (`🌐`) displaying all 10 languages with native names and keyboard navigation.
 - **Expanded browser locale auto-detection & command palette search:** recognizes BCP 47 codes and legacy aliases (`in`, `jw`, `jav`, `btk`, `batak`, `zsm`) and indexes Indonesian/regional language and city keywords in `⌘K` / `Ctrl+K`.
+- **Automated i18n, version parity, PII & screenshot validation (`scripts/check-i18n-docs.mjs`):** integrated into `.githooks/pre-push` to enforce key parity across all 10 catalogs, version sync (`Cargo.toml` ↔ `console/package.json`), zero PII sample strings, and valid localized screenshots.
+- **SEO, AEO & GEO improvements:** added structured FAQ sections, regional language coverage, and updated Docker Hub metadata across `README.md`, `docs/dockerhub.md`, and `scripts/release-docker.sh`.
+
+### Fixed
+- **Localized session status badges:** `HomeView` and `SessionView` now translate all session states (`connected`, `disconnected`, `connecting`, `pairing_required`, `qr_ready`, `logged_out`) instead of showing raw English `disconnected`.
+- **Dynamic console version:** injected `__APP_VERSION__` from `console/package.json` via Vite `define` and displayed it dynamically in `TopBar`, `LoginView`, and `HomeView` instead of hardcoding `v0.3.4`.
+- **Completed missing translations & removed personal sample data:** localized `login.online` in `id`, `bew`, `su`, `jv`, and `bbc`; replaced personal sample strings (`HermesPessoal`, `558791508478`, `87 99200-5656`) with synthetic placeholders across all catalogs and views; aligned section 2.4 of all 6 new guides with BR/MX/AR mobile resolution and connected-session deletion protection.
 
 ---
 

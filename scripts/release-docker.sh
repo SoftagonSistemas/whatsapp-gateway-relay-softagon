@@ -19,7 +19,7 @@ VERSION="${1:-$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1
 MINOR_VERSION="$(echo "$VERSION" | awk -F. '{print $1"."$2}')"
 REVISION="$(git rev-parse --short HEAD 2>/dev/null || echo dev)"
 CREATED="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-SHORT_DESC="Self-hosted WhatsApp Web API gateway in Rust with SQLite, S3 media, signed webhooks & local Whisper."
+SHORT_DESC="Self-hosted WhatsApp API gateway & MCP Server in Rust with 10-language Console, SQLite & Whisper."
 
 if [[ "${SYNC_OVERVIEW_ONLY:-0}" != "1" ]]; then
   echo "=== Building ${IMAGE_REPO} (version=${VERSION}, minor=${MINOR_VERSION}, rev=${REVISION}) ==="

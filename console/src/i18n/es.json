@@ -13,12 +13,12 @@
     "userDocs": "Documentación"
   },
   "home": {
-    "eyebrow": "Gateway de WhatsApp · v0.3.4",
+    "eyebrow": "Gateway de WhatsApp · v{version}",
     "h1": "¿Qué quieres hacer?",
     "sub": "Escribe un número de WhatsApp para conectarlo. O busca cualquier sesión, acción o evento.",
     "paletteLabel": "Barra de comandos",
     "inputLabel": "Número o comando",
-    "placeholder": "Escribe un número (ej.: 87 99200-5656) o un comando…",
+    "placeholder": "Escribe un número (ej.: 11 99999-0001) o un comando…",
     "clear": "Limpiar búsqueda",
     "results": "Resultados",
     "sConnect": "Conectar",
@@ -67,7 +67,7 @@
     "hActions": "acciones del ítem",
     "hNew": "número nuevo",
     "hClear": "limpiar",
-    "try1": "Prueba: 87 99200-5656",
+    "try1": "Prueba: 11 99999-0001",
     "try2": "Prueba: webhook"
   },
   "connect": {
@@ -203,7 +203,7 @@
     "storage": "Almacenamiento de multimedia",
     "storageSub": "Local · o S3 / R2 / MinIO",
     "local": "Local",
-    "dialog": "Acciones de la sesión HermesPessoal",
+    "dialog": "Acciones de la sesión support-sales",
     "searchActions": "Buscar acciones…",
     "close": "Cerrar acciones",
     "noActions": "No se encontraron acciones.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sesión desconectada por WhatsApp",
     "deviceRemovedDesc": "Este dispositivo vinculado fue desconectado por WhatsApp. Esto ocurre cuando se elimina el dispositivo en el teléfono o cuando WhatsApp aplica una restricción temporal a la cuenta. Revisa la app de WhatsApp en tu teléfono antes de volver a vincular — si hay una restricción activa, espera a que termine antes de reconectar.",
     "restrictedDesc": "WhatsApp aplicó una restricción temporal a esta cuenta. Espera a que finalice el plazo en tu teléfono antes de reconectar para evitar bloqueos adicionales.",
-    "manualLogoutDesc": "Esta sesión se cerró manualmente. Haz clic en \"Ver QR / reconectar\" cuando quieras vincularla de nuevo."
+    "manualLogoutDesc": "Esta sesión se cerró manualmente. Haz clic en \"Ver QR / reconectar\" cuando quieras vincularla de nuevo.",
+    "status": {
+      "connected": "Conectada",
+      "disconnected": "Desconectada",
+      "connecting": "Conectando",
+      "pairing_required": "Requiere vinculación",
+      "qr_ready": "QR listo",
+      "logged_out": "Sesión cerrada"
+    }
   },
   "events": {
     "title": "Eventos",
@@ -274,10 +282,10 @@
     "fail": "Falló tras 8 intentos",
     "sum": [
       "Audio de 0:18 transcrito · pt · 1,9 s",
-      "Audio recibido de +55 87 9•••-••12",
-      "Texto enviado a +55 87 9•••-••40",
+      "Audio recibido de +55 11 9•••-••01",
+      "Texto enviado a +55 11 9•••-••02",
       "Entregado (✓✓) · msg_51c0…",
-      "Conectada · 558791508478@s.whatsapp.net",
+      "Conectada · 5511999990001@s.whatsapp.net",
       "Participante añadido al grupo",
       "Cola llena · reintento programado"
     ]

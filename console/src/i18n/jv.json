@@ -13,7 +13,7 @@
     "userDocs": "Dokumèntasi"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "Arep nindakaké apa?",
     "sub": "Ketik nomer WhatsApp kanggo nyambungaké. Utawa golèk sèsi, aksi, utawa kedadéan apa waé.",
     "paletteLabel": "Bar préntah",
@@ -203,7 +203,7 @@
     "storage": "Panyimpenan média",
     "storageSub": "Lokal · utawa S3 / R2 / MinIO",
     "local": "Lokal",
-    "dialog": "Aksi kanggo sèsi HermesPessoal",
+    "dialog": "Aksi kanggo sèsi support-sales",
     "searchActions": "Golèk aksi…",
     "close": "Tutup aksi",
     "noActions": "Ora ana aksi sing ketemu.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sèsi dipedhot déning WhatsApp",
     "deviceRemovedDesc": "Piranti kagandhèng iki dipedhot déning WhatsApp. Iki kedadéan nalika piranti dibusak saka HP sampeyan utawa nalika WhatsApp mènèhi watesan sawetara ing akun. Priksa aplikasi WhatsApp ing HP sadurungé nggandhèngaké manèh — yen ana watesan aktif, entèni nganti rampung sadurungé nyambung manèh.",
     "restrictedDesc": "WhatsApp mènèhi watesan sawetara ing akun iki. Entèni nganti itungan mundur ing HP sampeyan rampung sadurungé nyambung manèh supaya ora kena blokir manèh.",
-    "manualLogoutDesc": "Sèsi iki dimetokaké kanthi manual. Klik \"Tuduhaké QR / sambung manèh\" nalika sampeyan arep nggandhèngaké manèh."
+    "manualLogoutDesc": "Sèsi iki dimetokaké kanthi manual. Klik \"Tuduhaké QR / sambung manèh\" nalika sampeyan arep nggandhèngaké manèh.",
+    "status": {
+      "connected": "Nyambung",
+      "disconnected": "Pedhot",
+      "connecting": "Nyambungaké",
+      "pairing_required": "Perlu tautan",
+      "qr_ready": "QR siap",
+      "logged_out": "Metu"
+    }
   },
   "events": {
     "title": "Kedadéan",
@@ -296,7 +304,7 @@
     "enter": "Mlebu",
     "where1": "Kunci ana ing variabel sèrver",
     "where2": "(berkas .env utawa Docker secrets).",
-    "online": "sèrver online"
+    "online": "sèrver aktif"
   },
   "apiReference": {
     "endpoints": "Endpoint",

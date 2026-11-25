@@ -46,7 +46,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.4
+    image: softagon/relay:0.3.5
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -84,8 +84,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.4`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.5`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
+| `0.3.5` | `linux/amd64` | 10-language Web Console & docs (PT, EN, ES, FR, ID, Betawi, Sundanese, Javanese, Batak Toba, Malay), dropdown switcher, dynamic version, automated i18n/docs checks |
 | `0.3.4` | `linux/amd64` | Docker MCP HTTP container-bind opt-in, unexpanded placeholder rejection, safe STDIO snippets |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
@@ -138,6 +139,14 @@ All `/v1/*` routes except `GET /v1/health` require `Authorization: Bearer <RELAY
 | `WEBHOOK_DELIVERY_TIMEOUT_SECONDS` / `WEBHOOK_MAX_ATTEMPTS` / `WEBHOOK_BACKOFF_BASE_SECONDS` | `10` / `8` / `2` | Webhook HTTP timeout and retry backoff policy |
 | `MCP_HTTP_ENABLED` / `MCP_HTTP_HOST` / `MCP_HTTP_PORT` | `false` / `127.0.0.1` / `8091` | Enable local MCP Streamable HTTP server (`/mcp`, loopback-only by default) |
 | `MCP_ALLOW_CONTAINER_BIND` / `MCP_ALLOW_DESTRUCTIVE` / `MCP_ALLOWED_ORIGINS` | `false` / `false` / *(loopback)* | Opt in to `0.0.0.0` bind inside Docker behind `-p 127.0.0.1:8091:8091`, destructive tools, and extra Origins |
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+- **Why Rust instead of Chromium / Puppeteer / Node.js?** Softagon Relay talks directly to WhatsApp Web over WebSocket (`whatsapp-rust`), keeping steady-state usage at **~38 MiB RAM** and **~55 MB** compressed Docker image size with zero external databases (PostgreSQL/Redis/RabbitMQ) or FFmpeg.
+- **Which languages are supported?** The embedded `/console` UI and visual docs support **10 languages**: Português (`pt-BR`), English (`en`), Español (`es`), Français (`fr`), Bahasa Indonesia (`id`), Basa Betawi (`bew` — Jakarta & Bekasi), Basa Sunda (`su` — Bandung & Bekasi), Basa Jawa (`jv` — Surabaya), Hata Batak Toba (`bbc` — Medan), and Bahasa Melayu (`ms` — Medan).
+- **Can I connect AI agents (Claude Desktop, Cursor, Antigravity) or n8n?** Yes — use the built-in **MCP Server** (`mcp --stdio` or Streamable HTTP `/mcp`) for local AI agents, and the `/v1` HTTP API + `/openapi.json` + HMAC-SHA256 signed webhooks for n8n and custom apps.
 
 ---
 

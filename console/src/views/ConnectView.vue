@@ -202,7 +202,7 @@ onUnmounted(() => {
             v-model="phoneInput"
             type="tel"
             class="inp mono phone-input"
-            placeholder="87 99200-5656"
+            placeholder="11 99999-0001"
             autofocus
           />
         </div>

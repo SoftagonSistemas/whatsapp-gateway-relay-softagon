@@ -6,6 +6,7 @@ import { Code2, LogOut, Moon, Search, Sun } from 'lucide-vue-next';
 import lockupDark from '../assets/softagon-lockup-dark.png';
 import lockupLight from '../assets/softagon-lockup-light.png';
 import LanguageSwitcher from './LanguageSwitcher.vue';
+import { APP_VERSION } from '../i18n';
 import { useTheme } from '../composables/useTheme';
 import { useAuth } from '../composables/useAuth';
 import { useSessions } from '../composables/useSessions';
@@ -62,6 +63,7 @@ onMounted(() => {
       />
       <span aria-hidden="true" class="brand-sep"></span>
       <span class="brand-name">Relay</span>
+      <span class="brand-ver hide-sm mono">v{{ APP_VERSION }}</span>
     </router-link>
 
     <button
@@ -163,6 +165,16 @@ onMounted(() => {
   font: 700 15px 'Montserrat', sans-serif;
   letter-spacing: 0.02em;
   color: var(--text);
+}
+
+.brand-ver {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--tint-neutral);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 7px;
 }
 
 .topbar-search {

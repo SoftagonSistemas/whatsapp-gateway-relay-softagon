@@ -54,8 +54,8 @@ Begitu sesi dibikin, kode QR SVG langsung nongol pake itungan mundur pembaruan o
 ### 2.4 Kelola Sesi & Kirim Pesan Tes (`/console/sessions`)
 Urus semua akun WhatsApp nyang nyambung di satu tempat:
 - Salin **ID** ame **JID** sesi sekali klik.
-- Klik **Kirim pesan** buat kirim pesan tes langsung pake validasi nomor internasional.
-- Buka **Aksi (`⌘K` / `Ctrl+K`)** buat ngulang sesi, sambungin ulang, keluar, atawa **hapus sesi nyang udeh putus**.
+- Klik **Kirim pesan** buat kirim pesan tes langsung pake validasi nomor internasional ame resolusi otomatis digit hape buat Brasil, Meksiko, ame Argentina (BR/MX/AR).
+- Buka **Aksi (`⌘K` / `Ctrl+K`)** buat ngulang sesi, sambungin ulang, keluar, atawa **hapus sesi nyang udeh putus** (sesi nyang masih nyambung dilindungin biar kagak kehapus kagak sengaja).
 
 ![Layar Manajemen Sesi Softagon Relay](../images/bew/session.png)
 

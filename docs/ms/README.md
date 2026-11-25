@@ -54,8 +54,8 @@ Setelah sesi dicipta, kod QR SVG langsung muncul dengan kira detik muat semula a
 ### 2.4 Pengurusan Sesi & Mesej Ujian (`/console/sessions`)
 Urus semua akaun WhatsApp yang disambungkan dari satu tempat:
 - Salin **ID** dan **JID** sesi dengan satu klik.
-- Klik **Hantar mesej** untuk menghantar mesej ujian langsung dengan pengesahan nombor antarabangsa.
-- Buka **Tindakan (`⌘K` / `Ctrl+K`)** untuk memulakan semula, menyambung semula, log keluar, atau **memadam sesi yang terputus**.
+- Klik **Hantar mesej** untuk menghantar mesej ujian langsung dengan pengesahan nombor antarabangsa dan resolusi automatik digit mudah alih bagi Brazil, Mexico, dan Argentina (BR/MX/AR).
+- Buka **Tindakan (`⌘K` / `Ctrl+K`)** untuk memulakan semula, menyambung semula, log keluar, atau **memadam sesi yang terputus** (sesi yang sedang disambungkan dilindungi daripada pemadaman tidak sengaja).
 
 ![Skrin Pengurusan Sesi Softagon Relay](../images/ms/session.png)
 

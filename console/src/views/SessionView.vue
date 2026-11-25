@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-vue-next';
 import TopBar from '../components/TopBar.vue';
+import { formatSessionStatus } from '../i18n';
 import { useApi, type SessionRecord } from '../composables/useApi';
 import { useSessions } from '../composables/useSessions';
 import { MOD_KEY, isInputFocused, isMacOS } from '../composables/useHotkeys';
@@ -374,7 +375,7 @@ onUnmounted(() => {
                 class="badge-pill"
                 :class="current.status === 'connected' ? 'cyan' : current.status === 'pairing_required' ? 'amber' : ''"
               >
-                {{ current.status === 'connected' ? t('session.connected') : current.status }}
+                {{ formatSessionStatus(current.status, t) }}
               </span>
             </div>
             <p v-if="current.phone_number" class="mono muted-line">{{ current.phone_number }}</p>
@@ -442,7 +443,7 @@ onUnmounted(() => {
                 v-model="sendTo"
                 type="tel"
                 class="inp form-input mono"
-                placeholder="+55 87 99200-5656"
+                placeholder="+55 11 99999-0001"
                 required
               />
               <label for="send-msg" class="sr">{{ t('session.sendMsg') }}</label>

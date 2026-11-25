@@ -13,7 +13,7 @@
     "userDocs": "Dokumentasi"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "Apa yang ingin Anda lakukan?",
     "sub": "Ketik nomor WhatsApp untuk menghubungkannya. Atau cari sesi, aksi, atau event apa saja.",
     "paletteLabel": "Bilah perintah",
@@ -203,7 +203,7 @@
     "storage": "Penyimpanan media",
     "storageSub": "Lokal · atau S3 / R2 / MinIO",
     "local": "Lokal",
-    "dialog": "Aksi untuk sesi HermesPessoal",
+    "dialog": "Aksi untuk sesi support-sales",
     "searchActions": "Cari aksi…",
     "close": "Tutup aksi",
     "noActions": "Tidak ada aksi ditemukan.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sesi diputuskan oleh WhatsApp",
     "deviceRemovedDesc": "Perangkat tertaut ini diputuskan oleh WhatsApp. Hal ini terjadi saat perangkat dihapus dari ponsel Anda atau saat WhatsApp menerapkan pembatasan sementara pada akun. Periksa aplikasi WhatsApp di ponsel sebelum menautkan ulang — jika ada pembatasan aktif, tunggu hingga berakhir sebelum menghubungkan kembali.",
     "restrictedDesc": "WhatsApp menerapkan pembatasan sementara pada akun ini. Tunggu hingga hitung mundur di ponsel Anda selesai sebelum menghubungkan kembali agar tidak terkena blokir lanjutan.",
-    "manualLogoutDesc": "Sesi ini telah keluar secara manual. Klik \"Tampilkan QR / hubungkan ulang\" saat Anda ingin menautkannya kembali."
+    "manualLogoutDesc": "Sesi ini telah keluar secara manual. Klik \"Tampilkan QR / hubungkan ulang\" saat Anda ingin menautkannya kembali.",
+    "status": {
+      "connected": "Terhubung",
+      "disconnected": "Terputus",
+      "connecting": "Menghubungkan",
+      "pairing_required": "Perlu penautan",
+      "qr_ready": "QR siap",
+      "logged_out": "Keluar"
+    }
   },
   "events": {
     "title": "Event",
@@ -296,7 +304,7 @@
     "enter": "Masuk",
     "where1": "Kunci berada pada variabel server",
     "where2": "(berkas .env atau Docker secrets).",
-    "online": "server online"
+    "online": "server aktif"
   },
   "apiReference": {
     "endpoints": "Endpoint",

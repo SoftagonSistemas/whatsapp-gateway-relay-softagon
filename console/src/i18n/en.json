@@ -13,12 +13,12 @@
     "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "WhatsApp gateway · v0.3.4",
+    "eyebrow": "WhatsApp gateway · v{version}",
     "h1": "What do you want to do?",
     "sub": "Type a WhatsApp number to connect it. Or search any session, action or event.",
     "paletteLabel": "Command bar",
     "inputLabel": "Number or command",
-    "placeholder": "Type a number (e.g. 87 99200-5656) or a command…",
+    "placeholder": "Type a number (e.g. 11 99999-0001) or a command…",
     "clear": "Clear search",
     "results": "Results",
     "sConnect": "Connect",
@@ -67,7 +67,7 @@
     "hActions": "item actions",
     "hNew": "new number",
     "hClear": "clear",
-    "try1": "Try: 87 99200-5656",
+    "try1": "Try: 11 99999-0001",
     "try2": "Try: webhook"
   },
   "connect": {
@@ -203,7 +203,7 @@
     "storage": "Media storage",
     "storageSub": "Local · or S3 / R2 / MinIO",
     "local": "Local",
-    "dialog": "Actions for session HermesPessoal",
+    "dialog": "Actions for session support-sales",
     "searchActions": "Search actions…",
     "close": "Close actions",
     "noActions": "No actions found.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Session disconnected by WhatsApp",
     "deviceRemovedDesc": "This linked device was disconnected by WhatsApp. This happens when the device is removed on your phone or when WhatsApp places a temporary restriction on the account. Check the WhatsApp app on your phone before pairing again — if a restriction is active, wait until it expires before reconnecting.",
     "restrictedDesc": "WhatsApp placed a temporary restriction on this account. Wait until the countdown on your phone expires before reconnecting to avoid further blocks.",
-    "manualLogoutDesc": "This session was logged out manually. Click \"Show QR / reconnect\" when you want to link it again."
+    "manualLogoutDesc": "This session was logged out manually. Click \"Show QR / reconnect\" when you want to link it again.",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "connecting": "Connecting",
+      "pairing_required": "Pairing required",
+      "qr_ready": "QR ready",
+      "logged_out": "Logged out"
+    }
   },
   "events": {
     "title": "Events",
@@ -274,10 +282,10 @@
     "fail": "Failed after 8 attempts",
     "sum": [
       "0:18 audio transcribed · pt · 1.9 s",
-      "Audio received from +55 87 9•••-••12",
-      "Text sent to +55 87 9•••-••40",
+      "Audio received from +55 11 9•••-••01",
+      "Text sent to +55 11 9•••-••02",
       "Delivered (✓✓) · msg_51c0…",
-      "Connected · 558791508478@s.whatsapp.net",
+      "Connected · 5511999990001@s.whatsapp.net",
       "Participant added to group",
       "Queue full · retry scheduled"
     ]

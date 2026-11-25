@@ -20,7 +20,7 @@ import iconImg from '../assets/softagon-icon.png';
 import { useSessions } from '../composables/useSessions';
 import { useTheme } from '../composables/useTheme';
 import { useAuth } from '../composables/useAuth';
-import { LOCALE_OPTIONS, setAppLocale } from '../i18n';
+import { APP_VERSION, formatSessionStatus, LOCALE_OPTIONS, setAppLocale } from '../i18n';
 import { MOD_KEY } from '../composables/useHotkeys';
 import { normalizeText, parsePhoneInput } from '../composables/usePhone';
 
@@ -168,7 +168,7 @@ const allItems = computed<PaletteItem[]>(() => {
       title: s.name,
       sub: s.jid || s.id,
       meta: s.phone_number || t('home.mSession'),
-      status: s.status === 'connected' ? t('home.connected') : s.status,
+      status: formatSessionStatus(s.status, t),
       icon: 'avatar',
       tint,
       initials,
@@ -315,7 +315,7 @@ onMounted(() => {
   <TopBar :show-search="false" />
 
   <main class="hero-pad home-main">
-    <p class="eyebrow">{{ t('home.eyebrow') }}</p>
+    <p class="eyebrow">{{ t('home.eyebrow', { version: APP_VERSION }) }}</p>
     <h1 class="hero-h1 home-h1">{{ t('home.h1') }}</h1>
     <p class="home-sub">{{ t('home.sub') }}</p>
 
@@ -432,7 +432,7 @@ onMounted(() => {
     </section>
 
     <div v-if="sessions.length === 0 && !query" class="try-row">
-      <button type="button" class="try-chip hov" @click="query = '87 99200-5656'; inputRef?.focus()">
+      <button type="button" class="try-chip hov" @click="query = '11 99999-0001'; inputRef?.focus()">
         {{ t('home.try1') }}
       </button>
       <button type="button" class="try-chip hov" @click="query = 'webhook'; inputRef?.focus()">

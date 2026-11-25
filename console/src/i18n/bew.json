@@ -13,7 +13,7 @@
     "userDocs": "Dokumentasi"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "Mau ngapain nih?",
     "sub": "Ketik nomor WhatsApp biar nyambung. Atawa cari sesi, aksi, ame event ape aje.",
     "paletteLabel": "Bilah perintah",
@@ -203,7 +203,7 @@
     "storage": "Simpenan media",
     "storageSub": "Lokal · atawa S3 / R2 / MinIO",
     "local": "Lokal",
-    "dialog": "Aksi buat sesi HermesPessoal",
+    "dialog": "Aksi buat sesi support-sales",
     "searchActions": "Cari aksi…",
     "close": "Tutup aksi",
     "noActions": "Kagak ade aksi nyang ketemu.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sesi diputusin ame WhatsApp",
     "deviceRemovedDesc": "Perangkat tertaut ini diputusin ame WhatsApp. Biasanye kejadian pas perangkat dihapus dari hape ente atawa WhatsApp lagi ngasih batasan sementara. Cek aplikasi WhatsApp di hape dulu sebelum nyambungin lagi — kalo lagi dibatesin, tunggu kelar dulu ye.",
     "restrictedDesc": "WhatsApp lagi ngasih batasan sementara di akun ini. Tungguin itungan mundur di hape ente abis dulu sebelum nyambungin lagi biar kagak diblokir makin lama.",
-    "manualLogoutDesc": "Sesi ini dikeluarin secara manual. Klik \"Tunjukin QR / sambungin ulang\" kalo mau disambungin lagi."
+    "manualLogoutDesc": "Sesi ini dikeluarin secara manual. Klik \"Tunjukin QR / sambungin ulang\" kalo mau disambungin lagi.",
+    "status": {
+      "connected": "Nyambung",
+      "disconnected": "Putus",
+      "connecting": "Lagi nyambung",
+      "pairing_required": "Perlu tautin",
+      "qr_ready": "QR siap",
+      "logged_out": "Udeh keluar"
+    }
   },
   "events": {
     "title": "Event",
@@ -296,7 +304,7 @@
     "enter": "Masuk",
     "where1": "Kuncinye ade di variabel server",
     "where2": "(berkas .env atawa Docker secrets).",
-    "online": "server online"
+    "online": "server nyala"
   },
   "apiReference": {
     "endpoints": "Endpoint",

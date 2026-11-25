@@ -54,7 +54,7 @@ Setelah sesi dibuat, kode QR SVG langsung tampil dengan hitung mundur pembaruan 
 ### 2.4 Manajemen Sesi & Pesan Uji (`/console/sessions`)
 Kelola seluruh akun WhatsApp yang terhubung dari satu tempat:
 - Salin **ID** dan **JID** sesi dalam satu klik.
-- Klik **Kirim pesan** untuk mengirim pesan uji langsung dengan validasi nomor internasional.
+- Klik **Kirim pesan** untuk mengirim pesan uji langsung dengan validasi nomor internasional dan resolusi otomatis digit seluler untuk Brasil, Meksiko, dan Argentina (BR/MX/AR).
 - Buka **Aksi (`⌘K` / `Ctrl+K`)** untuk memulai ulang, menghubungkan kembali, keluar, atau **menghapus sesi yang terputus** (sesi aktif terlindungi dari penghapusan tidak sengaja).
 
 ![Layar Manajemen Sesi Softagon Relay](../images/id/session.png)

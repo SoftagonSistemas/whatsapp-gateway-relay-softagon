@@ -13,7 +13,7 @@
     "userDocs": "Dokumentasi"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "Aha na naeng ulaonmu?",
     "sub": "Ketik nomor WhatsApp laho pahubungkon. Manang lului sesi, aksi, manang event dia pe.",
     "paletteLabel": "Bilah parenta",
@@ -203,7 +203,7 @@
     "storage": "Panyimpanan media",
     "storageSub": "Lokal · manang S3 / R2 / MinIO",
     "local": "Lokal",
-    "dialog": "Aksi laho sesi HermesPessoal",
+    "dialog": "Aksi laho sesi support-sales",
     "searchActions": "Lului aksi…",
     "close": "Tutup aksi",
     "noActions": "Ndang adong aksi na dapot.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sesi diputus WhatsApp",
     "deviceRemovedDesc": "Perangkat tertaut on diputus WhatsApp. Masa do on molo perangkat disesa sian HP-mu manang molo WhatsApp mangalehon batasan sementara tu akun. Pariksa aplikasi WhatsApp di HP andorang so pahubungkon muse — molo adong batasan aktif, paima sahat tu na sidung.",
     "restrictedDesc": "WhatsApp mangalehon batasan sementara tu akun on. Paima sahat tu na habis hitungan mundur di HP-mu andorang so pahubungkon muse asa unang diblokir muse.",
-    "manualLogoutDesc": "Sesi on dikaluarhon sacara manual. Klik \"Patuduhon QR / pahubung muse\" molo naeng pahubungkon muse."
+    "manualLogoutDesc": "Sesi on dikaluarhon sacara manual. Klik \"Patuduhon QR / pahubung muse\" molo naeng pahubungkon muse.",
+    "status": {
+      "connected": "Terhubung",
+      "disconnected": "Putus",
+      "connecting": "Pahubungkon",
+      "pairing_required": "Porlu tautan",
+      "qr_ready": "QR rade",
+      "logged_out": "Kaluar"
+    }
   },
   "events": {
     "title": "Event",
@@ -296,7 +304,7 @@
     "enter": "Masuk",
     "where1": "Kunci adong di variabel server",
     "where2": "(berkas .env manang Docker secrets).",
-    "online": "server online"
+    "online": "server aktif"
   },
   "apiReference": {
     "endpoints": "Endpoint",

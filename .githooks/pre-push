@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "[pre-push] Validating i18n catalogs, version parity, and docs images..."
+node scripts/check-i18n-docs.mjs
+
 echo "[pre-push] Building console SPA..."
 (cd console && npm run build)
 

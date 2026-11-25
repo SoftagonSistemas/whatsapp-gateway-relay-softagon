@@ -13,7 +13,7 @@
     "userDocs": "Dokumentasi"
   },
   "home": {
-    "eyebrow": "Gerbang WhatsApp · v0.3.4",
+    "eyebrow": "Gerbang WhatsApp · v{version}",
     "h1": "Apa yang anda ingin lakukan?",
     "sub": "Taip nombor WhatsApp untuk menyambungkannya. Atau cari mana-mana sesi, tindakan atau acara.",
     "paletteLabel": "Bar arahan",
@@ -203,7 +203,7 @@
     "storage": "Storan media",
     "storageSub": "Setempat · atau S3 / R2 / MinIO",
     "local": "Setempat",
-    "dialog": "Tindakan untuk sesi HermesPessoal",
+    "dialog": "Tindakan untuk sesi support-sales",
     "searchActions": "Cari tindakan…",
     "close": "Tutup tindakan",
     "noActions": "Tiada tindakan ditemui.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sesi diputuskan oleh WhatsApp",
     "deviceRemovedDesc": "Peranti terpaut ini telah diputuskan oleh WhatsApp. Ini berlaku apabila peranti dialih keluar pada telefon anda atau apabila WhatsApp mengenakan sekatan sementara pada akaun. Semak aplikasi WhatsApp pada telefon sebelum memautkan semula — jika sekatan aktif, tunggu sehingga tamat sebelum menyambung semula.",
     "restrictedDesc": "WhatsApp mengenakan sekatan sementara pada akaun ini. Tunggu sehingga kira detik pada telefon anda tamat sebelum menyambung semula untuk mengelakkan sekatan lanjut.",
-    "manualLogoutDesc": "Sesi ini telah dilog keluar secara manual. Klik \"Papar QR / sambung semula\" apabila anda ingin memautkannya semula."
+    "manualLogoutDesc": "Sesi ini telah dilog keluar secara manual. Klik \"Papar QR / sambung semula\" apabila anda ingin memautkannya semula.",
+    "status": {
+      "connected": "Disambungkan",
+      "disconnected": "Terputus",
+      "connecting": "Menyambung",
+      "pairing_required": "Pemautan diperlukan",
+      "qr_ready": "QR sedia",
+      "logged_out": "Log keluar"
+    }
   },
   "events": {
     "title": "Acara",

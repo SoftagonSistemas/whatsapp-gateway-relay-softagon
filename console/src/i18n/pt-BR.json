@@ -13,12 +13,12 @@
     "userDocs": "Documentação"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "O que você quer fazer?",
     "sub": "Digite um número de WhatsApp para conectar. Ou busque qualquer sessão, ação ou evento.",
     "paletteLabel": "Barra de comando",
     "inputLabel": "Número ou comando",
-    "placeholder": "Digite um número (ex.: 87 99200-5656) ou um comando…",
+    "placeholder": "Digite um número (ex.: 11 99999-0001) ou um comando…",
     "clear": "Limpar busca",
     "results": "Resultados",
     "sConnect": "Conectar",
@@ -67,7 +67,7 @@
     "hActions": "ações do item",
     "hNew": "novo número",
     "hClear": "limpar",
-    "try1": "Experimente: 87 99200-5656",
+    "try1": "Experimente: 11 99999-0001",
     "try2": "Experimente: webhook"
   },
   "connect": {
@@ -203,7 +203,7 @@
     "storage": "Armazenamento de mídia",
     "storageSub": "Local · ou S3 / R2 / MinIO",
     "local": "Local",
-    "dialog": "Ações da sessão HermesPessoal",
+    "dialog": "Ações da sessão support-sales",
     "searchActions": "Buscar ações…",
     "close": "Fechar ações",
     "noActions": "Nenhuma ação encontrada.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sessão desconectada pelo WhatsApp",
     "deviceRemovedDesc": "Este aparelho foi desconectado pelo WhatsApp. Isso ocorre quando o dispositivo é removido no celular ou quando o WhatsApp aplica uma restrição temporária à conta. Verifique o aplicativo no celular antes de tentar parear novamente — se houver restrição ativa, aguarde o prazo terminar antes de reconectar.",
     "restrictedDesc": "O WhatsApp aplicou uma restrição temporária a esta conta. Aguarde o fim do prazo exibido no celular antes de tentar reconectar para evitar bloqueios adicionais.",
-    "manualLogoutDesc": "Esta sessão foi encerrada manualmente. Clique em \"Ver QR / reconectar\" quando desejar parear novamente."
+    "manualLogoutDesc": "Esta sessão foi encerrada manualmente. Clique em \"Ver QR / reconectar\" quando desejar parear novamente.",
+    "status": {
+      "connected": "Conectada",
+      "disconnected": "Desconectada",
+      "connecting": "Conectando",
+      "pairing_required": "Aguardando QR",
+      "qr_ready": "QR pronto",
+      "logged_out": "Desconectada"
+    }
   },
   "events": {
     "title": "Eventos",
@@ -274,10 +282,10 @@
     "fail": "Falhou após 8 tentativas",
     "sum": [
       "Áudio de 0:18 transcrito · pt · 1,9 s",
-      "Áudio recebido de +55 87 9•••-••12",
-      "Texto enviado para +55 87 9•••-••40",
+      "Áudio recebido de +55 11 9•••-••01",
+      "Texto enviado para +55 11 9•••-••02",
       "Entregue (✓✓) · msg_51c0…",
-      "Conectada · 558791508478@s.whatsapp.net",
+      "Conectada · 5511999990001@s.whatsapp.net",
       "Participante adicionado ao grupo",
       "Fila cheia · nova tentativa agendada"
     ]

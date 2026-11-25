@@ -13,7 +13,7 @@
     "userDocs": "Dokuméntasi"
   },
   "home": {
-    "eyebrow": "Gateway WhatsApp · v0.3.4",
+    "eyebrow": "Gateway WhatsApp · v{version}",
     "h1": "Naon anu badé dipigawé?",
     "sub": "Ketik nomer WhatsApp pikeun nyambungkeunana. Atawa téangan sési, aksi, atawa kajadian naon baé.",
     "paletteLabel": "Bar paréntah",
@@ -203,7 +203,7 @@
     "storage": "Panyimpenan média",
     "storageSub": "Lokal · atawa S3 / R2 / MinIO",
     "local": "Lokal",
-    "dialog": "Aksi pikeun sési HermesPessoal",
+    "dialog": "Aksi pikeun sési support-sales",
     "searchActions": "Téangan aksi…",
     "close": "Tutup aksi",
     "noActions": "Henteu aya aksi anu kapanggih.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Sési dipegatkeun ku WhatsApp",
     "deviceRemovedDesc": "Alat anu ditautkeun ieu dipegatkeun ku WhatsApp. Ieu lumangsung nalika alat dipiceun tina hapé anjeun atawa nalika WhatsApp nerapkeun watesan samentara kana akun. Pariksa aplikasi WhatsApp dina hapé sateuacan nganautkeun deui — upami aya watesan aktif, antosan dugi ka réngsé sateuacan nyambungkeun deui.",
     "restrictedDesc": "WhatsApp nerapkeun watesan samentara kana akun ieu. Antosan dugi ka itungan mundur dina hapé anjeun réngsé sateuacan nyambungkeun deui supados henteu diblokir deui.",
-    "manualLogoutDesc": "Sési ieu dikaluarkeun sacara manual. Klik \"Témbongkeun QR / sambungkeun deui\" nalika anjeun hoyong nganautkeunana deui."
+    "manualLogoutDesc": "Sési ieu dikaluarkeun sacara manual. Klik \"Témbongkeun QR / sambungkeun deui\" nalika anjeun hoyong nganautkeunana deui.",
+    "status": {
+      "connected": "Nyambung",
+      "disconnected": "Pegat",
+      "connecting": "Nyambungkeun",
+      "pairing_required": "Peryogi tautan",
+      "qr_ready": "QR siap",
+      "logged_out": "Kaluar"
+    }
   },
   "events": {
     "title": "Kajadian",
@@ -296,7 +304,7 @@
     "enter": "Asup",
     "where1": "Konci aya dina variabel sérver",
     "where2": "(berkas .env atawa Docker secrets).",
-    "online": "sérver online"
+    "online": "sérver aktif"
   },
   "apiReference": {
     "endpoints": "Endpoint",

@@ -27,7 +27,7 @@ Open **`http://localhost:8080/console`** (or `/manager`), paste the printed `REL
 ## What It Includes
 
 - **Single container, zero external databases:** native Rust binary (Tokio + Axum) with embedded **SQLite (WAL)** — no PostgreSQL, Redis, RabbitMQ, or Chromium required.
-- **Embedded Raycast-style Web Console (`/console`):** keyboard-first Vue 3 UI (`⌘K`/`Ctrl+K`), Light/Dark theme, 10 languages (`pt-BR`, `en`, `es`, `fr`, `id`, `bew`, `su`, `jv`, `bbc`, `ms`), live SVG QR pairing, test messaging, webhook management, and live OpenAPI runner.
+- **Embedded Raycast-style Web Console (`/console`):** keyboard-first Vue 3 UI (`⌘K`/`Ctrl+K`), Light/Dark theme, **10 languages** — Português (`pt-BR`), English (`en`), Español (`es`), Français (`fr`), Bahasa Indonesia (`id`), Basa Betawi (`bew`, Jakarta & Bekasi), Basa Sunda (`su`, Bandung & Bekasi), Basa Jawa (`jv`, Surabaya), Hata Batak Toba (`bbc`, Medan), and Bahasa Melayu (`ms`, Medan) — with live SVG QR pairing, test messaging, webhook management, and live OpenAPI runner.
 - **Native Local MCP Server (`v0.3.0`, `rmcp`):** connects local AI agents (Claude Desktop, Cursor, Antigravity, VS Code) directly to the internal `RelayService` without going through HTTP REST:
   - **STDIO** (default local mode): `softagon-relay mcp --stdio` (logs routed to `stderr`).
   - **Streamable HTTP**: `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` — binds to `127.0.0.1` by default (Docker opt-in: `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true` behind `-p 127.0.0.1:8091:8091`), `Origin` validation (anti-DNS rebinding), Bearer auth, destructive tools blocked by default, and SQLite audit log (`mcp_audit_log`).
@@ -95,6 +95,22 @@ cp .env.example .env
 # Edit RELAY_API_KEY in .env
 docker compose up -d
 ```
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+### How much RAM does Softagon Relay use compared to Chromium-based WhatsApp gateways?
+Softagon Relay uses **~4–5 MiB RAM** at idle and **~38 MiB RAM** with an active WhatsApp WebSocket session in a **~55 MB** compressed Docker image, compared to 350–900+ MiB commonly required by headless Chromium/Puppeteer and Node.js stacks.
+
+### Does Softagon Relay require PostgreSQL, Redis, RabbitMQ, or FFmpeg?
+No. Sessions, messages, webhook delivery retries, and MCP audit logs run on embedded **SQLite (WAL)**, and OGG/Opus voice-note decoding runs in pure Rust (`symphonia` + `rubato`) before local `whisper.cpp` transcription.
+
+### Which languages are supported in the Web Console and documentation?
+The embedded Web Console and visual guides support **10 languages**: **Português (BR)**, **English**, **Español**, **Français**, **Bahasa Indonesia**, **Basa Betawi** (Jakarta & Bekasi), **Basa Sunda** (Bandung & Bekasi), **Basa Jawa** (Surabaya), **Hata Batak Toba** (Medan), and **Bahasa Melayu** (Medan).
+
+### How do I connect Claude Desktop, Cursor, Antigravity, or n8n?
+AI coding/desktop agents connect via the native **MCP Server** (`softagon-relay mcp --stdio` or Streamable HTTP at `http://127.0.0.1:8091/mcp`). Workflow tools like **n8n**, Make, or custom backends connect via the versioned `/v1` REST API, HMAC-SHA256 webhooks, and `/openapi.json`.
 
 ---
 

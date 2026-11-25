@@ -13,12 +13,12 @@
     "userDocs": "Documentation"
   },
   "home": {
-    "eyebrow": "Passerelle WhatsApp · v0.3.4",
+    "eyebrow": "Passerelle WhatsApp · v{version}",
     "h1": "Que voulez-vous faire ?",
     "sub": "Saisissez un numéro WhatsApp pour le connecter. Ou recherchez une session, une action ou un événement.",
     "paletteLabel": "Barre de commandes",
     "inputLabel": "Numéro ou commande",
-    "placeholder": "Saisissez un numéro (ex. : 87 99200-5656) ou une commande…",
+    "placeholder": "Saisissez un numéro (ex. : 11 99999-0001) ou une commande…",
     "clear": "Effacer la recherche",
     "results": "Résultats",
     "sConnect": "Connecter",
@@ -67,7 +67,7 @@
     "hActions": "actions de l’élément",
     "hNew": "nouveau numéro",
     "hClear": "effacer",
-    "try1": "Essayez : 87 99200-5656",
+    "try1": "Essayez : 11 99999-0001",
     "try2": "Essayez : webhook"
   },
   "connect": {
@@ -203,7 +203,7 @@
     "storage": "Stockage des médias",
     "storageSub": "Local · ou S3 / R2 / MinIO",
     "local": "Local",
-    "dialog": "Actions de la session HermesPessoal",
+    "dialog": "Actions de la session support-sales",
     "searchActions": "Rechercher une action…",
     "close": "Fermer les actions",
     "noActions": "Aucune action trouvée.",
@@ -246,7 +246,15 @@
     "loggedOutTitle": "Session déconnectée par WhatsApp",
     "deviceRemovedDesc": "Cet appareil lié a été déconnecté par WhatsApp. Cela se produit lorsque l’appareil est supprimé sur le téléphone ou lorsque WhatsApp applique une restriction temporaire au compte. Vérifiez WhatsApp sur votre téléphone avant de réappairer — en cas de restriction active, attendez la fin du délai avant de reconnecter.",
     "restrictedDesc": "WhatsApp a appliqué une restriction temporaire à ce compte. Attendez la fin du délai affiché sur votre téléphone avant de reconnecter afin d’éviter tout blocage supplémentaire.",
-    "manualLogoutDesc": "Cette session a été déconnectée manuellement. Cliquez sur « Voir le QR / reconnecter » pour l’appairer à nouveau."
+    "manualLogoutDesc": "Cette session a été déconnectée manuellement. Cliquez sur « Voir le QR / reconnecter » pour l’appairer à nouveau.",
+    "status": {
+      "connected": "Connectée",
+      "disconnected": "Déconnectée",
+      "connecting": "Connexion",
+      "pairing_required": "Appairage requis",
+      "qr_ready": "QR prêt",
+      "logged_out": "Déconnectée"
+    }
   },
   "events": {
     "title": "Événements",
@@ -274,10 +282,10 @@
     "fail": "Échec après 8 tentatives",
     "sum": [
       "Audio de 0:18 transcrit · pt · 1,9 s",
-      "Audio reçu de +55 87 9•••-••12",
-      "Texte envoyé à +55 87 9•••-••40",
+      "Audio reçu de +55 11 9•••-••01",
+      "Texte envoyé à +55 11 9•••-••02",
       "Livré (✓✓) · msg_51c0…",
-      "Connectée · 558791508478@s.whatsapp.net",
+      "Connectée · 5511999990001@s.whatsapp.net",
       "Participant ajouté au groupe",
       "File pleine · nouvelle tentative planifiée"
     ]
