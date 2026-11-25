@@ -131,9 +131,31 @@ En-têtes envoyés à chaque livraison (**at-least-once** avec backoff exponenti
 Softagon Relay intègre un **serveur MCP (Model Context Protocol)** natif en Rust (`rmcp`) connecté directement à `RelayService` (sans dépendre de l'API HTTP REST) :
 
 - **STDIO (mode local par défaut) :** lancez `softagon-relay mcp` (ou `softagon-relay mcp --stdio`). Les logs sont dirigés vers `stderr` afin de préserver `stdout` pour JSON-RPC.
-- **Streamable HTTP :** lancez `softagon-relay mcp --http` ou activez `MCP_HTTP_ENABLED=true` avec `softagon-relay serve` — écoute **exclusivement sur `127.0.0.1:8091/mcp`** avec validation `Origin` (anti-DNS rebinding) et `Authorization: Bearer <RELAY_API_KEY>`.
+- **Streamable HTTP :** lancez `softagon-relay mcp --http` ou activez `MCP_HTTP_ENABLED=true` avec `softagon-relay serve` — écoute sur `127.0.0.1:8091/mcp` par défaut (dans Docker derrière `-p 127.0.0.1:8091:8091`, utilisez `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true`), toujours avec validation `Host`/`Origin` (anti-DNS rebinding) et `Authorization: Bearer <RELAY_API_KEY>`.
 - **Outils :** `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, ainsi que `logout_session` / `delete_session` (**désactivés par défaut**, nécessitant `MCP_ALLOW_DESTRUCTIVE=true` et `confirm: true`).
 - **Audit :** chaque appel MCP est enregistré dans `mcp_audit_log` dans SQLite.
+
+```json
+{
+  "mcpServers": {
+    "softagon-relay": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "relay-data:/data",
+        "-e", "RELAY_API_KEY",
+        "softagon/relay:latest",
+        "mcp", "--stdio"
+      ],
+      "env": {
+        "RELAY_API_KEY": "<collez-votre-cle-generee>"
+      }
+    }
+  }
+}
+```
+
+> Pour un usage **autonome** sans autre conteneur `softagon-relay` actif, ajoutez `"-e", "MCP_RESTORE_SESSIONS=true"` dans `args`. Avec le serveur principal en cours d'exécution, préférez **Streamable HTTP** dans le même conteneur (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
 ---
 

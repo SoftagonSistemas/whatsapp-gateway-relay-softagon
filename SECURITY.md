@@ -32,7 +32,8 @@ Because Softagon Relay holds live WhatsApp Web session credentials:
 4. **Keep `DOCS_PUBLIC=false` in production** unless you intentionally want `/docs`, `/openapi.json`, and `/openapi.yaml` reachable without a Bearer token.
 5. **Local MCP Server safety:**
    - Prefer **STDIO** (`mcp --stdio`) for local desktop AI agents.
-   - **Streamable HTTP** (`mcp --http` / `MCP_HTTP_ENABLED=true`) refuses to bind to non-loopback addresses (`0.0.0.0` is blocked), enforces `Origin` validation to mitigate DNS rebinding, and requires `Authorization: Bearer <RELAY_API_KEY>`.
+   - **Streamable HTTP** (`mcp --http` / `MCP_HTTP_ENABLED=true`) refuses to bind to non-loopback addresses by default (`0.0.0.0` is blocked), enforces loopback `Host` & `Origin` validation to mitigate DNS rebinding, and requires `Authorization: Bearer <RELAY_API_KEY>`.
+   - When opting in to `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true` inside Docker (behind `-p 127.0.0.1:8091:8091` on the host), keep in mind that **other containers attached to the same Docker network can reach port `8091`** — inside that bridge network, `RELAY_API_KEY` (plus `Host`/`Origin` checks) is the actual access boundary.
    - Keep `MCP_ALLOW_DESTRUCTIVE=false` (default) so AI agents cannot unlink or delete WhatsApp sessions.
    - Review `mcp_audit_log` in `/data/relay.db` for an audit trail of every MCP tool invocation.
 6. **Verify Webhook HMAC Signatures:** Always validate `X-Relay-Signature` (`HMAC-SHA256(secret, "{X-Relay-Timestamp}.{raw_body}")`) with constant-time comparison and reject stale timestamps.

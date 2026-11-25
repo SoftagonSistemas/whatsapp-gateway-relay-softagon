@@ -131,9 +131,31 @@ Cabeceras en cada entrega (**at-least-once** con backoff exponencial + jitter):
 Softagon Relay incluye un **MCP Server (Model Context Protocol)** nativo en Rust (`rmcp`) conectado directamente a `RelayService` (sin depender del HTTP REST):
 
 - **STDIO (modo local predeterminado):** ejecuta `softagon-relay mcp` (o `softagon-relay mcp --stdio`). Los logs se envían a `stderr` para mantener `stdout` limpio para JSON-RPC.
-- **Streamable HTTP:** ejecuta `softagon-relay mcp --http` o activa `MCP_HTTP_ENABLED=true` junto con `softagon-relay serve` — escucha **exclusivamente en `127.0.0.1:8091/mcp`** con validación de `Origin` (anti-DNS rebinding) y `Authorization: Bearer <RELAY_API_KEY>`.
+- **Streamable HTTP:** ejecuta `softagon-relay mcp --http` o activa `MCP_HTTP_ENABLED=true` junto con `softagon-relay serve` — escucha en `127.0.0.1:8091/mcp` por defecto (en Docker detrás de `-p 127.0.0.1:8091:8091`, usa `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true`), siempre con validación de `Host`/`Origin` (anti-DNS rebinding) y `Authorization: Bearer <RELAY_API_KEY>`.
 - **Herramientas:** `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message` y (deshabilitadas por defecto) `logout_session` / `delete_session` (`MCP_ALLOW_DESTRUCTIVE=true` y `confirm: true`).
 - **Auditoría:** cada invocación MCP se registra en `mcp_audit_log` en SQLite.
+
+```json
+{
+  "mcpServers": {
+    "softagon-relay": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "relay-data:/data",
+        "-e", "RELAY_API_KEY",
+        "softagon/relay:latest",
+        "mcp", "--stdio"
+      ],
+      "env": {
+        "RELAY_API_KEY": "<pega-tu-clave-generada>"
+      }
+    }
+  }
+}
+```
+
+> Para uso **standalone** sin otro contenedor `softagon-relay` en ejecución, añade `"-e", "MCP_RESTORE_SESSIONS=true"` en `args`. Con el servidor principal activo, prefiere **Streamable HTTP** dentro del mismo contenedor (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
 ---
 

@@ -131,7 +131,7 @@ Headers on every delivery (**at-least-once** with exponential backoff + jitter):
 Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** powered by `rmcp`, calling the shared `RelayService` directly (no HTTP REST dependency):
 
 - **STDIO (default local mode):** run `softagon-relay mcp` (or `softagon-relay mcp --stdio`). All logs are routed to `stderr` so `stdout` stays clean JSON-RPC.
-- **Streamable HTTP:** run `softagon-relay mcp --http` or enable `MCP_HTTP_ENABLED=true` alongside `softagon-relay serve` — binds **exclusively to `127.0.0.1:8091/mcp`** with strict `Origin` validation (anti-DNS rebinding) and `Authorization: Bearer <RELAY_API_KEY>`.
+- **Streamable HTTP:** run `softagon-relay mcp --http` or enable `MCP_HTTP_ENABLED=true` alongside `softagon-relay serve` — binds to `127.0.0.1:8091/mcp` by default (in Docker behind `-p 127.0.0.1:8091:8091`, set `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true`), always enforcing loopback `Host`/`Origin` validation (anti-DNS rebinding) and `Authorization: Bearer <RELAY_API_KEY>`.
 - **Tools:** `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, plus destructive tools `logout_session` / `delete_session` (**disabled by default** unless `MCP_ALLOW_DESTRUCTIVE=true` and `confirm: true`).
 - **Audit trail:** every MCP tool invocation is persisted to `mcp_audit_log` in SQLite.
 
