@@ -77,6 +77,18 @@ fn config_rejects_placeholder_api_key_and_invalid_s3() {
     });
     assert!(err.is_err());
 
+    let err_readme_placeholder = AppConfig::from_lookup(|k| match k {
+        "RELAY_API_KEY" => Some("change-me-to-a-strong-secret".to_string()),
+        _ => None,
+    });
+    assert!(err_readme_placeholder.is_err());
+
+    let err_short = AppConfig::from_lookup(|k| match k {
+        "RELAY_API_KEY" => Some("short-key".to_string()),
+        _ => None,
+    });
+    assert!(err_short.is_err());
+
     let err_s3 = AppConfig::from_lookup(|k| match k {
         "RELAY_API_KEY" => Some("strong-secret-key".to_string()),
         "MEDIA_STORAGE" => Some("s3".to_string()),

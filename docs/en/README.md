@@ -16,12 +16,12 @@
 ## 1. Quick Start (Docker)
 
 ```bash
-docker run -d \
+KEY="$(openssl rand -hex 32)" && echo "RELAY_API_KEY=$KEY" && docker run -d \
   --name softagon-relay \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 127.0.0.1:8080:8080 \
   -v relay-data:/data \
-  -e RELAY_API_KEY="replace-with-a-strong-secret" \
+  -e RELAY_API_KEY="$KEY" \
   softagon/relay:latest
 ```
 
@@ -139,12 +139,14 @@ Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** 
 {
   "mcpServers": {
     "softagon-relay": {
-      "command": "softagon-relay",
-      "args": ["mcp", "--stdio"],
-      "env": {
-        "RELAY_API_KEY": "your-secret-key",
-        "DATA_DIR": "/path/to/data"
-      }
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "relay-data:/data",
+        "-e", "RELAY_API_KEY=your-generated-64-char-hex-key",
+        "softagon/relay:latest",
+        "mcp", "--stdio"
+      ]
     }
   }
 }

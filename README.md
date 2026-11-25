@@ -1,20 +1,24 @@
 # Softagon Relay
 
-**Self-hosted WhatsApp Web gateway, embedded Web Console, and local MCP Server in a single Rust container (~55 MB).**
+**Connect your apps and local AI agents to WhatsApp without spinning up Chromium, Node.js, PostgreSQL, Redis, or external transcription APIs.**
+
+Self-hosted WhatsApp Web gateway, embedded Web Console, and native local MCP Server in a single Rust container (~55 MB).
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/SoftagonSistemas/whatsapp-gateway-relay-softagon)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases)
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-softagon%2Frelay-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/softagon/relay)
 
-> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Changelog & Roadmap](CHANGELOG.md)
+> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Quick Start (One-Line Docker Run)
 
 ```bash
-docker run -d --name softagon-relay --restart unless-stopped -p 8080:8080 -v relay-data:/data -e RELAY_API_KEY="change-me-to-a-strong-secret" softagon/relay:latest
+KEY="$(openssl rand -hex 32)" && echo "RELAY_API_KEY=$KEY" && docker run -d --name softagon-relay --restart unless-stopped -p 127.0.0.1:8080:8080 -v relay-data:/data -e RELAY_API_KEY="$KEY" softagon/relay:latest
 ```
 
-Open **`http://localhost:8080/console`** (or `/manager`), paste your `RELAY_API_KEY`, type a phone number, and scan the live SVG QR code.
+> Binds to `127.0.0.1:8080` by default and generates a random 256-bit key. Known placeholder keys and keys shorter than 16 characters are rejected at startup.
+
+Open **`http://localhost:8080/console`** (or `/manager`), paste the printed `RELAY_API_KEY`, type a phone number, and scan the live SVG QR code.
 
 ![Softagon Relay Web Console walkthrough](docs/images/demo.gif)
 
@@ -36,35 +40,41 @@ Open **`http://localhost:8080/console`** (or `/manager`), paste your `RELAY_API_
 
 ## Measured Resource Footprint (Real Scenarios)
 
-Measured on `softagon/relay:0.3.0` (`linux/amd64`, Docker 29.1.3, Linux host):
+Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compiled with `--features whisper`) using `docker stats --no-stream` via [`scripts/monitor.sh`](scripts/monitor.sh) on Docker 29.1.3 / Linux (x86_64):
 
 | Scenario | RAM | CPU | Notes |
 |---|---:|---:|---|
-| **Boot / Idle (0 paired sessions)** | ~4–5 MiB | ~0.05% | Before pairing any WhatsApp session |
-| **1 paired WhatsApp session (steady state)** | **~38 MiB** | **~0.1–0.2%** | Active WebSocket connection, receiving & sending messages |
-| **Active voice-note transcription (`whisper` base)** | **~212 MiB** | Burst | Model loads lazily on first audio and unloads after `180s` idle |
-| **Docker image size (`linux/amd64`)** | **55.0 MB** | — | Includes Rust binary, Console SPA, SQLite, Opus decoder, `whisper.cpp` |
+| **Boot / Idle (0 paired sessions)** | ~4–5 MiB | ~0.05% | Measured right after container start, before pairing |
+| **1 paired WhatsApp session (steady state)** | **~38 MiB** | **~0.1–0.2%** | Measured with 1 real WhatsApp account connected via WebSocket |
+| **Active voice-note transcription (`whisper` base)** | **~212–338 MiB** | Burst | Model loads lazily on incoming voice note and unloads after `180s` idle (~100 MiB RSS after unload) |
+| **Docker image size (`linux/amd64`)** | **55.0 MB** | — | `docker image inspect` (`Size`): Rust binary, Console SPA, SQLite, Opus decoder, `whisper.cpp` |
 
 > *Architecture note:* Prebuilt Docker images currently publish **`linux/amd64`**. Multi-arch **`linux/arm64`** support is tracked on our roadmap (you can also build locally on ARM64 with `docker build`).
 
 ---
 
-## Local MCP Server Example (STDIO)
+## Local MCP Server Example (STDIO via Docker)
+
+Works out of the box with the official Docker image (no separate binary download required):
 
 ```json
 {
   "mcpServers": {
     "softagon-relay": {
-      "command": "softagon-relay",
-      "args": ["mcp", "--stdio"],
-      "env": {
-        "RELAY_API_KEY": "your-strong-secret",
-        "DATA_DIR": "/path/to/relay-data"
-      }
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "relay-data:/data",
+        "-e", "RELAY_API_KEY=your-generated-64-char-hex-key",
+        "softagon/relay:latest",
+        "mcp", "--stdio"
+      ]
     }
   }
 }
 ```
+
+Or enable **Streamable HTTP** alongside the HTTP API (`MCP_HTTP_ENABLED=true`, bound strictly to `127.0.0.1:8091/mcp` with `Origin` validation and Bearer auth). If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries are also attached to [GitHub Releases](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases).
 
 Tools exposed: `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, and (disabled unless `MCP_ALLOW_DESTRUCTIVE=true` + `confirm: true`) `logout_session` / `delete_session`.
 

@@ -16,12 +16,12 @@ O **Softagon Relay** é um **gateway WhatsApp Web open-source e self-hosted** de
 ## 1. Instalação Rápida (Docker)
 
 ```bash
-docker run -d \
+KEY="$(openssl rand -hex 32)" && echo "RELAY_API_KEY=$KEY" && docker run -d \
   --name softagon-relay \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 127.0.0.1:8080:8080 \
   -v relay-data:/data \
-  -e RELAY_API_KEY="troque-por-uma-chave-forte" \
+  -e RELAY_API_KEY="$KEY" \
   softagon/relay:latest
 ```
 
@@ -139,12 +139,14 @@ O Softagon Relay inclui um **MCP Server (Model Context Protocol)** nativo em Rus
 {
   "mcpServers": {
     "softagon-relay": {
-      "command": "softagon-relay",
-      "args": ["mcp", "--stdio"],
-      "env": {
-        "RELAY_API_KEY": "sua-chave-aqui",
-        "DATA_DIR": "/caminho/para/data"
-      }
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "relay-data:/data",
+        "-e", "RELAY_API_KEY=sua-chave-gerada-com-openssl",
+        "softagon/relay:latest",
+        "mcp", "--stdio"
+      ]
     }
   }
 }

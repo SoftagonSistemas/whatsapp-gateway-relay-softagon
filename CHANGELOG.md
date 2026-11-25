@@ -6,6 +6,16 @@ Todas as mudanças relevantes do **Softagon Relay** são documentadas neste arqu
 
 ---
 
+## [0.3.1] — 2026-11-25
+
+### Segurança & Comunidade
+- **Validação endurecida de `RELAY_API_KEY`:** o servidor agora recusa iniciar com chaves fracas (< 16 caracteres) ou placeholders conhecidos de documentação (como `change-me-to-a-strong-secret`, `change-this-before-starting`, `replace-with-a-strong-random-key`, etc.).
+- **Quickstart seguro:** exemplos de `docker run` atualizados para gerar chave aleatória de 256 bits (`openssl rand -hex 32`) e escutar em `127.0.0.1:8080` por padrão.
+- **MCP STDIO via Docker:** exemplo pronto usando `docker run -i --rm ... softagon/relay:latest mcp --stdio` (e binário `linux-x86_64` anexado à GitHub Release).
+- **Licença & Governança:** `LICENSE` verbatim oficial **Apache-2.0**, `CONTRIBUTING.md`, `SECURITY.md`, GitHub Discussions habilitado, `good first issue`s abertas e imagem de preview social (`docs/images/social-preview.png`).
+
+---
+
 ## [0.3.0] — 2026-11-25
 
 ### Adicionado — Servidor MCP (Model Context Protocol) Nativo para Agentes de IA

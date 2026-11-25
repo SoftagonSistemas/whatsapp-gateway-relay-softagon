@@ -2,7 +2,23 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-const PLACEHOLDER_API_KEY: &str = "change-this-before-starting";
+const DISALLOWED_API_KEYS: &[&str] = &[
+    "change-this-before-starting",
+    "change-me-to-a-strong-secret",
+    "replace-with-a-strong-random-key",
+    "replace-with-a-strong-secret",
+    "troque-por-uma-chave-forte",
+    "cambia-por-una-clave-segura",
+    "remplacez-par-une-cle-forte",
+    "your-strong-secret",
+    "sua-chave-aqui",
+    "changeme",
+    "secret",
+    "password",
+    "admin",
+    "test",
+];
+const MIN_API_KEY_LEN: usize = 16;
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -225,12 +241,22 @@ impl AppConfig {
             .filter(|v| !v.is_empty())
             .ok_or(ConfigError::Missing("RELAY_API_KEY"))?;
 
-        if api_key == PLACEHOLDER_API_KEY {
+        let normalized_key = api_key.to_ascii_lowercase();
+        if DISALLOWED_API_KEYS.contains(&normalized_key.as_str()) {
             return Err(ConfigError::Invalid {
                 key: "RELAY_API_KEY",
-                reason:
-                    "refusing to start with example placeholder key 'change-this-before-starting'"
-                        .into(),
+                reason: format!(
+                    "refusing to start with known example/placeholder key '{api_key}'; generate a random key with `openssl rand -hex 32`"
+                ),
+            });
+        }
+        if api_key.len() < MIN_API_KEY_LEN {
+            return Err(ConfigError::Invalid {
+                key: "RELAY_API_KEY",
+                reason: format!(
+                    "key is too short ({} chars, minimum {MIN_API_KEY_LEN}); generate a random key with `openssl rand -hex 32`",
+                    api_key.len()
+                ),
             });
         }
 

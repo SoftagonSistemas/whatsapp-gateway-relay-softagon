@@ -14,10 +14,12 @@
 ## Quick Start (One-Line Docker Run)
 
 ```bash
-docker run -d --name softagon-relay --restart unless-stopped -p 8080:8080 -v relay-data:/data -e RELAY_API_KEY="replace-with-a-strong-random-key" softagon/relay:latest
+KEY="$(openssl rand -hex 32)" && echo "RELAY_API_KEY=$KEY" && docker run -d --name softagon-relay --restart unless-stopped -p 127.0.0.1:8080:8080 -v relay-data:/data -e RELAY_API_KEY="$KEY" softagon/relay:latest
 ```
 
-Open **`http://localhost:8080/console`** and sign in with your `RELAY_API_KEY`, or check health:
+> Binds to `127.0.0.1:8080` and generates a random 256-bit key. Known placeholder keys and keys shorter than 16 characters are rejected at startup.
+
+Open **`http://localhost:8080/console`** and sign in with the printed `RELAY_API_KEY`, or check health:
 
 ```bash
 curl http://localhost:8080/v1/health
@@ -27,14 +29,14 @@ curl http://localhost:8080/v1/health
 
 ## Measured Container Footprint (Real Scenarios)
 
-Measurements recorded on `softagon/relay:0.3.0` (`linux/amd64`, compiled with `--features whisper`, Docker 29.1.3, Linux host):
+Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compiled with `--features whisper`) using `docker stats --no-stream` on Docker 29.1.3 / Linux (x86_64):
 
 | Scenario | Measured Value | Notes |
 |---|---|---|
-| **Image Size (`linux/amd64`)** | **55.0 MB** | Includes Rust binary, Vue 3 Console, SQLite, S3 client, Opus decoder, `rmcp`, and `whisper.cpp` |
-| **Boot / Idle (0 paired sessions)** | **~4–5 MiB RAM** | Single Tokio/Axum process before connecting any WhatsApp session |
-| **1 Paired WhatsApp Session (steady state)** | **~38 MiB RAM · ~0.1–0.2% CPU** | Live WhatsApp WebSocket connected, receiving & sending messages |
-| **During Whisper `base` Transcription** | **~212 MiB RAM** | Model loads lazily on first voice note and unloads automatically after `TRANSCRIPTION_IDLE_UNLOAD_SECONDS` (default: 180s) |
+| **Image Size (`linux/amd64`)** | **55.0 MB** | `docker image inspect`: Rust binary, Vue 3 Console, SQLite, S3 client, Opus decoder, `rmcp`, and `whisper.cpp` |
+| **Boot / Idle (0 paired sessions)** | **~4–5 MiB RAM** | Right after startup, before pairing any WhatsApp session |
+| **1 Paired WhatsApp Session (steady state)** | **~38 MiB RAM · ~0.1–0.2% CPU** | 1 real WhatsApp account connected via WebSocket |
+| **During Whisper `base` Transcription** | **~212–338 MiB RAM** | Model loads lazily on incoming voice note and unloads after `180s` idle (~100 MiB RSS after unload) |
 | **External Databases Required** | **0** | Embedded SQLite (WAL); S3/R2/MinIO is optional |
 
 ---
@@ -44,7 +46,7 @@ Measurements recorded on `softagon/relay:0.3.0` (`linux/amd64`, compiled with `-
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.0
+    image: softagon/relay:0.3.1
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -82,9 +84,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.0`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.1`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
-| `0.3.0` | `linux/amd64` | Native MCP Server (STDIO + loopback Streamable HTTP), `/console`, `/openapi.json` |
+| `0.3.1` | `linux/amd64` | Strict API key validation, MCP Server (STDIO + loopback Streamable HTTP), `/console`, `/openapi.json` |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
 
