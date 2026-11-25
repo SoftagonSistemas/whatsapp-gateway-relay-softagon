@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod console;
 pub mod docs;
 pub mod error;
 pub mod routes;
@@ -45,8 +46,16 @@ pub fn build_router(state: AppState) -> Router {
             get(routes::sessions::get_qr),
         )
         .route(
+            "/v1/sessions/{session_id}/qr.svg",
+            get(routes::sessions::get_qr_svg),
+        )
+        .route(
             "/v1/sessions/{session_id}/status",
             get(routes::sessions::get_status),
+        )
+        .route(
+            "/v1/sessions/{session_id}/reconnect",
+            post(routes::sessions::reconnect_session),
         )
         .route(
             "/v1/sessions/{session_id}/logout",
@@ -92,7 +101,14 @@ pub fn build_router(state: AppState) -> Router {
         auth::require_bearer_auth,
     ));
 
-    let mut public = Router::new().route("/v1/health", get(routes::health::health));
+    let mut public = Router::new()
+        .route("/", get(console::redirect_to_console))
+        .route("/manager", get(console::redirect_to_console))
+        .route("/manager/{*path}", get(console::redirect_to_console))
+        .route("/console", get(console::redirect_to_console))
+        .route("/console/", get(console::console_index))
+        .route("/console/{*path}", get(console::console_fallback))
+        .route("/v1/health", get(routes::health::health));
     if state.config.docs_enabled && state.config.docs_public {
         public = public
             .route("/docs", get(docs::scalar_docs))

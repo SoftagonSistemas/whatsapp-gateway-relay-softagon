@@ -1,5 +1,13 @@
 # syntax=docker/dockerfile:1.7
 
+FROM oven/bun:1-alpine AS frontend
+
+WORKDIR /app/console
+COPY console/package.json console/package-lock.json* ./
+RUN bun install --frozen-lockfile || bun install
+COPY console ./
+RUN bun run build
+
 FROM rust:1.94-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,6 +23,7 @@ WORKDIR /app
 COPY Cargo.toml Cargo.lock* rust-toolchain.toml ./
 COPY migrations ./migrations
 COPY openapi ./openapi
+COPY --from=frontend /app/console/dist ./console/dist
 COPY src ./src
 
 RUN cargo build --release --features whisper

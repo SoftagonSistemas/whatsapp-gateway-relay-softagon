@@ -400,6 +400,53 @@ async fn session_lifecycle_idempotent_send_and_signed_webhook_delivery() {
     assert_eq!(status_del, StatusCode::NO_CONTENT);
 }
 
+#[tokio::test]
+async fn console_spa_serves_and_redirects_root_and_manager() {
+    let app = TestHarness::new(false).await;
+
+    let (status_root, _) = app
+        .request(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await;
+    assert_eq!(status_root, StatusCode::PERMANENT_REDIRECT);
+
+    let (status_mgr, _) = app
+        .request(
+            Request::builder()
+                .uri("/manager")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_mgr, StatusCode::PERMANENT_REDIRECT);
+
+    let (status_console, body_console) = app
+        .request(
+            Request::builder()
+                .uri("/console/")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_console, StatusCode::OK);
+    assert!(
+        body_console
+            .as_str()
+            .unwrap_or("")
+            .contains("<div id=\"app\">")
+    );
+
+    let (status_spa, body_spa) = app
+        .request(
+            Request::builder()
+                .uri("/console/login")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_spa, StatusCode::OK);
+    assert!(body_spa.as_str().unwrap_or("").contains("<div id=\"app\">"));
+}
+
 #[test]
 fn openapi_spec_is_valid_3_2_1_yaml() {
     let doc: serde_yaml_ng::Value = serde_yaml_ng::from_str(OPENAPI_SPEC_YAML).expect("valid YAML");

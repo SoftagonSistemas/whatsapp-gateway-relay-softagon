@@ -217,6 +217,24 @@ impl SessionManager {
         Ok((rec, live_status))
     }
 
+    pub async fn reconnect_session(&self, session_id: &str) -> Result<SessionRecord, SessionError> {
+        let rec = self.get_session(session_id).await?;
+        let _ = self.engine.stop_session(session_id).await;
+        self.qr_cache.write().await.remove(session_id);
+        self.db
+            .update_session_status(
+                session_id,
+                SessionConnectionState::Connecting.as_str(),
+                None,
+                None,
+            )
+            .await?;
+        self.engine
+            .start_session(session_id, self.event_tx.clone())
+            .await?;
+        self.get_session(&rec.id).await
+    }
+
     pub async fn logout_session(&self, session_id: &str) -> Result<(), SessionError> {
         let _ = self.get_session(session_id).await?;
         let _ = self.engine.logout_session(session_id).await;

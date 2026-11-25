@@ -1,6 +1,9 @@
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, StatusCode, header};
+use axum::response::{IntoResponse, Response};
+use qrcode::QrCode;
+use qrcode::render::svg;
 use serde::{Deserialize, Serialize};
 
 use crate::api::AppState;
@@ -71,6 +74,50 @@ pub async fn get_qr(
 ) -> Result<Json<SessionQrResponse>, ApiError> {
     let qr = state.sessions.get_qr(&session_id).await?;
     Ok(Json(SessionQrResponse { session_id, qr }))
+}
+
+pub async fn get_qr_svg(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+) -> Result<Response, ApiError> {
+    let Some(qr) = state.sessions.get_qr(&session_id).await? else {
+        return Err(ApiError::NotFound(
+            "no active QR code for this session (already connected or expired)".into(),
+        ));
+    };
+    let code = QrCode::new(qr.code.as_bytes())
+        .map_err(|e| ApiError::Internal(format!("qr render error: {e}")))?;
+    let svg_str = code
+        .render::<svg::Color>()
+        .min_dimensions(280, 280)
+        .quiet_zone(true)
+        .dark_color(svg::Color("#0f172a"))
+        .light_color(svg::Color("#ffffff"))
+        .build();
+
+    Ok((
+        StatusCode::OK,
+        [
+            (
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("image/svg+xml; charset=utf-8"),
+            ),
+            (
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("no-store, max-age=0"),
+            ),
+        ],
+        svg_str,
+    )
+        .into_response())
+}
+
+pub async fn reconnect_session(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+) -> Result<Json<SessionRecord>, ApiError> {
+    let session = state.sessions.reconnect_session(&session_id).await?;
+    Ok(Json(session))
 }
 
 pub async fn get_status(

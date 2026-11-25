@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "[pre-push] Building console SPA..."
+(cd console && npm run build)
+
 echo "[pre-push] Checking formatting..."
 cargo fmt --check
 

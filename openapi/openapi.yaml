@@ -119,6 +119,42 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/qr.svg:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: getSessionQrSvg
+      summary: Obtain pairing QR code rendered as SVG
+      responses:
+        "200":
+          description: Current pairing QR code SVG image
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/reconnect:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Sessions]
+      operationId: reconnectSession
+      summary: Restart a session and generate a fresh QR code cycle
+      responses:
+        "200":
+          description: Session reconnecting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/sessions/{session_id}/status:
     parameters:
       - $ref: "#/components/parameters/SessionId"

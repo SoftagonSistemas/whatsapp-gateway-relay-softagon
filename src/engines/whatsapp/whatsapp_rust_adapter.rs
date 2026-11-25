@@ -91,9 +91,18 @@ impl WhatsAppEngine for WhatsAppRustEngine {
         event_tx: mpsc::Sender<EngineEvent>,
     ) -> Result<(), EngineError> {
         {
-            let guard = self.sessions.read().await;
-            if guard.contains_key(session_id) {
-                return Ok(());
+            let mut guard = self.sessions.write().await;
+            if let Some(existing) = guard.get(session_id) {
+                let st = *existing.status.read().await;
+                if st == SessionConnectionState::Connected
+                    || st == SessionConnectionState::PairingRequired
+                    || st == SessionConnectionState::Connecting
+                {
+                    return Ok(());
+                }
+            }
+            if let Some(old) = guard.remove(session_id) {
+                old.handle.shutdown().await;
             }
         }
 
@@ -380,6 +389,19 @@ async fn handle_wa_event(
                     phone_number: Some(phone),
                     jid: Some(jid_str),
                     reason: None,
+                })
+                .await;
+        }
+        Event::PairingQrCodesExhausted(_) => {
+            *status_cell.write().await = SessionConnectionState::Disconnected;
+            *qr_cell.write().await = None;
+            let _ = tx
+                .send(EngineEvent::StatusChanged {
+                    session_id: session_id.to_string(),
+                    status: SessionConnectionState::Disconnected,
+                    phone_number: None,
+                    jid: None,
+                    reason: Some("qr_expired".into()),
                 })
                 .await;
         }
