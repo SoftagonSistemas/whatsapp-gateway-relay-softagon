@@ -125,7 +125,18 @@ En-têtes envoyés à chaque livraison (**at-least-once** avec backoff exponenti
 
 ---
 
-## 6. Support et Contact
+## 6. Serveur MCP Local pour Agents IA (`v0.3.0`)
+
+Softagon Relay intègre un **serveur MCP (Model Context Protocol)** natif en Rust (`rmcp`) connecté directement à `RelayService` (sans dépendre de l'API HTTP REST) :
+
+- **STDIO (mode local par défaut) :** lancez `softagon-relay mcp` (ou `softagon-relay mcp --stdio`). Les logs sont dirigés vers `stderr` afin de préserver `stdout` pour JSON-RPC.
+- **Streamable HTTP :** lancez `softagon-relay mcp --http` ou activez `MCP_HTTP_ENABLED=true` avec `softagon-relay serve` — écoute **exclusivement sur `127.0.0.1:8091/mcp`** avec validation `Origin` (anti-DNS rebinding) et `Authorization: Bearer <RELAY_API_KEY>`.
+- **Outils :** `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, ainsi que `logout_session` / `delete_session` (**désactivés par défaut**, nécessitant `MCP_ALLOW_DESTRUCTIVE=true` et `confirm: true`).
+- **Audit :** chaque appel MCP est enregistré dans `mcp_audit_log` dans SQLite.
+
+---
+
+## 7. Support et Contact
 
 Besoin d'un support dédié, d'intégrations sur mesure ou de conseil en IA et messagerie ?  
 Visitez **[softagon.com.br](https://softagon.com.br)** et contactez l'équipe de **Softagon Sistemas**.

@@ -32,6 +32,49 @@ pub struct AppConfig {
     pub media: MediaConfig,
     pub transcription: TranscriptionConfig,
     pub webhooks: WebhookConfig,
+    pub mcp: McpConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct McpConfig {
+    pub http_enabled: bool,
+    pub http_host: String,
+    pub http_port: u16,
+    pub allow_destructive: bool,
+    pub allowed_origins: Vec<String>,
+}
+
+impl Default for McpConfig {
+    fn default() -> Self {
+        Self {
+            http_enabled: false,
+            http_host: "127.0.0.1".to_string(),
+            http_port: 8091,
+            allow_destructive: false,
+            allowed_origins: Vec::new(),
+        }
+    }
+}
+
+impl McpConfig {
+    pub fn bind_addr(&self) -> Result<SocketAddr, ConfigError> {
+        let addr: SocketAddr = format!("{}:{}", self.http_host, self.http_port)
+            .parse()
+            .map_err(|e| ConfigError::Invalid {
+                key: "MCP_HTTP_HOST",
+                reason: format!("invalid socket address: {e}"),
+            })?;
+        if !addr.ip().is_loopback() {
+            return Err(ConfigError::Invalid {
+                key: "MCP_HTTP_HOST",
+                reason: format!(
+                    "refusing to bind MCP HTTP server to non-loopback address '{}'; use 127.0.0.1 or ::1",
+                    self.http_host
+                ),
+            });
+        }
+        Ok(addr)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -326,6 +369,30 @@ impl AppConfig {
             });
         }
 
+        let mcp_http_enabled = parse_bool(&lookup, "MCP_HTTP_ENABLED", false)?;
+        let mcp_http_host = lookup_or(&lookup, "MCP_HTTP_HOST", "127.0.0.1");
+        let mcp_http_port = parse_u16(&lookup, "MCP_HTTP_PORT", 8091)?;
+        let mcp_allow_destructive = parse_bool(&lookup, "MCP_ALLOW_DESTRUCTIVE", false)?;
+        let mcp_allowed_origins = lookup("MCP_ALLOWED_ORIGINS")
+            .map(|raw| {
+                raw.split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
+        let mcp = McpConfig {
+            http_enabled: mcp_http_enabled,
+            http_host: mcp_http_host,
+            http_port: mcp_http_port,
+            allow_destructive: mcp_allow_destructive,
+            allowed_origins: mcp_allowed_origins,
+        };
+        if mcp.http_enabled {
+            mcp.bind_addr()?;
+        }
+
         Ok(Self {
             app_host,
             app_port,
@@ -362,6 +429,7 @@ impl AppConfig {
                 max_attempts: webhook_max_attempts,
                 backoff_base_seconds: webhook_backoff_base,
             },
+            mcp,
         })
     }
 

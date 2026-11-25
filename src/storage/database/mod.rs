@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod idempotency;
 pub mod media;
 pub mod messages;

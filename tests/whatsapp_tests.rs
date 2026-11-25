@@ -5,8 +5,8 @@ use tempfile::TempDir;
 use tokio::sync::{Notify, watch};
 
 use softagon_relay::config::{
-    AppConfig, JournalMode, MediaBackendConfig, MediaConfig, SqliteConfig, TranscriptionConfig,
-    WebhookConfig, WhisperModel,
+    AppConfig, JournalMode, McpConfig, MediaBackendConfig, MediaConfig, SqliteConfig,
+    TranscriptionConfig, WebhookConfig, WhisperModel,
 };
 use softagon_relay::core::events::EventBus;
 use softagon_relay::core::queue::TranscriptionQueue;
@@ -60,6 +60,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             max_attempts: 3,
             backoff_base_seconds: 1,
         },
+        mcp: McpConfig::default(),
     };
     config.ensure_directories().unwrap();
 

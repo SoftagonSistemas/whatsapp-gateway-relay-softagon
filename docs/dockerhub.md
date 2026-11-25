@@ -85,7 +85,7 @@ Expected response:
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.2.1
+    image: softagon/relay:0.3.0
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -169,9 +169,9 @@ Every webhook request includes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.2.1`) |
-| `0.2` | `linux/amd64` | Latest `0.2.x` release |
-| `0.2.1` | `linux/amd64` | Pinned immutable release (includes `/console`, `/openapi.json`, and 4-lang docs) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.0`) |
+| `0.3` | `linux/amd64` | Latest `0.3.x` release |
+| `0.3.0` | `linux/amd64` | Native MCP Server (STDIO + loopback Streamable HTTP), `/console`, `/openapi.json` |
 
 ---
 
@@ -221,6 +221,8 @@ All routes except `GET /v1/health` require `Authorization: Bearer <RELAY_API_KEY
 | `TRANSCRIPTION_THREADS` / `TRANSCRIPTION_WORKERS` | `1` / `1` | Inference threads and concurrent workers |
 | `TRANSCRIPTION_MAX_QUEUE` / `TRANSCRIPTION_TIMEOUT_SECONDS` | `20` / `180` | Queue bound and per-job timeout |
 | `WEBHOOK_DELIVERY_TIMEOUT_SECONDS` / `WEBHOOK_MAX_ATTEMPTS` / `WEBHOOK_BACKOFF_BASE_SECONDS` | `10` / `8` / `2` | Webhook HTTP timeout and retry backoff policy |
+| `MCP_HTTP_ENABLED` / `MCP_HTTP_HOST` / `MCP_HTTP_PORT` | `false` / `127.0.0.1` / `8091` | Enable local MCP Streamable HTTP server (`/mcp`, loopback-only) |
+| `MCP_ALLOW_DESTRUCTIVE` / `MCP_ALLOWED_ORIGINS` | `false` / *(loopback)* | Allow destructive MCP tools (`logout_session`, `delete_session`) and extra Origins |
 
 ---
 

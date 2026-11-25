@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use tokio::net::TcpListener;
 use tokio::sync::{Notify, watch};
+use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -9,27 +10,68 @@ use softagon_relay::api::{AppState, build_router};
 use softagon_relay::config::AppConfig;
 use softagon_relay::core::events::EventBus;
 use softagon_relay::core::queue::TranscriptionQueue;
+use softagon_relay::core::service::RelayService;
 use softagon_relay::core::sessions::SessionManager;
 use softagon_relay::core::webhooks::{WebhookDispatcher, WebhookService};
 use softagon_relay::engines::whatsapp::WhatsAppEngine;
 use softagon_relay::engines::whatsapp::whatsapp_rust_adapter::WhatsAppRustEngine;
+use softagon_relay::mcp;
 use softagon_relay::storage::database::Database;
 use softagon_relay::storage::media::{MediaStorage, ObjectStoreMediaStorage};
 use softagon_relay::transcription::whisper::build_transcription_engine;
 use softagon_relay::transcription::worker::TranscriptionWorkerPool;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RunMode {
+    Serve,
+    McpStdio,
+    McpHttp,
+}
+
+fn parse_cli_mode() -> anyhow::Result<RunMode> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        None | Some("serve") => Ok(RunMode::Serve),
+        Some("mcp") => match args.get(1).map(String::as_str) {
+            None | Some("--stdio") => Ok(RunMode::McpStdio),
+            Some("--http") => Ok(RunMode::McpHttp),
+            Some(flag) => {
+                anyhow::bail!("unknown mcp option '{flag}'; expected --stdio (default) or --http")
+            }
+        },
+        Some("--help" | "-h" | "help") => {
+            eprintln!(
+                "Softagon Relay v{}\n\nUSAGE:\n  softagon-relay [serve]          Run REST API + Web Console (and optional MCP HTTP if MCP_HTTP_ENABLED=true)\n  softagon-relay mcp [--stdio]    Run local MCP server over STDIO (default local mode)\n  softagon-relay mcp --http       Run local MCP Streamable HTTP server on 127.0.0.1",
+                env!("CARGO_PKG_VERSION")
+            );
+            std::process::exit(0);
+        }
+        Some(other) => anyhow::bail!("unknown subcommand '{other}'; expected 'serve' or 'mcp'"),
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-        )
-        .json()
-        .init();
+    let mode = parse_cli_mode()?;
+
+    // In STDIO MCP mode, stdout is exclusively reserved for JSON-RPC frames.
+    // Always route structured logs to stderr in MCP STDIO mode.
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    if mode == RunMode::McpStdio {
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_writer(std::io::stderr)
+            .json()
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .json()
+            .init();
+    }
 
     let config = AppConfig::from_env()?;
     config.ensure_directories()?;
-    let bind_addr = config.bind_addr()?;
 
     let db = Database::connect(&config.sqlite).await?;
     let media: Arc<dyn MediaStorage> =
@@ -92,22 +134,69 @@ async fn main() -> anyhow::Result<()> {
         Err(err) => warn!(error = %err, "failed to restore persisted whatsapp sessions"),
     }
 
-    let state = AppState {
-        config: config.clone(),
-        db: db.clone(),
+    let service = RelayService::new(
+        config.clone(),
+        db.clone(),
         media,
         sessions,
-        webhooks: WebhookService::new(db),
-        transcription_engine: tx_engine,
-    };
+        WebhookService::new(db),
+        tx_engine,
+    );
 
-    let router = build_router(state);
-    let listener = TcpListener::bind(bind_addr).await?;
-    info!(address = %bind_addr, "softagon-relay listening");
+    match mode {
+        RunMode::McpStdio => {
+            info!("softagon-relay MCP server starting on STDIO");
+            mcp::run_stdio(service).await?;
+        }
+        RunMode::McpHttp => {
+            let mcp_addr = config.mcp.bind_addr()?;
+            let ct = CancellationToken::new();
+            let mcp_router = mcp::http::build_mcp_http_router(service, ct.clone());
+            let listener = TcpListener::bind(mcp_addr).await?;
+            info!(address = %mcp_addr, "softagon-relay MCP Streamable HTTP listening at /mcp");
+            let ct_shutdown = ct.clone();
+            axum::serve(listener, mcp_router)
+                .with_graceful_shutdown(async move {
+                    shutdown_signal().await;
+                    ct_shutdown.cancel();
+                })
+                .await?;
+        }
+        RunMode::Serve => {
+            let bind_addr = config.bind_addr()?;
+            let mcp_ct = CancellationToken::new();
+            let mcp_handle = if config.mcp.http_enabled {
+                let mcp_addr = config.mcp.bind_addr()?;
+                let mcp_router = mcp::http::build_mcp_http_router(service.clone(), mcp_ct.clone());
+                let mcp_listener = TcpListener::bind(mcp_addr).await?;
+                info!(address = %mcp_addr, "softagon-relay MCP Streamable HTTP listening at /mcp");
+                let ct_inner = mcp_ct.clone();
+                Some(tokio::spawn(async move {
+                    let _ = axum::serve(mcp_listener, mcp_router)
+                        .with_graceful_shutdown(async move {
+                            ct_inner.cancelled().await;
+                        })
+                        .await;
+                }))
+            } else {
+                None
+            };
 
-    axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+            let state = AppState::from(service);
+            let router = build_router(state);
+            let listener = TcpListener::bind(bind_addr).await?;
+            info!(address = %bind_addr, "softagon-relay listening");
+
+            axum::serve(listener, router)
+                .with_graceful_shutdown(shutdown_signal())
+                .await?;
+
+            mcp_ct.cancel();
+            if let Some(h) = mcp_handle {
+                let _ = h.await;
+            }
+        }
+    }
 
     let _ = shutdown_tx.send(true);
     let _ = event_loop_handle.await;

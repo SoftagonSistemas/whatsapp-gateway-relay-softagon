@@ -15,6 +15,7 @@ use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::config::AppConfig;
+use crate::core::service::RelayService;
 use crate::core::sessions::SessionManager;
 use crate::core::webhooks::WebhookService;
 use crate::storage::database::Database;
@@ -29,6 +30,19 @@ pub struct AppState {
     pub sessions: Arc<SessionManager>,
     pub webhooks: WebhookService,
     pub transcription_engine: Arc<dyn TranscriptionEngine>,
+}
+
+impl From<RelayService> for AppState {
+    fn from(svc: RelayService) -> Self {
+        Self {
+            config: svc.config,
+            db: svc.db,
+            media: svc.media,
+            sessions: svc.sessions,
+            webhooks: svc.webhooks,
+            transcription_engine: svc.transcription_engine,
+        }
+    }
 }
 
 pub fn build_router(state: AppState) -> Router {

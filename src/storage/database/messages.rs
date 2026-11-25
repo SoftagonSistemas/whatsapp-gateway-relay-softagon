@@ -38,6 +38,34 @@ pub struct NewMessage<'a> {
     pub metadata_json: &'a str,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ChatSummaryRecord {
+    pub chat_jid: String,
+    pub last_message_id: String,
+    pub last_direction: String,
+    pub last_message_type: String,
+    pub last_text: Option<String>,
+    pub last_sender_jid: Option<String>,
+    pub last_message_at: String,
+    pub message_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct MessageWithTranscriptionRecord {
+    pub id: String,
+    pub session_id: String,
+    pub direction: String,
+    pub chat_jid: String,
+    pub sender_jid: Option<String>,
+    pub message_type: String,
+    pub text_body: Option<String>,
+    pub caption: Option<String>,
+    pub transcription_text: Option<String>,
+    pub status: String,
+    pub metadata_json: String,
+    pub created_at: String,
+}
+
 impl Database {
     pub async fn insert_message(&self, msg: NewMessage<'_>) -> Result<MessageRecord, DbError> {
         let now = Utc::now().to_rfc3339();
@@ -115,5 +143,161 @@ impl Database {
         } else {
             Ok(None)
         }
+    }
+
+    pub async fn list_chats(
+        &self,
+        session_id: &str,
+        query: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<ChatSummaryRecord>, DbError> {
+        let clamped = limit.clamp(1, 200);
+        let pattern = query
+            .map(str::trim)
+            .filter(|q| !q.is_empty())
+            .map(|q| format!("%{}%", q.to_lowercase()));
+
+        let rows = if let Some(pat) = pattern {
+            sqlx::query_as::<_, ChatSummaryRecord>(
+                r#"
+                SELECT
+                    m.chat_jid,
+                    m.id AS last_message_id,
+                    m.direction AS last_direction,
+                    m.message_type AS last_message_type,
+                    COALESCE(m.text_body, m.caption) AS last_text,
+                    m.sender_jid AS last_sender_jid,
+                    m.created_at AS last_message_at,
+                    agg.message_count AS message_count
+                FROM messages m
+                INNER JOIN (
+                    SELECT chat_jid, MAX(created_at) AS max_created, COUNT(*) AS message_count
+                    FROM messages
+                    WHERE session_id = ?1
+                    GROUP BY chat_jid
+                ) agg ON agg.chat_jid = m.chat_jid AND agg.max_created = m.created_at
+                WHERE m.session_id = ?1
+                  AND EXISTS (
+                      SELECT 1 FROM messages sm
+                      LEFT JOIN transcriptions st ON st.message_id = sm.id
+                      WHERE sm.session_id = ?1
+                        AND sm.chat_jid = m.chat_jid
+                        AND (
+                            LOWER(sm.chat_jid) LIKE ?2
+                            OR LOWER(COALESCE(sm.sender_jid, '')) LIKE ?2
+                            OR LOWER(COALESCE(sm.text_body, '')) LIKE ?2
+                            OR LOWER(COALESCE(sm.caption, '')) LIKE ?2
+                            OR LOWER(COALESCE(sm.metadata_json, '')) LIKE ?2
+                            OR LOWER(COALESCE(st.text, '')) LIKE ?2
+                        )
+                  )
+                GROUP BY m.chat_jid
+                ORDER BY m.created_at DESC
+                LIMIT ?3
+                "#,
+            )
+            .bind(session_id)
+            .bind(&pat)
+            .bind(clamped)
+            .fetch_all(self.pool())
+            .await?
+        } else {
+            sqlx::query_as::<_, ChatSummaryRecord>(
+                r#"
+                SELECT
+                    m.chat_jid,
+                    m.id AS last_message_id,
+                    m.direction AS last_direction,
+                    m.message_type AS last_message_type,
+                    COALESCE(m.text_body, m.caption) AS last_text,
+                    m.sender_jid AS last_sender_jid,
+                    m.created_at AS last_message_at,
+                    agg.message_count AS message_count
+                FROM messages m
+                INNER JOIN (
+                    SELECT chat_jid, MAX(created_at) AS max_created, COUNT(*) AS message_count
+                    FROM messages
+                    WHERE session_id = ?1
+                    GROUP BY chat_jid
+                ) agg ON agg.chat_jid = m.chat_jid AND agg.max_created = m.created_at
+                WHERE m.session_id = ?1
+                GROUP BY m.chat_jid
+                ORDER BY m.created_at DESC
+                LIMIT ?2
+                "#,
+            )
+            .bind(session_id)
+            .bind(clamped)
+            .fetch_all(self.pool())
+            .await?
+        };
+        Ok(rows)
+    }
+
+    pub async fn get_chat_messages(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        limit: i64,
+    ) -> Result<Vec<MessageWithTranscriptionRecord>, DbError> {
+        let clamped = limit.clamp(1, 200);
+        let rows = sqlx::query_as::<_, MessageWithTranscriptionRecord>(
+            r#"
+            SELECT
+                m.id, m.session_id, m.direction, m.chat_jid, m.sender_jid,
+                m.message_type, m.text_body, m.caption,
+                t.text AS transcription_text,
+                m.status, m.metadata_json, m.created_at
+            FROM messages m
+            LEFT JOIN transcriptions t ON t.message_id = m.id
+            WHERE m.session_id = ?1 AND m.chat_jid = ?2
+            ORDER BY m.created_at DESC
+            LIMIT ?3
+            "#,
+        )
+        .bind(session_id)
+        .bind(chat_jid)
+        .bind(clamped)
+        .fetch_all(self.pool())
+        .await?;
+        Ok(rows)
+    }
+
+    pub async fn search_messages(
+        &self,
+        session_id: &str,
+        query: &str,
+        limit: i64,
+    ) -> Result<Vec<MessageWithTranscriptionRecord>, DbError> {
+        let clamped = limit.clamp(1, 200);
+        let pat = format!("%{}%", query.trim().to_lowercase());
+        let rows = sqlx::query_as::<_, MessageWithTranscriptionRecord>(
+            r#"
+            SELECT
+                m.id, m.session_id, m.direction, m.chat_jid, m.sender_jid,
+                m.message_type, m.text_body, m.caption,
+                t.text AS transcription_text,
+                m.status, m.metadata_json, m.created_at
+            FROM messages m
+            LEFT JOIN transcriptions t ON t.message_id = m.id
+            WHERE m.session_id = ?1
+              AND (
+                  LOWER(m.chat_jid) LIKE ?2
+                  OR LOWER(COALESCE(m.sender_jid, '')) LIKE ?2
+                  OR LOWER(COALESCE(m.text_body, '')) LIKE ?2
+                  OR LOWER(COALESCE(m.caption, '')) LIKE ?2
+                  OR LOWER(COALESCE(m.metadata_json, '')) LIKE ?2
+                  OR LOWER(COALESCE(t.text, '')) LIKE ?2
+              )
+            ORDER BY m.created_at DESC
+            LIMIT ?3
+            "#,
+        )
+        .bind(session_id)
+        .bind(&pat)
+        .bind(clamped)
+        .fetch_all(self.pool())
+        .await?;
+        Ok(rows)
     }
 }
