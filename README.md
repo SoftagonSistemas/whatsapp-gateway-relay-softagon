@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 - **Website:** <https://softagon.com.br> (by **Softagon Sistemas**)
-- **Documentation:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md)
+- **Documentation:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md)
 - **Docker Hub:** <https://hub.docker.com/r/softagon/relay> (`docker pull softagon/relay:latest`)
 - **Repository:** <https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon>
 

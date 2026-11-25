@@ -1,6 +1,6 @@
 # Documentação Oficial — Softagon Relay (Português)
 
-> Idiomas: **Português (BR)** · [English](../en/README.md) · [Español](../es/README.md)
+> Idiomas: **Português (BR)** · [English](../en/README.md) · [Español](../es/README.md) · [Français](../fr/README.md)
 
 **O que é o Softagon Relay?**  
 O **Softagon Relay** é um **gateway WhatsApp Web open-source e self-hosted** desenvolvido em **Rust** pela **[Softagon Sistemas](https://softagon.com.br)**. Ele roda em um **único container Docker (~52 MB)** com **SQLite (WAL)** embutido, **Console Web estilo Raycast** em `/console`, armazenamento de mídia **Local ou S3/R2/MinIO**, **webhooks assinados com HMAC-SHA256**, **OpenAPI 3.2.1** e **transcrição offline multilíngue de áudios** com `whisper.cpp`.
