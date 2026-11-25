@@ -6,6 +6,16 @@ Todas as mudanças relevantes do **Softagon Relay** são documentadas neste arqu
 
 ---
 
+## [0.3.3] — 2026-11-25
+
+### Correções & Documentação
+- **Isolamento do modo `mcp --stdio`:** `mcp --stdio` não inicia mais os workers de webhooks e transcrição nem reconecta sessões WhatsApp automaticamente por padrão (exige `MCP_RESTORE_SESSIONS=true` para uso standalone), evitando desconexão/conflito de sessão e webhooks duplicados quando o servidor `serve` já está rodando. Para uso simultâneo com o servidor, use `MCP_HTTP_ENABLED=true` no mesmo container.
+- **Quickstarts corrigidos:** `docs/es/README.md`, `docs/fr/README.md` e o exemplo `compose.yaml` em `docs/dockerhub.md` atualizados para `openssl rand -hex 32` / `${RELAY_API_KEY}`.
+- **Bloqueio de chaves de exemplo MCP:** adicionadas `your-generated-64-char-hex-key` e `sua-chave-gerada-com-openssl` à lista de chaves recusadas no startup; exemplos MCP atualizados para `${RELAY_API_KEY}`.
+- **Detalhes de documentação:** corrigido caminho `/data/whatsapp-sessions.db` em `SECURITY.md` e link direto `oxidezap/whatsapp-rust` no `README.md`.
+
+---
+
 ## [0.3.2] — 2026-11-25
 
 ### Melhorias — Diagnóstico Amigável de Desconexão e Restrição de Conta

@@ -143,7 +143,8 @@ O Softagon Relay inclui um **MCP Server (Model Context Protocol)** nativo em Rus
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=sua-chave-gerada-com-openssl",
+        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
+        "-e", "MCP_RESTORE_SESSIONS=true",
         "softagon/relay:latest",
         "mcp", "--stdio"
       ]

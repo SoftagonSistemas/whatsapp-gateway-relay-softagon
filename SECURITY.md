@@ -28,7 +28,7 @@ Because Softagon Relay holds live WhatsApp Web session credentials:
 
 1. **Strong `RELAY_API_KEY`:** Always generate a high-entropy random key (e.g. `openssl rand -hex 32`). Known placeholder strings and short keys are rejected at startup.
 2. **Never expose port `8080` directly without TLS:** Run behind a TLS-terminating reverse proxy (Caddy, Traefik, Nginx) or private network/VPN (Tailscale, WireGuard).
-3. **Protect `/data` as secrets:** `/data/whatsapp-sessions/` contains WhatsApp Web encryption keys. Encrypt backups and restrict filesystem permissions (container runs as non-root UID `10001`).
+3. **Protect `/data` as secrets:** `/data/whatsapp-sessions.db` contains WhatsApp Web encryption keys. Encrypt backups and restrict filesystem permissions (container runs as non-root UID `10001`).
 4. **Keep `DOCS_PUBLIC=false` in production** unless you intentionally want `/docs`, `/openapi.json`, and `/openapi.yaml` reachable without a Bearer token.
 5. **Local MCP Server safety:**
    - Prefer **STDIO** (`mcp --stdio`) for local desktop AI agents.

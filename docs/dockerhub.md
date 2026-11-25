@@ -46,15 +46,15 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.2
+    image: softagon/relay:0.3.3
     container_name: softagon-relay
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - relay-data:/data
     environment:
-      RELAY_API_KEY: "replace-with-a-strong-random-key"
+      RELAY_API_KEY: "${RELAY_API_KEY:?Generate with: openssl rand -hex 32}"
       RUST_LOG: "info"
       DOCS_ENABLED: "true"
       DOCS_PUBLIC: "false"
@@ -84,9 +84,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.2`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.3`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
-| `0.3.2` | `linux/amd64` | Friendly WhatsApp disconnection/restriction status & banner, strict key validation, MCP Server, `/console` |
+| `0.3.3` | `linux/amd64` | Safe MCP STDIO worker isolation, friendly disconnect diagnostics, strict key validation, `/console` |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
 

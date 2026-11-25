@@ -143,7 +143,8 @@ Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** 
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=your-generated-64-char-hex-key",
+        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
+        "-e", "MCP_RESTORE_SESSIONS=true",
         "softagon/relay:latest",
         "mcp", "--stdio"
       ]

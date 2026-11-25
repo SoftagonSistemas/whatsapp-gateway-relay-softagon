@@ -16,12 +16,12 @@
 ## 1. Démarrage Rapide (Docker)
 
 ```bash
-docker run -d \
+KEY="$(openssl rand -hex 32)" && echo "RELAY_API_KEY=$KEY" && docker run -d \
   --name softagon-relay \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 127.0.0.1:8080:8080 \
   -v relay-data:/data \
-  -e RELAY_API_KEY="remplacez-par-une-cle-forte" \
+  -e RELAY_API_KEY="$KEY" \
   softagon/relay:latest
 ```
 

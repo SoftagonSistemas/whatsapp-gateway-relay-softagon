@@ -11,6 +11,8 @@ const DISALLOWED_API_KEYS: &[&str] = &[
     "cambia-por-una-clave-segura",
     "remplacez-par-une-cle-forte",
     "your-strong-secret",
+    "your-generated-64-char-hex-key",
+    "sua-chave-gerada-com-openssl",
     "sua-chave-aqui",
     "changeme",
     "secret",

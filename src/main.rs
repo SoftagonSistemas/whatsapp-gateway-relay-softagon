@@ -106,15 +106,26 @@ async fn main() -> anyhow::Result<()> {
 
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
+    // Only the long-running HTTP daemon (`serve`) should run background webhook delivery
+    // and transcription worker pools. In `mcp --stdio` / `mcp --http` standalone modes,
+    // skipping these background workers prevents duplicate webhook deliveries and SQLite
+    // write contention if a gateway container is already running.
+    let run_background_workers = mode == RunMode::Serve;
+
     let event_loop_handle = sessions
         .clone()
         .spawn_event_loop(event_rx, shutdown_rx.clone());
 
-    let webhook_handle =
-        WebhookDispatcher::new(db.clone(), webhook_notify, config.webhooks.clone())
-            .spawn(shutdown_rx.clone());
+    let webhook_handle = if run_background_workers {
+        Some(
+            WebhookDispatcher::new(db.clone(), webhook_notify, config.webhooks.clone())
+                .spawn(shutdown_rx.clone()),
+        )
+    } else {
+        None
+    };
 
-    let tx_handles = if config.transcription.enabled {
+    let tx_handles = if run_background_workers && config.transcription.enabled {
         TranscriptionWorkerPool::new(
             db.clone(),
             media.clone(),
@@ -129,9 +140,25 @@ async fn main() -> anyhow::Result<()> {
         Vec::new()
     };
 
-    match sessions.restore_sessions().await {
-        Ok(restored) => info!(count = restored, "restored persisted whatsapp sessions"),
-        Err(err) => warn!(error = %err, "failed to restore persisted whatsapp sessions"),
+    // In `mcp --stdio` mode, only restore WhatsApp WebSocket sessions when explicitly running
+    // standalone (MCP_RESTORE_SESSIONS=true). By default `mcp --stdio` avoids kicking an active
+    // `serve` container off WhatsApp Web.
+    let should_restore_sessions = match mode {
+        RunMode::Serve | RunMode::McpHttp => true,
+        RunMode::McpStdio => std::env::var("MCP_RESTORE_SESSIONS")
+            .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "true" | "1" | "yes"))
+            .unwrap_or(false),
+    };
+
+    if should_restore_sessions {
+        match sessions.restore_sessions().await {
+            Ok(restored) => info!(count = restored, "restored persisted whatsapp sessions"),
+            Err(err) => warn!(error = %err, "failed to restore persisted whatsapp sessions"),
+        }
+    } else {
+        info!(
+            "skipping session restore in mcp --stdio mode (set MCP_RESTORE_SESSIONS=true for standalone STDIO without a running server, or use MCP_HTTP_ENABLED=true inside the server container)"
+        );
     }
 
     let service = RelayService::new(
@@ -200,7 +227,9 @@ async fn main() -> anyhow::Result<()> {
 
     let _ = shutdown_tx.send(true);
     let _ = event_loop_handle.await;
-    let _ = webhook_handle.await;
+    if let Some(h) = webhook_handle {
+        let _ = h.await;
+    }
     for h in tx_handles {
         let _ = h.await;
     }

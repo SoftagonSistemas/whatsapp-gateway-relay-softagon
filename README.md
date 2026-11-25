@@ -53,9 +53,10 @@ Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compil
 
 ---
 
-## Local MCP Server Example (STDIO via Docker)
+## Local MCP Server (AI Agents)
 
-Works out of the box with the official Docker image (no separate binary download required):
+- **Recommended when `softagon-relay` is already running:** enable **Streamable HTTP** inside the same container (`-e MCP_HTTP_ENABLED=true -p 127.0.0.1:8091:8091`) so a single process owns the WhatsApp WebSocket and SQLite database (`http://127.0.0.1:8091/mcp`, loopback-only, `Origin` validation, `Authorization: Bearer ${RELAY_API_KEY}`).
+- **Standalone STDIO via Docker** (when no server container is running, pass `MCP_RESTORE_SESSIONS=true` to reconnect WhatsApp sessions; without it, STDIO runs read-only against SQLite without kicking an active server off WhatsApp):
 
 ```json
 {
@@ -65,7 +66,8 @@ Works out of the box with the official Docker image (no separate binary download
       "args": [
         "run", "-i", "--rm",
         "-v", "relay-data:/data",
-        "-e", "RELAY_API_KEY=your-generated-64-char-hex-key",
+        "-e", "RELAY_API_KEY=${RELAY_API_KEY}",
+        "-e", "MCP_RESTORE_SESSIONS=true",
         "softagon/relay:latest",
         "mcp", "--stdio"
       ]
@@ -74,7 +76,7 @@ Works out of the box with the official Docker image (no separate binary download
 }
 ```
 
-Or enable **Streamable HTTP** alongside the HTTP API (`MCP_HTTP_ENABLED=true`, bound strictly to `127.0.0.1:8091/mcp` with `Origin` validation and Bearer auth). If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries are also attached to [GitHub Releases](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases).
+If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries are attached to [GitHub Releases](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases).
 
 Tools exposed: `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, and (disabled unless `MCP_ALLOW_DESTRUCTIVE=true` + `confirm: true`) `logout_session` / `delete_session`.
 
@@ -109,6 +111,6 @@ If you need the Tauri Desktop edition, ARM64 images, or specific MCP tools, **[o
 
 ## Disclaimer & License
 
-Softagon Relay is an independent, unofficial open-source project built on [`whatsapp-rust`](https://github.com/jlucaso1/whatsapp-rust) and is **not affiliated with, authorized by, or endorsed by Meta or WhatsApp**. Review Meta's Terms of Service, deploy behind TLS, and protect backups of `/data`.
+Softagon Relay is an independent, unofficial open-source project built on [`whatsapp-rust`](https://github.com/oxidezap/whatsapp-rust) and is **not affiliated with, authorized by, or endorsed by Meta or WhatsApp**. Review Meta's Terms of Service, deploy behind TLS, and protect backups of `/data`.
 
 Licensed under the **[Apache License, Version 2.0](LICENSE)** · Maintained by **[Softagon Sistemas](https://softagon.com.br)**.
