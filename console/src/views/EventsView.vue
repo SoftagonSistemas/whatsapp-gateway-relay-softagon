@@ -263,19 +263,32 @@ onMounted(() => {
             <X :size="16" aria-hidden="true" />
           </button>
         </div>
-        <form class="modal-form" @submit.prevent="submitWebhook">
+        <form
+          class="modal-form"
+          toolname="create_webhook_subscription"
+          tooldescription="Register a new HMAC-SHA256 signed webhook URL to receive WhatsApp gateway events."
+          @submit.prevent="submitWebhook"
+        >
           <label for="wh-url" class="f-label">URL</label>
           <input
             id="wh-url"
             v-model="formUrl"
+            name="url"
             type="url"
             required
             class="inp f-input mono"
             placeholder="https://example.com/webhooks/whatsapp"
+            toolparamdescription="Destination HTTPS webhook endpoint URL."
           />
 
           <label for="wh-sess" class="f-label">{{ t('events.session') }}</label>
-          <select id="wh-sess" v-model="formSession" class="f-input">
+          <select
+            id="wh-sess"
+            v-model="formSession"
+            name="session_id"
+            class="f-input"
+            toolparamdescription="Optional WhatsApp session ID to filter events, or empty for all sessions."
+          >
             <option value="">{{ t('events.all') }}</option>
             <option v-for="s in sessions" :key="s.id" :value="s.id">
               {{ s.name }} ({{ s.id }})

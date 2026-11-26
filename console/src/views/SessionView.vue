@@ -435,23 +435,32 @@ onUnmounted(() => {
               <X :size="15" aria-hidden="true" />
             </button>
           </div>
-          <form class="send-form" @submit.prevent="submitTestMessage">
+          <form
+            class="send-form"
+            toolname="send_test_whatsapp_message"
+            tooldescription="Send a test WhatsApp text message from the currently selected connected session."
+            @submit.prevent="submitTestMessage"
+          >
             <div class="form-row">
               <label for="send-to" class="sr">{{ t('session.number') }}</label>
               <input
                 id="send-to"
                 v-model="sendTo"
+                name="to"
                 type="tel"
                 class="inp form-input mono"
                 placeholder="+55 11 99999-0001"
+                toolparamdescription="Recipient WhatsApp phone number with country code or JID."
                 required
               />
               <label for="send-msg" class="sr">{{ t('session.sendMsg') }}</label>
               <input
                 id="send-msg"
                 v-model="sendText"
+                name="text"
                 class="inp form-input"
                 :placeholder="t('apiReference.hello')"
+                toolparamdescription="Text message content to send via WhatsApp."
                 required
               />
               <button type="submit" class="btn btn-primary" :disabled="sending || !recipientValid">

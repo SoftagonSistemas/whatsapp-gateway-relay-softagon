@@ -6,6 +6,15 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.6] — 2026-11-25
+
+### Added — Chrome Modern Web Guidance & WebMCP Support
+- **Imperative WebMCP API (`console/src/composables/useWebMcp.ts`):** registers client-side Web Console tools via `document.modelContext.registerTool()` (with `AbortController` lifecycle cleanup and `navigator.modelContext` fallback) so browser AI agents (Claude, ChatGPT, Chromium assistants) can inspect health (`relay_get_health`), switch language/theme (`relay_set_language`, `relay_set_theme`), navigate (`relay_navigate`), list sessions/webhooks (`relay_list_sessions`, `relay_get_session_status`, `relay_list_webhooks`), start QR pairing (`relay_create_session`), and send text messages (`relay_send_text_message`) while keeping destructive actions and API keys unexposed.
+- **Declarative WebMCP Forms:** added `toolname`, `tooldescription`, and `toolparamdescription` attributes to key Console forms (`SessionView`, `ConnectView`, `EventsView`) and `.mwgrc` (`{"allowOriginTrials": true}`) following Chrome Modern Web Guidance.
+- **CLI `--version` / `-V` flag:** `softagon-relay --version` prints the exact crate version.
+
+---
+
 ## [0.3.5] — 2026-11-25
 
 ### Added — 10-Language Web Console, Localized Visual Docs & Automated Checks

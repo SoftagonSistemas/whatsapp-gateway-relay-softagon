@@ -191,6 +191,8 @@ onUnmounted(() => {
       <form
         v-if="!session && !loading"
         class="phone-form pad-sm"
+        toolname="start_whatsapp_pairing"
+        tooldescription="Create a WhatsApp session for a phone number or label and display a live QR code for pairing."
         @submit.prevent="startConnectFlow()"
       >
         <h1 id="cx-h" class="cx-h1">{{ t('connectMobile.h1') }}</h1>
@@ -200,9 +202,11 @@ onUnmounted(() => {
           <input
             id="phone-in"
             v-model="phoneInput"
+            name="phone"
             type="tel"
             class="inp mono phone-input"
             placeholder="11 99999-0001"
+            toolparamdescription="WhatsApp phone number with area/country code (or session label) to pair."
             autofocus
           />
         </div>

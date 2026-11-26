@@ -6,6 +6,7 @@ import { useTheme } from './composables/useTheme';
 import { useAuth } from './composables/useAuth';
 import { useSessions } from './composables/useSessions';
 import { useGlobalHotkeys } from './composables/useHotkeys';
+import { useWebMcp } from './composables/useWebMcp';
 import { setUnauthorizedHandler } from './composables/useApi';
 import ShortcutsModal from './components/ShortcutsModal.vue';
 
@@ -26,6 +27,8 @@ setUnauthorizedHandler(() => {
     router.replace({ name: 'login' });
   }
 });
+
+useWebMcp(router);
 
 useGlobalHotkeys({
   onCommandK: () => {
