@@ -19,10 +19,11 @@ git config core.hooksPath .githooks
 ```
 
 Before pushing, the hook automatically runs:
-1. `cd console && npm run build` (`vue-tsc -b && vite build`)
-2. `cargo fmt --check`
-3. `cargo clippy --all-targets -- -D warnings`
-4. `cargo test`
+1. `node scripts/check-i18n-docs.mjs` (10-language key parity, version sync, PII check, and localized doc screenshots)
+2. `cd console && npm run build` (`vue-tsc -b && vite build`)
+3. `cargo fmt --check`
+4. `cargo clippy --all-targets -- -D warnings`
+5. `cargo test`
 
 ## Architecture Guidelines
 

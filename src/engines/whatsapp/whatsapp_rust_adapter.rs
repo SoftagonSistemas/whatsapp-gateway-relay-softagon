@@ -85,7 +85,7 @@ fn parse_recipient_jid(to: &str) -> Result<Jid, EngineError> {
 }
 
 /// Resolves the exact WhatsApp JID for a phone number, handling Brazilian 9th-digit variations
-/// (e.g., `5587992005656` vs `558792005656`) via `client.contacts().is_on_whatsapp(...)`.
+/// (e.g., `5511999990001` vs `551199990001`) via `client.contacts().is_on_whatsapp(...)`.
 async fn resolve_recipient_jid(
     client: &Arc<whatsapp_rust::Client>,
     to: &str,
