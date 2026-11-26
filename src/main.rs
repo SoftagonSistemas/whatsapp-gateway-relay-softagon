@@ -39,9 +39,13 @@ fn parse_cli_mode() -> anyhow::Result<RunMode> {
                 anyhow::bail!("unknown mcp option '{flag}'; expected --stdio (default) or --http")
             }
         },
+        Some("--version" | "-V" | "version") => {
+            println!("softagon-relay {}", env!("CARGO_PKG_VERSION"));
+            std::process::exit(0);
+        }
         Some("--help" | "-h" | "help") => {
             eprintln!(
-                "Softagon Relay v{}\n\nUSAGE:\n  softagon-relay [serve]          Run REST API + Web Console (and optional MCP HTTP if MCP_HTTP_ENABLED=true)\n  softagon-relay mcp [--stdio]    Run local MCP server over STDIO (default local mode)\n  softagon-relay mcp --http       Run local MCP Streamable HTTP server on 127.0.0.1",
+                "Softagon Relay v{}\n\nUSAGE:\n  softagon-relay [serve]          Run REST API + Web Console (and optional MCP HTTP if MCP_HTTP_ENABLED=true)\n  softagon-relay mcp [--stdio]    Run local MCP server over STDIO (default local mode)\n  softagon-relay mcp --http       Run local MCP Streamable HTTP server on 127.0.0.1\n  softagon-relay --version        Print version information",
                 env!("CARGO_PKG_VERSION")
             );
             std::process::exit(0);
