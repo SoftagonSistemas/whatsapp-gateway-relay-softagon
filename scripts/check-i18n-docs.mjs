@@ -28,12 +28,25 @@ function shapeKeys(obj, prefix = '') {
   return [prefix];
 }
 
-// 1. Version parity between Cargo.toml and console/package.json
+// 1. Version parity across Cargo.toml, console/package.json, openapi/openapi.yaml, and Dockerfile
 const cargoToml = fs.readFileSync('Cargo.toml', 'utf8');
 const cargoVersion = cargoToml.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
 const pkgVersion = JSON.parse(fs.readFileSync('console/package.json', 'utf8')).version;
-if (!cargoVersion || cargoVersion !== pkgVersion) {
-  fail(`Version mismatch: Cargo.toml=${cargoVersion} vs console/package.json=${pkgVersion}`);
+const openapiVersion = fs
+  .readFileSync('openapi/openapi.yaml', 'utf8')
+  .match(/^\s*version:\s*([^\s#]+)/m)?.[1];
+const dockerfileVersion = fs
+  .readFileSync('Dockerfile', 'utf8')
+  .match(/^ARG\s+VERSION=([^\s]+)/m)?.[1];
+if (
+  !cargoVersion ||
+  cargoVersion !== pkgVersion ||
+  cargoVersion !== openapiVersion ||
+  cargoVersion !== dockerfileVersion
+) {
+  fail(
+    `Version mismatch: Cargo.toml=${cargoVersion}, console/package.json=${pkgVersion}, openapi.yaml=${openapiVersion}, Dockerfile=${dockerfileVersion}`,
+  );
 }
 
 // 2. i18n JSON key parity, placeholders, Intl.NumberFormat, and PII checks

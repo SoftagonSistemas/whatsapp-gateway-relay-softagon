@@ -346,7 +346,7 @@ onUnmounted(() => {
               on: s.status === 'connected',
               warn: s.status === 'pairing_required',
             }"
-            :title="s.status"
+            :title="formatSessionStatus(s.status, t)"
           ></span>
         </router-link>
       </div>

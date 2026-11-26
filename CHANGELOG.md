@@ -18,7 +18,7 @@ All notable changes to **Softagon Relay** are documented in this file, following
 ### Fixed
 - **Localized session status badges:** `HomeView` and `SessionView` now translate all session states (`connected`, `disconnected`, `connecting`, `pairing_required`, `qr_ready`, `logged_out`) instead of showing raw English `disconnected`.
 - **Dynamic console version:** injected `__APP_VERSION__` from `console/package.json` via Vite `define` and displayed it dynamically in `TopBar`, `LoginView`, and `HomeView` instead of hardcoding `v0.3.4`.
-- **Completed missing translations & removed personal sample data:** localized `login.online` in `id`, `bew`, `su`, `jv`, and `bbc`; replaced personal sample strings (`HermesPessoal`, `558791508478`, `87 99200-5656`) with synthetic placeholders across all catalogs and views; aligned section 2.4 of all 6 new guides with BR/MX/AR mobile resolution and connected-session deletion protection.
+- **Completed missing translations & removed personal sample data:** localized `login.online` in `id`, `bew`, `su`, `jv`, and `bbc`; replaced personal sample names and phone numbers with synthetic placeholders across all catalogs, views, and comments; aligned section 2.4 of all 6 new guides with BR/MX/AR mobile resolution and connected-session deletion protection.
 
 ---
 
