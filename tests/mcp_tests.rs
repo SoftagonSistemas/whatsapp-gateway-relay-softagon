@@ -300,6 +300,11 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
     assert!(tool_names.contains(&"list_sessions"));
     assert!(tool_names.contains(&"list_chats"));
     assert!(tool_names.contains(&"send_text_message"));
+    assert!(tool_names.contains(&"send_media_message"));
+    assert!(tool_names.contains(&"get_contact"));
+    assert!(tool_names.contains(&"mark_read"));
+    assert!(tool_names.contains(&"create_pairing_link"));
+    assert!(tool_names.contains(&"request_pair_code"));
 
     // 2. Agent finds João's conversation
     let (st_chats, body_chats) = post_mcp_json(

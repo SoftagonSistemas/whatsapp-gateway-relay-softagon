@@ -46,7 +46,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.7
+    image: softagon/relay:0.3.8
     container_name: softagon-relay
     restart: unless-stopped
     ports:

@@ -100,6 +100,14 @@ pub fn build_router(state: AppState) -> Router {
             post(routes::messages::send_media),
         )
         .route(
+            "/v1/sessions/{session_id}/chats/read",
+            post(routes::messages::mark_read),
+        )
+        .route(
+            "/v1/sessions/{session_id}/contacts/{jid}",
+            get(routes::messages::get_contact),
+        )
+        .route(
             "/v1/messages/{message_id}",
             get(routes::messages::get_message),
         )

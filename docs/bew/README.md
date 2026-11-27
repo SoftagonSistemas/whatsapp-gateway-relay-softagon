@@ -155,6 +155,14 @@ Softagon Relay udeh bawa **MCP Server (Model Context Protocol)** Rust native pak
 }
 ```
 
+### 6.2 Grok Bot, Sambungin Tanpa Login & Fitur Agen (`v0.3.8`)
+
+- **Paket Siap Pake Grok Bot:** liat [`docs/grok-bot.md`](../grok-bot.md) ame [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) buat pasang biner lokal di `/workspace/softagon-relay`.
+- **Link Pairing Sementara (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (atawa MCP `create_pairing_link`) buka **QR Code** langsung tanpa login `RELAY_API_KEY`, otomatis bikin QR baru ampe 10 menit, plus ada `qr.png` ame **kode 8 digit** (`POST /v1/sessions/{id}/pair-code`).
+- **Webhook Bearer & Header Bebas:** tambahin `bearer_token` atawa `auth_header_name`/`auth_header_value` pas bikin/ubah webhook. Kalo kena `401`/`403`, langsung berenti nyoba ulang.
+- **Konteks Obrolan Komplit:** ada `sender_name`, `sender_phone` (termasuk kontak `@lid`), balesan tim dari HP (`from_me: true`, `source: "device_sync"`), waktu asli tanpa spam webhook pas `is_history_sync`, plus `sticker`, `reaction`, `location`, ame `contact`.
+- **Alat MCP & REST Baru:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), ame `send_media_message` lewat `media_url` atawa `data_base64` pake `idempotency_key`.
+
 ---
 
 ## 7. Dukungan & Kontak

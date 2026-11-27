@@ -176,6 +176,136 @@ impl RelayService {
         Ok(record)
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_media_message(
+        &self,
+        session_id: &str,
+        to: &str,
+        kind: crate::engines::whatsapp::MediaKind,
+        mime_type: Option<&str>,
+        filename: Option<&str>,
+        caption: Option<&str>,
+        data_base64: Option<&str>,
+        media_url: Option<&str>,
+        idempotency_key: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
+        let key = idempotency_key.map(str::trim).filter(|k| !k.is_empty());
+        let source_sig = media_url
+            .map(|u| format!("url:{u}"))
+            .or_else(|| data_base64.map(|b| format!("b64:{}", b.len())))
+            .unwrap_or_default();
+        let req_hash = if key.is_some() {
+            use sha2::{Digest, Sha256};
+            let mut h = Sha256::new();
+            h.update(format!("media:{to}:{}:{source_sig}", kind.as_str()).as_bytes());
+            Some(hex::encode(h.finalize()))
+        } else {
+            None
+        };
+
+        if let (Some(k), Some(hash)) = (key, req_hash.as_deref())
+            && let Some(existing) = self.db.get_idempotency_key(k, session_id).await?
+        {
+            if existing.request_hash != hash {
+                return Err(SessionError::Conflict(
+                    "idempotency_key already used with a different request payload".into(),
+                ));
+            }
+            if let Ok(cached) = serde_json::from_str::<MessageRecord>(&existing.response_body) {
+                return Ok(cached);
+            }
+        }
+
+        let (bytes, inferred_mime, inferred_name) = match (media_url, data_base64) {
+            (Some(url), _) if !url.trim().is_empty() => {
+                self.sessions.fetch_media_from_url(url).await?
+            }
+            (_, Some(b64)) if !b64.trim().is_empty() => {
+                use base64::Engine as _;
+                let raw = base64::engine::general_purpose::STANDARD
+                    .decode(b64.trim())
+                    .map_err(|e| {
+                        SessionError::BadRequest(format!("invalid base64 payload: {e}"))
+                    })?;
+                (bytes::Bytes::from(raw), None, None)
+            }
+            _ => {
+                return Err(SessionError::BadRequest(
+                    "either media_url or data_base64 is required".into(),
+                ));
+            }
+        };
+
+        let effective_filename = filename
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string)
+            .or(inferred_name);
+        let effective_mime = mime_type
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string)
+            .or(inferred_mime)
+            .or_else(|| {
+                effective_filename
+                    .as_deref()
+                    .and_then(|f| mime_guess::from_path(f).first())
+                    .map(|m| m.to_string())
+            })
+            .unwrap_or_else(|| match kind {
+                crate::engines::whatsapp::MediaKind::Image => "image/jpeg".to_string(),
+                crate::engines::whatsapp::MediaKind::Video => "video/mp4".to_string(),
+                crate::engines::whatsapp::MediaKind::Audio => "audio/ogg".to_string(),
+                crate::engines::whatsapp::MediaKind::Document => {
+                    "application/octet-stream".to_string()
+                }
+            });
+
+        let record = self
+            .sessions
+            .send_media(
+                session_id,
+                to,
+                kind,
+                &effective_mime,
+                effective_filename.as_deref(),
+                caption,
+                bytes,
+            )
+            .await?;
+
+        if let (Some(k), Some(hash)) = (key, req_hash.as_deref())
+            && let Ok(json_body) = serde_json::to_string(&record)
+        {
+            let _ = self
+                .db
+                .save_idempotency_key(k, session_id, hash, 201, &json_body)
+                .await;
+        }
+
+        Ok(record)
+    }
+
+    pub async fn mark_read(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        sender_jid: Option<&str>,
+        message_ids: Vec<String>,
+    ) -> Result<usize, SessionError> {
+        self.sessions
+            .mark_read(session_id, chat_jid, sender_jid, message_ids)
+            .await
+    }
+
+    pub async fn get_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<crate::engines::whatsapp::ContactInfo, SessionError> {
+        self.sessions.get_contact(session_id, jid_or_phone).await
+    }
+
     pub async fn get_message_transcription(
         &self,
         message_id: &str,

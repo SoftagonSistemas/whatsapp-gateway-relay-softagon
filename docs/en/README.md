@@ -157,6 +157,14 @@ Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** 
 
 > For **standalone** STDIO (when no `serve` container is running), add `"-e", "MCP_RESTORE_SESSIONS=true"` to `args`. Alongside a running server container, prefer **Streamable HTTP** inside the same container (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
+### 6.2 Grok Bot, Zero-Login Pairing & Agent Features (`v0.3.8`)
+
+- **Grok Bot Turnkey Kit:** see [`docs/grok-bot.md`](../grok-bot.md) and [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) to install the native binary under `/workspace/softagon-relay`.
+- **Zero-Login Pairing Link (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (or MCP `create_pairing_link`) opens the **QR Code** directly without login or exposing `RELAY_API_KEY`, auto-renews expired 60s cycles for up to 10 minutes, and provides native `qr.png` plus an **8-digit code** alternative (`POST /v1/sessions/{id}/pair-code` / MCP `request_pair_code`).
+- **Webhook Bearer & Custom Auth Headers:** pass `bearer_token` or `auth_header_name`/`auth_header_value` on `POST`/`PATCH /v1/webhooks` to talk directly to Grok Bot routines without a forwarder proxy. HTTP `401`/`403` responses stop retries immediately.
+- **Rich Conversation Context:** webhooks and SQLite history include `sender_name` (`push_name`), `sender_phone` (resolved even for `@lid` contacts), phone-sent team replies (`from_me: true`, `source: "device_sync"`), real timestamps with `is_history_sync` webhook suppression, plus `sticker`, `reaction`, `location`, and `contact` messages.
+- **New MCP Tools & REST Endpoints:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), `send_media_message` accepting `media_url` (HTTP/HTTPS) or `data_base64`, and SQLite-backed `idempotency_key` deduplication.
+
 ---
 
 ## 7. Support & Contact

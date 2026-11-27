@@ -241,4 +241,60 @@ impl WhatsAppEngine for MockWhatsAppEngine {
             external_message_id: format!("wamid.{}", uuid::Uuid::now_v7()),
         })
     }
+
+    async fn mark_read(
+        &self,
+        session_id: &str,
+        _chat_jid: &str,
+        _sender_jid: Option<&str>,
+        _message_ids: &[String],
+    ) -> Result<(), EngineError> {
+        let status = self.get_status(session_id).await?;
+        if status != SessionConnectionState::Connected {
+            return Err(EngineError::NotConnected(session_id.to_string()));
+        }
+        Ok(())
+    }
+
+    async fn resolve_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<crate::engines::whatsapp::ContactInfo, EngineError> {
+        let status = self.get_status(session_id).await?;
+        if status != SessionConnectionState::Connected {
+            return Err(EngineError::NotConnected(session_id.to_string()));
+        }
+        let trimmed = jid_or_phone.trim();
+        let (jid, lid, phone_number) = if trimmed.ends_with("@lid") {
+            (trimmed.to_string(), Some(trimmed.to_string()), None)
+        } else if let Some((user, server)) = trimmed.split_once('@') {
+            let digits: String = user.chars().filter(|c| c.is_ascii_digit()).collect();
+            let pn = if server.eq_ignore_ascii_case("s.whatsapp.net") && digits.len() >= 7 {
+                Some(digits)
+            } else {
+                None
+            };
+            (trimmed.to_string(), None, pn)
+        } else {
+            let digits: String = trimmed.chars().filter(|c| c.is_ascii_digit()).collect();
+            let jid = format!("{digits}@s.whatsapp.net");
+            (
+                jid,
+                None,
+                if digits.len() >= 7 {
+                    Some(digits)
+                } else {
+                    None
+                },
+            )
+        };
+        Ok(crate::engines::whatsapp::ContactInfo {
+            query: trimmed.to_string(),
+            jid,
+            lid,
+            phone_number,
+            push_name: None,
+        })
+    }
 }

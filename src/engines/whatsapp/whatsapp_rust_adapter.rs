@@ -479,6 +479,88 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             external_message_id: res.message_id,
         })
     }
+
+    async fn mark_read(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        sender_jid: Option<&str>,
+        message_ids: &[String],
+    ) -> Result<(), EngineError> {
+        if message_ids.is_empty() {
+            return Ok(());
+        }
+        let client = {
+            let guard = self.sessions.read().await;
+            let Some(active) = guard.get(session_id) else {
+                return Err(EngineError::SessionNotFound(session_id.to_string()));
+            };
+            if *active.status.read().await != SessionConnectionState::Connected {
+                return Err(EngineError::NotConnected(session_id.to_string()));
+            }
+            active.handle.client()
+        };
+
+        let chat = resolve_recipient_jid(&client, chat_jid).await?;
+        let sender = match sender_jid.map(str::trim).filter(|s| !s.is_empty()) {
+            Some(s) => Some(resolve_recipient_jid(&client, s).await?),
+            None => None,
+        };
+        let id_refs: Vec<&str> = message_ids.iter().map(String::as_str).collect();
+        client
+            .mark_as_read(&chat, sender.as_ref(), &id_refs)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("mark_as_read failed: {e}")))?;
+        Ok(())
+    }
+
+    async fn resolve_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<crate::engines::whatsapp::ContactInfo, EngineError> {
+        let client = {
+            let guard = self.sessions.read().await;
+            let Some(active) = guard.get(session_id) else {
+                return Err(EngineError::SessionNotFound(session_id.to_string()));
+            };
+            if *active.status.read().await != SessionConnectionState::Connected {
+                return Err(EngineError::NotConnected(session_id.to_string()));
+            }
+            active.handle.client()
+        };
+
+        let trimmed = jid_or_phone.trim();
+        let jid = resolve_recipient_jid(&client, trimmed).await?;
+        let mut lid: Option<String> = if jid.is_lid() {
+            Some(jid.to_string())
+        } else {
+            None
+        };
+        let mut phone_number = extract_phone_from_jid(&jid.to_string());
+
+        if let Ok(Some(entry)) = client.get_lid_pn_entry(&jid).await {
+            if phone_number.is_none() && !entry.phone_number.is_empty() {
+                phone_number = Some(entry.phone_number.to_string());
+            }
+            if lid.is_none() && !entry.lid.is_empty() {
+                lid = Some(format!("{}@lid", entry.lid));
+            }
+        }
+
+        let canonical_jid = phone_number
+            .as_ref()
+            .map(|p| format!("{p}@s.whatsapp.net"))
+            .unwrap_or_else(|| jid.to_string());
+
+        Ok(crate::engines::whatsapp::ContactInfo {
+            query: trimmed.to_string(),
+            jid: canonical_jid,
+            lid,
+            phone_number,
+            push_name: None,
+        })
+    }
 }
 
 async fn handle_wa_event(
@@ -689,7 +771,7 @@ async fn convert_inbound_message(
             Some(trimmed.to_string())
         }
     };
-    let sender_phone = info
+    let mut sender_phone = info
         .source
         .sender_alt
         .as_ref()
@@ -702,6 +784,13 @@ async fn convert_inbound_message(
                 .and_then(|j| extract_phone_from_jid(&j.to_string()))
         })
         .or_else(|| extract_phone_from_jid(&chat_jid));
+    if sender_phone.is_none()
+        && info.source.sender.is_lid()
+        && let Ok(Some(entry)) = client.get_lid_pn_entry(&info.source.sender).await
+        && !entry.phone_number.is_empty()
+    {
+        sender_phone = Some(entry.phone_number.to_string());
+    }
     let from_me = info.source.is_from_me;
     let timestamp = info.timestamp;
     let is_history_sync = (Utc::now() - timestamp).num_seconds() > 300;

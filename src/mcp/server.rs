@@ -96,6 +96,49 @@ pub struct SendTextMessageInput {
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct SendMediaMessageInput {
+    /// Connected WhatsApp session ID.
+    pub session_id: String,
+    /// Recipient phone number (with country code, e.g., 5511999990001) or full JID.
+    pub to: String,
+    /// Media category: "image", "video", "audio", or "document".
+    pub media_type: String,
+    /// Public HTTP/HTTPS URL to download the media from (alternative to data_base64).
+    pub media_url: Option<String>,
+    /// Base64-encoded media bytes (alternative to media_url).
+    pub data_base64: Option<String>,
+    /// Optional MIME type (inferred automatically from HTTP Content-Type or filename if omitted).
+    pub mime_type: Option<String>,
+    /// Optional filename (especially useful for documents).
+    pub filename: Option<String>,
+    /// Optional caption text.
+    pub caption: Option<String>,
+    /// Optional idempotency key to prevent duplicate sends on retries.
+    pub idempotency_key: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct GetContactInput {
+    /// WhatsApp session ID.
+    pub session_id: String,
+    /// Contact @lid, full JID, or phone number to resolve.
+    pub jid_or_phone: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct MarkReadInput {
+    /// Connected WhatsApp session ID.
+    pub session_id: String,
+    /// Chat JID to mark as read.
+    pub chat_jid: String,
+    /// Optional sender JID (for group chats).
+    pub sender_jid: Option<String>,
+    /// Optional list of external WhatsApp message IDs; when omitted, marks the latest inbound messages in the chat as read.
+    #[serde(default)]
+    pub message_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct DestructiveSessionInput {
     /// WhatsApp session ID.
     pub session_id: String,
@@ -445,6 +488,122 @@ impl RelayMcpServer {
                 "chat_jid": msg.chat_jid,
                 "status": msg.status,
                 "created_at": msg.created_at,
+            }))
+        })
+        .await
+    }
+
+    /// Send an image, video, audio, or document via HTTP/HTTPS URL or base64.
+    #[tool(
+        description = "Send a WhatsApp media message (image, video, audio, document) using either a public media_url or data_base64. Supports idempotency_key and is audited in SQLite."
+    )]
+    async fn send_media_message(
+        &self,
+        Parameters(input): Parameters<SendMediaMessageInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "to": input.to,
+            "media_type": input.media_type,
+            "media_url": input.media_url,
+            "has_base64": input.data_base64.as_ref().is_some_and(|s| !s.is_empty()),
+            "mime_type": input.mime_type,
+            "filename": input.filename,
+            "idempotency_key": input.idempotency_key,
+        });
+        self.audit_and_wrap("send_media_message", Some(&sid), args, || async {
+            let kind = match input.media_type.trim().to_ascii_lowercase().as_str() {
+                "image" => crate::engines::whatsapp::MediaKind::Image,
+                "video" => crate::engines::whatsapp::MediaKind::Video,
+                "audio" => crate::engines::whatsapp::MediaKind::Audio,
+                "document" => crate::engines::whatsapp::MediaKind::Document,
+                other => {
+                    return Err(format!(
+                        "unsupported media_type '{other}': expected image, video, audio, or document"
+                    ));
+                }
+            };
+            let msg = self
+                .service
+                .send_media_message(
+                    &input.session_id,
+                    &input.to,
+                    kind,
+                    input.mime_type.as_deref(),
+                    input.filename.as_deref(),
+                    input.caption.as_deref(),
+                    input.data_base64.as_deref(),
+                    input.media_url.as_deref(),
+                    input.idempotency_key.as_deref(),
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "message_id": msg.id,
+                "session_id": msg.session_id,
+                "chat_jid": msg.chat_jid,
+                "media_id": msg.media_id,
+                "message_type": msg.message_type,
+                "status": msg.status,
+                "created_at": msg.created_at,
+            }))
+        })
+        .await
+    }
+
+    /// Resolve a WhatsApp contact (@lid, JID, or phone number) to its phone number, canonical JID, and display name.
+    #[tool(
+        description = "Resolve a WhatsApp @lid, JID, or phone number into canonical phone_number, jid, lid, and push_name using WhatsApp's LID-to-PN mapping and message history."
+    )]
+    async fn get_contact(
+        &self,
+        Parameters(input): Parameters<GetContactInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "jid_or_phone": input.jid_or_phone,
+        });
+        self.audit_and_wrap("get_contact", Some(&sid), args, || async {
+            self.service
+                .get_contact(&input.session_id, &input.jid_or_phone)
+                .await
+                .map_err(|e| e.to_string())
+        })
+        .await
+    }
+
+    /// Mark WhatsApp messages in a chat as read (sends read receipts so the phone doesn't accumulate unread badges).
+    #[tool(
+        description = "Mark WhatsApp messages in a chat as read (sends read receipts). When message_ids is omitted, automatically marks the latest inbound messages in that chat as read."
+    )]
+    async fn mark_read(
+        &self,
+        Parameters(input): Parameters<MarkReadInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "chat_jid": input.chat_jid,
+            "sender_jid": input.sender_jid,
+            "message_ids_count": input.message_ids.len(),
+        });
+        self.audit_and_wrap("mark_read", Some(&sid), args, || async {
+            let marked_count = self
+                .service
+                .mark_read(
+                    &input.session_id,
+                    &input.chat_jid,
+                    input.sender_jid.as_deref(),
+                    input.message_ids.clone(),
+                )
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "session_id": input.session_id,
+                "chat_jid": input.chat_jid,
+                "marked_count": marked_count,
             }))
         })
         .await

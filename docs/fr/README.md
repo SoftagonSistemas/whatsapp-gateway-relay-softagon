@@ -157,6 +157,14 @@ Softagon Relay intègre un **serveur MCP (Model Context Protocol)** natif en Rus
 
 > Pour un usage **autonome** sans autre conteneur `softagon-relay` actif, ajoutez `"-e", "MCP_RESTORE_SESSIONS=true"` dans `args`. Avec le serveur principal en cours d'exécution, préférez **Streamable HTTP** dans le même conteneur (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
+### 6.2 Grok Bot, Appairage sans Connexion et Outils Agents (`v0.3.8`)
+
+- **Kit clé en main Grok Bot :** consultez [`docs/grok-bot.md`](../grok-bot.md) et [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) pour installer le binaire natif dans `/workspace/softagon-relay`.
+- **Lien d'appairage temporaire (`/pair/{token}`) :** `POST /v1/sessions/{id}/pair-link` (ou MCP `create_pairing_link`) affiche le **QR Code** sans demander `RELAY_API_KEY`, renouvelle automatiquement les cycles expirés jusqu'à 10 minutes et propose `qr.png` natif ainsi qu'un **code à 8 chiffres** (`POST /v1/sessions/{id}/pair-code` / MCP `request_pair_code`).
+- **Webhooks avec Bearer ou en-tête personnalisé :** transmettez `bearer_token` ou `auth_header_name`/`auth_header_value` sur `POST`/`PATCH /v1/webhooks`. Les erreurs `401`/`403` arrêtent immédiatement les nouvelles tentatives.
+- **Contexte client enrichi :** inclut `sender_name`, `sender_phone` (résolu même pour `@lid`), les réponses envoyées depuis le téléphone de l'équipe (`from_me: true`, `source: "device_sync"`), l'horodatage réel sans déclencher de webhook sur `is_history_sync`, ainsi que `sticker`, `reaction`, `location` et `contact`.
+- **Nouveaux outils MCP & endpoints REST :** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`) et `send_media_message` via `media_url` (HTTP/HTTPS) ou `data_base64` avec `idempotency_key`.
+
 ---
 
 ## 7. Support et Contact

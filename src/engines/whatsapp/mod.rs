@@ -171,6 +171,15 @@ pub struct SendResult {
     pub external_message_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContactInfo {
+    pub query: String,
+    pub jid: String,
+    pub lid: Option<String>,
+    pub phone_number: Option<String>,
+    pub push_name: Option<String>,
+}
+
 #[async_trait]
 pub trait WhatsAppEngine: Send + Sync {
     async fn start_session(
@@ -219,4 +228,28 @@ pub trait WhatsAppEngine: Send + Sync {
         session_id: &str,
         params: SendMediaParams,
     ) -> Result<SendResult, EngineError>;
+
+    async fn mark_read(
+        &self,
+        _session_id: &str,
+        _chat_jid: &str,
+        _sender_jid: Option<&str>,
+        _message_ids: &[String],
+    ) -> Result<(), EngineError> {
+        Ok(())
+    }
+
+    async fn resolve_contact(
+        &self,
+        _session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<ContactInfo, EngineError> {
+        Ok(ContactInfo {
+            query: jid_or_phone.to_string(),
+            jid: jid_or_phone.to_string(),
+            lid: None,
+            phone_number: None,
+            push_name: None,
+        })
+    }
 }

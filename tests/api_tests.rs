@@ -700,3 +700,119 @@ async fn webhook_bearer_token_and_custom_auth_header() {
     assert_eq!(body_patch["has_auth_header"], true);
     assert!(!body_patch.to_string().contains("custom_val_999"));
 }
+
+#[tokio::test]
+async fn contacts_mark_read_media_url_and_live_health() {
+    let app = TestHarness::new(false).await;
+
+    // Create and connect a session
+    let (st, sess) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/sessions")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(json!({ "name": "store-live" }).to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    let session_id = sess["id"].as_str().unwrap().to_string();
+
+    app.engine
+        .simulate_connected(&session_id, "551100000001", "551100000001@s.whatsapp.net")
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    // /v1/health reports live connected session count
+    let (st_health, health_body) = app
+        .request(
+            Request::builder()
+                .uri("/v1/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st_health, StatusCode::OK);
+    assert_eq!(health_body["active_sessions"], 1);
+    assert_eq!(health_body["total_sessions"], 1);
+    assert_eq!(health_body["sessions_healthy"], true);
+
+    // Simulate inbound message from an @lid contact with resolved sender_phone + sender_name
+    app.engine
+        .simulate_inbound_message(
+            &session_id,
+            softagon_relay::engines::whatsapp::InboundMessage {
+                external_id: "wamid.lid_msg_1".to_string(),
+                chat_jid: "123456789012345@lid".to_string(),
+                sender_jid: Some("123456789012345@lid".to_string()),
+                sender_name: Some("Ana Paula".to_string()),
+                sender_phone: Some("5511977776666".to_string()),
+                from_me: false,
+                is_history_sync: false,
+                message_type: "text".to_string(),
+                text_body: Some("Tem caderno em estoque?".to_string()),
+                caption: None,
+                media: None,
+                timestamp: chrono::Utc::now(),
+            },
+        )
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(80)).await;
+
+    // GET /v1/sessions/{id}/contacts/{jid} resolves @lid -> phone_number + push_name
+    let (st_contact, contact_body) = app
+        .request(
+            Request::builder()
+                .uri(format!(
+                    "/v1/sessions/{session_id}/contacts/123456789012345@lid"
+                ))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st_contact, StatusCode::OK);
+    assert_eq!(contact_body["phone_number"], "5511977776666");
+    assert_eq!(contact_body["push_name"], "Ana Paula");
+    assert_eq!(contact_body["jid"], "5511977776666@s.whatsapp.net");
+
+    // POST /v1/sessions/{id}/chats/read marks latest inbound messages as read
+    let (st_read, read_body) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{session_id}/chats/read"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({ "chat_jid": "123456789012345@lid" }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st_read, StatusCode::OK);
+    assert_eq!(read_body["marked_count"], 1);
+
+    // Reject invalid media_url schemes (e.g., file://)
+    let (st_bad_url, _) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{session_id}/messages/media"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511977776666",
+                        "media_type": "image",
+                        "media_url": "file:///etc/passwd"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st_bad_url, StatusCode::BAD_REQUEST);
+}

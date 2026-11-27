@@ -30,7 +30,8 @@ Never ask the user to type `RELAY_API_KEY` into the browser login screen, and ne
 - **Direct Webhook to Grok Bot Routines:** register a webhook with `POST /v1/webhooks` passing `"bearer_token": "<routine-token>"` (or `auth_header_name` / `auth_header_value`) and `"events": ["message.received", "message.sent"]`. No proxy forwarder is needed.
 - **Rich Context:** incoming events include `sender_name` (WhatsApp display name), `sender_phone` (resolved even for `@lid` contacts), `from_me` / `source: "device_sync"` (so you know when store staff replied from the phone), and `is_history_sync` (historical sync never wakes routines).
 - Prefer the local **MCP Streamable HTTP** server (`http://127.0.0.1:8091/mcp`) or REST API (`http://127.0.0.1:8080/v1/*`) using the key stored in `/workspace/softagon-relay/.env` (never print or echo `RELAY_API_KEY` in chat).
-- Always pass an `idempotency_key` when calling `send_text_message` so retries never send duplicate messages.
+- Use MCP `get_contact` to resolve `@lid` contacts into phone numbers and display names, `mark_read` after answering so the store phone doesn't accumulate unread chats, and `send_media_message` with either `media_url` or `data_base64`.
+- Always pass an `idempotency_key` when calling `send_text_message` or `send_media_message` so retries never send duplicate messages.
 - For multi-bot handoffs or user-facing reports, save exported summaries, transcripts, or media under `/workspace/softagon-relay/results/` and reference the file path clearly.
 - Always confirm recipient and message content with the user before sending outbound WhatsApp messages unless the user explicitly authorized autonomous replies.
 

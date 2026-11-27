@@ -339,4 +339,69 @@ impl Database {
         .await?;
         Ok(rows)
     }
+
+    pub async fn list_recent_inbound_external_ids(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        limit: i64,
+    ) -> Result<Vec<String>, DbError> {
+        let clamped = limit.clamp(1, 100);
+        let rows: Vec<(String,)> = sqlx::query_as(
+            r#"
+            SELECT external_id
+            FROM messages
+            WHERE session_id = ?1
+              AND chat_jid = ?2
+              AND direction = 'inbound'
+              AND external_id IS NOT NULL
+              AND external_id != ''
+            ORDER BY created_at DESC
+            LIMIT ?3
+            "#,
+        )
+        .bind(session_id)
+        .bind(chat_jid)
+        .bind(clamped)
+        .fetch_all(self.pool())
+        .await?;
+        Ok(rows.into_iter().map(|(id,)| id).collect())
+    }
+
+    pub async fn lookup_contact_from_history(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<Option<(String, Option<String>, Option<String>)>, DbError> {
+        let pat = format!("%{}%", jid_or_phone.trim().to_lowercase());
+        let row: Option<(String, Option<String>, Option<String>)> = sqlx::query_as(
+            r#"
+            SELECT
+                chat_jid,
+                json_extract(metadata_json, '$.sender_name') AS sender_name,
+                json_extract(metadata_json, '$.sender_phone') AS sender_phone
+            FROM messages
+            WHERE session_id = ?1
+              AND direction = 'inbound'
+              AND (
+                  LOWER(chat_jid) = LOWER(?2)
+                  OR LOWER(COALESCE(sender_jid, '')) = LOWER(?2)
+                  OR LOWER(COALESCE(json_extract(metadata_json, '$.sender_phone'), '')) = LOWER(?2)
+                  OR LOWER(chat_jid) LIKE ?3
+                  OR LOWER(COALESCE(sender_jid, '')) LIKE ?3
+              )
+            ORDER BY
+                (json_extract(metadata_json, '$.sender_name') IS NOT NULL) DESC,
+                (json_extract(metadata_json, '$.sender_phone') IS NOT NULL) DESC,
+                created_at DESC
+            LIMIT 1
+            "#,
+        )
+        .bind(session_id)
+        .bind(jid_or_phone.trim())
+        .bind(&pat)
+        .fetch_optional(self.pool())
+        .await?;
+        Ok(row)
+    }
 }

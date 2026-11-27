@@ -157,6 +157,14 @@ Softagon Relay menyertakan **MCP Server (Model Context Protocol)** Rust native b
 
 > Untuk STDIO **mandiri** (saat tidak ada container `serve` yang berjalan), tambahkan `"-e", "MCP_RESTORE_SESSIONS=true"` pada `args`. Jika container server sedang berjalan, gunakan **Streamable HTTP** di dalam container yang sama (`-p 127.0.0.1:8091:8091 -e MCP_HTTP_ENABLED=true -e MCP_HTTP_HOST=0.0.0.0 -e MCP_ALLOW_CONTAINER_BIND=true`).
 
+### 6.2 Grok Bot, Pairing Tanpa Login & Fitur Agen (`v0.3.8`)
+
+- **Kit Siap Pakai Grok Bot:** lihat [`docs/grok-bot.md`](../grok-bot.md) dan [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) untuk instalasi biner lokal di `/workspace/softagon-relay`.
+- **Tautan Pairing Sementara (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (atau MCP `create_pairing_link`) membuka **QR Code** tanpa login atau mengekspos `RELAY_API_KEY`, memperbarui otomatis siklus QR hingga 10 menit, serta menyediakan `qr.png` dan **kode 8 digit** (`POST /v1/sessions/{id}/pair-code` / MCP `request_pair_code`).
+- **Webhook Bearer & Header Kustom:** kirim `bearer_token` atau `auth_header_name`/`auth_header_value` pada `POST`/`PATCH /v1/webhooks`. Respons `401`/`403` langsung menghentikan percobaan ulang.
+- **Konteks Percakapan Lengkap:** mencakup `sender_name`, `sender_phone` (termasuk resolusi `@lid`), balasan tim dari ponsel (`from_me: true`, `source: "device_sync"`), timestamp asli tanpa memicu webhook saat `is_history_sync`, serta pesan `sticker`, `reaction`, `location`, dan `contact`.
+- **Alat MCP & Endpoint REST Baru:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), dan `send_media_message` melalui `media_url` (HTTP/HTTPS) atau `data_base64` dengan `idempotency_key`.
+
 ---
 
 ## 7. Dukungan & Kontak

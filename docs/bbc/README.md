@@ -155,6 +155,14 @@ Softagon Relay adong **MCP Server (Model Context Protocol)** Rust native marhite
 }
 ```
 
+### 6.2 Grok Bot, Pairing Tanpa Login & Fitur Agen (`v0.3.8`)
+
+- **Kit Siap Pakke Grok Bot:** ida [`docs/grok-bot.md`](../grok-bot.md) dohot [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) laho mamasang biner lokal di `/workspace/softagon-relay`.
+- **Link Pairing Satongkin (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (manang MCP `create_pairing_link`) mambuka **QR Code** tanpa login `RELAY_API_KEY`, mambahen QR baru otomatis sahat tu 10 menit, jala adong `qr.png` dohot **kode 8 digit** (`POST /v1/sessions/{id}/pair-code`).
+- **Webhook Bearer & Header Kustom:** bahen `bearer_token` manang `auth_header_name`/`auth_header_value` di `POST`/`PATCH /v1/webhooks`. Alus `401`/`403` pintor mansohot mangulahi.
+- **Konteks Pangkataion Lengkap:** adong `sender_name`, `sender_phone` (dohot resolusi `@lid`), alus ni tim sian HP (`from_me: true`, `source: "device_sync"`), tingki asli tanpa mambahen webhook di `is_history_sync`, jala `sticker`, `reaction`, `location`, dohot `contact`.
+- **Alat MCP & REST Baru:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), dohot `send_media_message` marhite `media_url` manang `data_base64` dohot `idempotency_key`.
+
 ---
 
 ## 7. Pangurupion & Kontak

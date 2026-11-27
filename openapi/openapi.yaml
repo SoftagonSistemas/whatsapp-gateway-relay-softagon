@@ -1,7 +1,7 @@
 openapi: 3.2.1
 info:
   title: Softagon Relay API
-  version: 0.3.7
+  version: 0.3.8
   summary: Open-source, self-hosted WhatsApp messaging gateway
   description: |
     Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
@@ -375,6 +375,61 @@ paths:
           $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /v1/sessions/{session_id}/chats/read:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Messages]
+      operationId: markChatRead
+      summary: Send WhatsApp read receipts for a chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chat_jid]
+              properties:
+                chat_jid:
+                  type: string
+                sender_jid:
+                  type: ["string", "null"]
+                message_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Read receipts sent
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/contacts/{jid}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+      - name: jid
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Sessions]
+      operationId: getContact
+      summary: Resolve a WhatsApp @lid, JID, or phone number into phone_number and push_name
+      responses:
+        "200":
+          description: Resolved contact details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/messages/{message_id}:
     parameters:
       - $ref: "#/components/parameters/MessageId"
@@ -636,6 +691,24 @@ components:
           type: boolean
         active_sessions:
           type: integer
+        total_sessions:
+          type: integer
+        sessions_healthy:
+          type: boolean
+    ContactInfo:
+      type: object
+      required: [query, jid]
+      properties:
+        query:
+          type: string
+        jid:
+          type: string
+        lid:
+          type: ["string", "null"]
+        phone_number:
+          type: ["string", "null"]
+        push_name:
+          type: ["string", "null"]
     CreateSessionRequest:
       type: object
       required: [name]
@@ -704,7 +777,7 @@ components:
           type: string
     SendMediaRequest:
       type: object
-      required: [to, media_type, mime_type, data_base64]
+      required: [to, media_type]
       properties:
         to:
           type: string
@@ -712,14 +785,18 @@ components:
           type: string
           enum: [image, video, audio, document]
         mime_type:
-          type: string
+          type: ["string", "null"]
+          description: Optional MIME type (inferred automatically from HTTP Content-Type or filename when omitted)
         filename:
           type: ["string", "null"]
         caption:
           type: ["string", "null"]
+        media_url:
+          type: ["string", "null"]
+          description: Public HTTP/HTTPS URL to fetch the media from (alternative to data_base64)
         data_base64:
-          type: string
-          description: Base64-encoded media bytes
+          type: ["string", "null"]
+          description: Base64-encoded media bytes (alternative to media_url)
     Message:
       type: object
       required: [id, session_id, direction, chat_jid, message_type, status, created_at, updated_at]

@@ -538,6 +538,146 @@ impl SessionManager {
             .ok_or_else(|| SessionError::MessageNotFound(message_id.to_string()))
     }
 
+    pub async fn mark_read(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        sender_jid: Option<&str>,
+        message_ids: Vec<String>,
+    ) -> Result<usize, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        let chat = chat_jid.trim();
+        if chat.is_empty() {
+            return Err(SessionError::BadRequest("chat_jid cannot be empty".into()));
+        }
+        let ids = if message_ids.is_empty() {
+            self.db
+                .list_recent_inbound_external_ids(session_id, chat, 20)
+                .await?
+        } else {
+            message_ids
+                .into_iter()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        };
+        if ids.is_empty() {
+            return Ok(0);
+        }
+        self.engine
+            .mark_read(session_id, chat, sender_jid, &ids)
+            .await?;
+        Ok(ids.len())
+    }
+
+    pub async fn get_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+    ) -> Result<crate::engines::whatsapp::ContactInfo, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        let query = jid_or_phone.trim();
+        if query.is_empty() {
+            return Err(SessionError::BadRequest(
+                "jid_or_phone cannot be empty".into(),
+            ));
+        }
+
+        let mut info = match self.engine.resolve_contact(session_id, query).await {
+            Ok(resolved) => resolved,
+            Err(_) => crate::engines::whatsapp::ContactInfo {
+                query: query.to_string(),
+                jid: query.to_string(),
+                lid: if query.ends_with("@lid") {
+                    Some(query.to_string())
+                } else {
+                    None
+                },
+                phone_number: None,
+                push_name: None,
+            },
+        };
+
+        if let Ok(Some((hist_jid, hist_name, hist_phone))) =
+            self.db.lookup_contact_from_history(session_id, query).await
+        {
+            if info.push_name.is_none() {
+                info.push_name = hist_name;
+            }
+            if info.phone_number.is_none() {
+                info.phone_number = hist_phone;
+            }
+            if info.jid == query && !hist_jid.is_empty() {
+                info.jid = hist_jid;
+            }
+        }
+
+        if let Some(ref pn) = info.phone_number
+            && info.jid.ends_with("@lid")
+        {
+            info.jid = format!("{pn}@s.whatsapp.net");
+        }
+
+        Ok(info)
+    }
+
+    pub async fn fetch_media_from_url(
+        &self,
+        url: &str,
+    ) -> Result<(Bytes, Option<String>, Option<String>), SessionError> {
+        let parsed = reqwest::Url::parse(url.trim())
+            .map_err(|e| SessionError::BadRequest(format!("invalid media_url: {e}")))?;
+        if !matches!(parsed.scheme(), "http" | "https") {
+            return Err(SessionError::BadRequest(
+                "media_url must use http:// or https://".into(),
+            ));
+        }
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(20))
+            .build()
+            .map_err(|e| SessionError::BadRequest(format!("http client error: {e}")))?;
+        let resp =
+            client.get(parsed.clone()).send().await.map_err(|e| {
+                SessionError::BadRequest(format!("failed to download media_url: {e}"))
+            })?;
+        if !resp.status().is_success() {
+            return Err(SessionError::BadRequest(format!(
+                "media_url returned HTTP {}",
+                resp.status().as_u16()
+            )));
+        }
+        if let Some(len) = resp.content_length()
+            && len as usize > self.config.media_max_upload_bytes
+        {
+            return Err(SessionError::BadRequest(format!(
+                "media_url payload exceeds max size of {} bytes",
+                self.config.media_max_upload_bytes
+            )));
+        }
+        let content_type = resp
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.split(';').next().unwrap_or(s).trim().to_string())
+            .filter(|s| !s.is_empty());
+        let filename = parsed
+            .path_segments()
+            .and_then(|mut s| s.next_back())
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string);
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| SessionError::BadRequest(format!("failed to read media_url body: {e}")))?;
+        if bytes.len() > self.config.media_max_upload_bytes {
+            return Err(SessionError::BadRequest(format!(
+                "media_url payload exceeds max size of {} bytes",
+                self.config.media_max_upload_bytes
+            )));
+        }
+        Ok((bytes, content_type, filename))
+    }
+
     pub async fn request_transcription(
         &self,
         message_id: &str,

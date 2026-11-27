@@ -6,6 +6,17 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.8] — 2026-11-27
+
+### Added — Complete Grok Bot Feature Set & 10-Language Documentation Sync
+- **Read Receipts (`mark_read`):** added `POST /v1/sessions/{id}/chats/read` and MCP tool `mark_read` backed by `whatsapp-rust`'s `client.mark_as_read(...)`. Automatically marks the latest inbound messages when `message_ids` is omitted so linked phones do not accumulate unread badges.
+- **Contact & `@lid` Resolution (`get_contact`):** added `GET /v1/sessions/{id}/contacts/{jid}` and MCP tool `get_contact` combining WhatsApp's `get_lid_pn_entry` LID-to-PN cache with SQLite message history (`push_name`, `phone_number`, canonical `jid`). Also uses `get_lid_pn_entry` as fallback during inbound `@lid` message conversion.
+- **Media Sending via URL (`media_url`) & MCP `send_media_message`:** `POST /v1/sessions/{id}/messages/media` and the new MCP tool `send_media_message` now accept either a public HTTP/HTTPS `media_url` (with MIME/filename auto-detection and size limit enforcement) or `data_base64`, with full `idempotency_key` deduplication.
+- **Live Session Health in `/v1/health`:** `/v1/health` now queries live engine session states and exposes `active_sessions`, `total_sessions`, and `sessions_healthy`.
+- **10-Language Regional Docs Updated:** added section `6.2` covering Grok Bot, zero-login `/pair/{token}`, 8-digit pairing codes, webhook Bearer auth, `@lid` resolution, `mark_read`, and `media_url` across all 10 language guides (`pt-BR`, `en`, `es`, `fr`, `id`, `bew`, `su`, `jv`, `bbc`, `ms`).
+
+---
+
 ## [0.3.7] — 2026-11-27
 
 ### Added — Grok Bot Turnkey Experience, Zero-Login Pairing & Webhook Auth

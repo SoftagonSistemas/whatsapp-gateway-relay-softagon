@@ -13,16 +13,19 @@ pub struct HealthResponse {
     pub transcription_enabled: bool,
     pub transcription_available: bool,
     pub active_sessions: usize,
+    pub total_sessions: usize,
+    pub sessions_healthy: bool,
 }
 
 pub async fn health(State(state): State<AppState>) -> (StatusCode, Json<HealthResponse>) {
     let db_ok = state.db.health_check().await.is_ok();
-    let active_sessions = state
-        .db
-        .list_sessions()
-        .await
-        .map(|s| s.into_iter().filter(|x| x.status == "connected").count())
-        .unwrap_or(0);
+    let sessions = state.sessions.list_sessions().await.unwrap_or_default();
+    let total_sessions = sessions.len();
+    let active_sessions = sessions
+        .into_iter()
+        .filter(|x| x.status == "connected")
+        .count();
+    let sessions_healthy = total_sessions == 0 || active_sessions == total_sessions;
 
     let status = if db_ok {
         StatusCode::OK
@@ -39,6 +42,8 @@ pub async fn health(State(state): State<AppState>) -> (StatusCode, Json<HealthRe
             transcription_enabled: state.config.transcription.enabled,
             transcription_available: state.transcription_engine.is_available(),
             active_sessions,
+            total_sessions,
+            sessions_healthy,
         }),
     )
 }
