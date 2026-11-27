@@ -36,6 +36,7 @@ pub struct NewMessage<'a> {
     pub media_id: Option<&'a str>,
     pub status: &'a str,
     pub metadata_json: &'a str,
+    pub created_at: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -71,6 +72,7 @@ pub struct MessageWithTranscriptionRecord {
 impl Database {
     pub async fn insert_message(&self, msg: NewMessage<'_>) -> Result<MessageRecord, DbError> {
         let now = Utc::now().to_rfc3339();
+        let created_at = msg.created_at.unwrap_or(&now);
         sqlx::query(
             r#"
             INSERT INTO messages (
@@ -93,7 +95,7 @@ impl Database {
         .bind(msg.media_id)
         .bind(msg.status)
         .bind(msg.metadata_json)
-        .bind(&now)
+        .bind(created_at)
         .bind(&now)
         .execute(self.pool())
         .await?;

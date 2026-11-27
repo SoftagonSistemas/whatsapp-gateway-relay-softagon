@@ -103,6 +103,13 @@ pub struct InboundMedia {
     pub is_voice_note: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuotedMessage {
+    pub stanza_id: Option<String>,
+    pub participant: Option<String>,
+    pub text: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct InboundMessage {
     pub external_id: String,
@@ -111,7 +118,9 @@ pub struct InboundMessage {
     pub sender_name: Option<String>,
     pub sender_phone: Option<String>,
     pub from_me: bool,
+    pub is_group: bool,
     pub is_history_sync: bool,
+    pub quoted: Option<QuotedMessage>,
     pub message_type: String,
     pub text_body: Option<String>,
     pub caption: Option<String>,
@@ -147,6 +156,13 @@ pub enum EngineEvent {
         group_jid: String,
         action: String,
         details: serde_json::Value,
+    },
+    PresenceUpdated {
+        session_id: String,
+        chat_jid: String,
+        sender_jid: Option<String>,
+        state: String,
+        last_seen: Option<DateTime<Utc>>,
     },
 }
 

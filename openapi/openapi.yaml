@@ -1,7 +1,7 @@
 openapi: 3.2.1
 info:
   title: Softagon Relay API
-  version: 0.3.9
+  version: 0.3.10
   summary: Open-source, self-hosted WhatsApp messaging gateway
   description: |
     Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
@@ -897,6 +897,7 @@ components:
               - message.transcription.completed
               - message.transcription.failed
               - group.updated
+              - chat.presence
         enabled:
           type: boolean
           default: true
@@ -980,6 +981,7 @@ components:
             - message.transcription.completed
             - message.transcription.failed
             - group.updated
+            - chat.presence
         session_id:
           type: string
         timestamp:

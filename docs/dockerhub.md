@@ -47,7 +47,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.9
+    image: softagon/relay:0.3.10
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -85,8 +85,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.9`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.10`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
+| `0.3.10` | `linux/amd64` | Ignore `status@broadcast` noise, `quoted` + `is_group` + real `created_at` timestamps, live status in `GET /v1/sessions/{id}`, phone/JID on `Connected`, `chat.presence` events |
 | `0.3.9` | `linux/amd64` | Browser auto-language detection on `/pair/{token}`, clean credential wipe when reconnecting `logged_out` sessions, hidden broken-image fix |
 | `0.3.8` | `linux/amd64` | Complete Grok Bot kit: `mark_read`, `get_contact` (`@lid` resolution), `media_url` + MCP `send_media_message`, live `/v1/health`, 10-locale docs |
 | `0.3.7` | `linux/amd64` | Zero-login `/pair/{token}` auto-renewing QR, `qr.png`, 8-digit pairing code, webhook `bearer_token`/custom auth, `sender_name`, `from_me` phone sync, `is_history_sync` suppression |

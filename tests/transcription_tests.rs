@@ -131,6 +131,7 @@ async fn transcription_worker_processes_audio_and_cleans_temp_files() {
         media_id: Some("med_voice"),
         status: "received",
         metadata_json: "{}",
+        created_at: None,
     })
     .await
     .unwrap();

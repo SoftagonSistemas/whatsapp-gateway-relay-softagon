@@ -6,6 +6,19 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.10] — 2026-11-27
+
+### Added — Presence Events, Quoted Replies & Group Metadata
+- **Presence Events (`chat.presence`):** maps `whatsapp-rust` `Event::ChatPresence` (`composing`, `recording`, `paused`) and `Event::Presence` (`available`, `unavailable`, `last_seen`) to a new subscribable webhook event `chat.presence` (ignoring `status@broadcast`).
+- **Quoted Message & Group Flag (`quoted`, `is_group`):** extracts `stanza_id`, `participant`, and quoted text/caption from WhatsApp `ContextInfo` and includes `quoted` and `is_group` in both SQLite `metadata_json` and `message.received` / `message.sent` webhook payloads.
+
+### Fixed
+- **Filter Out `status@broadcast` (WhatsApp Stories):** `Event::Messages` and `Event::Receipt` now drop `status@broadcast` events at the adapter boundary so WhatsApp Stories never flood webhooks or consume routine execution quotas.
+- **Live Status in `GET /v1/sessions/{id}` & Phone/JID on `Connected`:** `SessionManager::get_session` now merges live engine status (matching `list_sessions`), and `Event::Connected` extracts the own device `phone_number` and `jid` from `persistence_manager().get_device_snapshot().pn` so both SQLite and `session.status` webhooks include them immediately.
+- **Real Message Timestamp in `created_at` / `list_chats.last_message_at`:** `insert_message` now persists the real WhatsApp `info.timestamp` in `created_at` so chat ordering and `last_message_at` remain accurate even during history sync.
+
+---
+
 ## [0.3.9] — 2026-11-27
 
 ### Added

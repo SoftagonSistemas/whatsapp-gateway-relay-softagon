@@ -199,10 +199,15 @@ impl SessionManager {
     }
 
     pub async fn get_session(&self, session_id: &str) -> Result<SessionRecord, SessionError> {
-        self.db
+        let mut rec = self
+            .db
             .get_session(session_id)
             .await?
-            .ok_or_else(|| SessionError::NotFound(session_id.to_string()))
+            .ok_or_else(|| SessionError::NotFound(session_id.to_string()))?;
+        if let Ok(live) = self.engine.get_status(&rec.id).await {
+            rec.status = live.as_str().to_string();
+        }
+        Ok(rec)
     }
 
     pub async fn get_qr(&self, session_id: &str) -> Result<Option<QrPayload>, SessionError> {
@@ -401,6 +406,7 @@ impl SessionManager {
                 media_id: None,
                 status: "sent",
                 metadata_json: "{}",
+                created_at: None,
             })
             .await?;
 
@@ -515,6 +521,7 @@ impl SessionManager {
                 media_id: Some(&media_id),
                 status: "sent",
                 metadata_json: "{}",
+                created_at: None,
             })
             .await?;
 
@@ -774,6 +781,8 @@ impl SessionManager {
                         serde_json::json!({
                             "session_id": session_id,
                             "status": status.as_str(),
+                            "phone_number": phone_number,
+                            "jid": jid,
                             "reason": reason,
                         }),
                     )
@@ -840,12 +849,15 @@ impl SessionManager {
                 } else {
                     "contact"
                 };
+                let msg_ts = message.timestamp.to_rfc3339();
                 let metadata = serde_json::json!({
                     "sender_name": message.sender_name,
                     "sender_phone": message.sender_phone,
                     "from_me": message.from_me,
+                    "is_group": message.is_group,
+                    "quoted": message.quoted,
                     "source": source,
-                    "message_timestamp": message.timestamp.to_rfc3339(),
+                    "message_timestamp": msg_ts,
                     "is_history_sync": message.is_history_sync,
                 });
                 let metadata_str = metadata.to_string();
@@ -866,6 +878,7 @@ impl SessionManager {
                         media_id: media_id_opt.as_deref(),
                         status,
                         metadata_json: &metadata_str,
+                        created_at: Some(&msg_ts),
                     })
                     .await;
 
@@ -891,8 +904,10 @@ impl SessionManager {
                                         "sender_name": message.sender_name,
                                         "sender_phone": message.sender_phone,
                                         "from_me": message.from_me,
+                                        "is_group": message.is_group,
+                                        "quoted": message.quoted,
                                         "source": source,
-                                        "timestamp": message.timestamp.to_rfc3339(),
+                                        "timestamp": msg_ts,
                                         "is_history_sync": message.is_history_sync,
                                         "message_type": rec.message_type,
                                         "text": rec.text_body,
@@ -959,6 +974,27 @@ impl SessionManager {
                             "group_jid": group_jid,
                             "action": action,
                             "details": details,
+                        }),
+                    )
+                    .await;
+            }
+            EngineEvent::PresenceUpdated {
+                session_id,
+                chat_jid,
+                sender_jid,
+                state,
+                last_seen,
+            } => {
+                let _ = self
+                    .events
+                    .publish(
+                        "chat.presence",
+                        &session_id,
+                        serde_json::json!({
+                            "chat_jid": chat_jid,
+                            "sender_jid": sender_jid,
+                            "state": state,
+                            "last_seen": last_seen.map(|t| t.to_rfc3339()),
                         }),
                     )
                     .await;

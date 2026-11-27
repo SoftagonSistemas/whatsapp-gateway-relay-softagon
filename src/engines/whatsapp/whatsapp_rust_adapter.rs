@@ -15,6 +15,7 @@ use whatsapp_rust::upload::UploadOptions;
 use whatsapp_rust::wacore::download::MediaType;
 use whatsapp_rust::wacore::store::device::DevicePropsOverride;
 use whatsapp_rust::wacore::types::events::Event;
+use whatsapp_rust::wacore_binary::JidExt;
 
 use super::{
     EngineError, EngineEvent, InboundMedia, InboundMessage, MediaKind, PairCodePayload, QrPayload,
@@ -601,12 +602,22 @@ async fn handle_wa_event(
             *status_cell.write().await = SessionConnectionState::Connected;
             *qr_cell.write().await = None;
             *pair_code_cell.write().await = None;
+            let own_pn = client
+                .persistence_manager()
+                .get_device_snapshot()
+                .pn
+                .clone();
+            let jid = own_pn.as_ref().map(|j| j.to_string());
+            let phone_number = own_pn
+                .as_ref()
+                .map(|j| j.user.to_string())
+                .filter(|s| !s.is_empty());
             let _ = tx
                 .send(EngineEvent::StatusChanged {
                     session_id: session_id.to_string(),
                     status: SessionConnectionState::Connected,
-                    phone_number: None,
-                    jid: None,
+                    phone_number,
+                    jid,
                     reason: None,
                 })
                 .await;
@@ -670,6 +681,9 @@ async fn handle_wa_event(
         }
         Event::Messages(batch) => {
             for item in batch.iter() {
+                if item.info.source.chat.is_status_broadcast() {
+                    continue;
+                }
                 if let Some(inbound) =
                     convert_inbound_message(item.message.as_ref(), &item.info, &client).await
                 {
@@ -683,6 +697,9 @@ async fn handle_wa_event(
             }
         }
         Event::Receipt(receipt) => {
+            if receipt.source.chat.is_status_broadcast() {
+                return;
+            }
             let ack_status = format!("{:?}", receipt.r#type).to_ascii_lowercase();
             let chat_jid = receipt.source.chat.to_string();
             for msg_id in &receipt.message_ids {
@@ -695,6 +712,47 @@ async fn handle_wa_event(
                     })
                     .await;
             }
+        }
+        Event::ChatPresence(cp) => {
+            if cp.source.chat.is_status_broadcast() {
+                return;
+            }
+            let state = match (cp.state, cp.media) {
+                (
+                    whatsapp_rust::wacore::types::presence::ChatPresence::Composing,
+                    whatsapp_rust::wacore::types::presence::ChatPresenceMedia::Audio,
+                ) => "recording",
+                (whatsapp_rust::wacore::types::presence::ChatPresence::Composing, _) => "composing",
+                (whatsapp_rust::wacore::types::presence::ChatPresence::Paused, _) => "paused",
+            };
+            let _ = tx
+                .send(EngineEvent::PresenceUpdated {
+                    session_id: session_id.to_string(),
+                    chat_jid: cp.source.chat.to_string(),
+                    sender_jid: Some(cp.source.sender.to_string()),
+                    state: state.to_string(),
+                    last_seen: None,
+                })
+                .await;
+        }
+        Event::Presence(p) => {
+            if p.from.is_status_broadcast() {
+                return;
+            }
+            let state = if p.unavailable {
+                "unavailable"
+            } else {
+                "available"
+            };
+            let _ = tx
+                .send(EngineEvent::PresenceUpdated {
+                    session_id: session_id.to_string(),
+                    chat_jid: p.from.to_string(),
+                    sender_jid: Some(p.from.to_string()),
+                    state: state.to_string(),
+                    last_seen: p.last_seen,
+                })
+                .await;
         }
         Event::GroupUpdate(update) => {
             let _ = tx
@@ -754,6 +812,81 @@ fn extract_phone_from_jid(jid: &str) -> Option<String> {
     }
 }
 
+fn extract_quoted_message(msg: &wa::Message) -> Option<crate::engines::whatsapp::QuotedMessage> {
+    let ctx = msg
+        .extended_text_message
+        .as_option()
+        .and_then(|m| m.context_info.as_option())
+        .or_else(|| {
+            msg.image_message
+                .as_option()
+                .and_then(|m| m.context_info.as_option())
+        })
+        .or_else(|| {
+            msg.video_message
+                .as_option()
+                .and_then(|m| m.context_info.as_option())
+        })
+        .or_else(|| {
+            msg.audio_message
+                .as_option()
+                .and_then(|m| m.context_info.as_option())
+        })
+        .or_else(|| {
+            msg.document_message
+                .as_option()
+                .and_then(|m| m.context_info.as_option())
+        })
+        .or_else(|| {
+            msg.sticker_message
+                .as_option()
+                .and_then(|m| m.context_info.as_option())
+        })?;
+
+    let stanza_id = ctx.stanza_id.clone().filter(|s| !s.trim().is_empty());
+    let participant = ctx.participant.clone().filter(|s| !s.trim().is_empty());
+    let text = ctx.quoted_message.as_option().and_then(|qm| {
+        let inner = unwrap_message_content(qm);
+        inner
+            .conversation
+            .clone()
+            .or_else(|| {
+                inner
+                    .extended_text_message
+                    .as_option()
+                    .and_then(|e| e.text.clone())
+            })
+            .or_else(|| {
+                inner
+                    .image_message
+                    .as_option()
+                    .and_then(|i| i.caption.clone())
+            })
+            .or_else(|| {
+                inner
+                    .video_message
+                    .as_option()
+                    .and_then(|v| v.caption.clone())
+            })
+            .or_else(|| {
+                inner
+                    .document_message
+                    .as_option()
+                    .and_then(|d| d.caption.clone().or_else(|| d.file_name.clone()))
+            })
+    });
+
+    if stanza_id.is_none() && participant.is_none() && text.is_none() {
+        return None;
+    }
+
+    Some(crate::engines::whatsapp::QuotedMessage {
+        stanza_id,
+        participant,
+        text,
+    })
+}
+
 async fn convert_inbound_message(
     raw_msg: &wa::Message,
     info: &whatsapp_rust::wacore::types::message::MessageInfo,
@@ -792,6 +925,8 @@ async fn convert_inbound_message(
         sender_phone = Some(entry.phone_number.to_string());
     }
     let from_me = info.source.is_from_me;
+    let is_group = info.source.is_group || chat_jid.ends_with("@g.us");
+    let quoted = extract_quoted_message(msg);
     let timestamp = info.timestamp;
     let is_history_sync = (Utc::now() - timestamp).num_seconds() > 300;
 
@@ -809,7 +944,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "audio".to_string(),
             text_body: None,
             caption: None,
@@ -833,7 +970,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "image".to_string(),
             text_body: None,
             caption: image.caption.clone(),
@@ -860,7 +999,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "video".to_string(),
             text_body: None,
             caption: video.caption.clone(),
@@ -887,7 +1028,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "document".to_string(),
             text_body: None,
             caption: doc.caption.clone(),
@@ -913,7 +1056,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "sticker".to_string(),
             text_body: None,
             caption: None,
@@ -930,7 +1075,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "reaction".to_string(),
             text_body: reaction.text.clone(),
             caption: None,
@@ -957,7 +1104,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "location".to_string(),
             text_body: summary,
             caption: loc.comment.clone(),
@@ -974,7 +1123,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "contact".to_string(),
             text_body: contact.display_name.clone(),
             caption: None,
@@ -991,7 +1142,9 @@ async fn convert_inbound_message(
             sender_name,
             sender_phone,
             from_me,
+            is_group,
             is_history_sync,
+            quoted,
             message_type: "contacts".to_string(),
             text_body: contacts.display_name.clone(),
             caption: None,
@@ -1013,7 +1166,9 @@ async fn convert_inbound_message(
         sender_name,
         sender_phone,
         from_me,
+        is_group,
         is_history_sync,
+        quoted,
         message_type: "text".to_string(),
         text_body: Some(text),
         caption: None,

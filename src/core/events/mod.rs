@@ -15,6 +15,7 @@ pub const ALL_EVENT_TYPES: &[&str] = &[
     "message.transcription.completed",
     "message.transcription.failed",
     "group.updated",
+    "chat.presence",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
