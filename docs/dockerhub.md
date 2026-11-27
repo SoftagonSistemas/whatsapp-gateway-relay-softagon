@@ -6,6 +6,7 @@
 - **Official Website & Contact:** https://softagon.com.br
 - **Source Code & Changelog (GitHub):** https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon · [CHANGELOG.md](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/CHANGELOG.md)
 - **User Documentation (with screenshots):** [Português (BR)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/pt-BR/README.md) · [English](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/en/README.md) · [Español](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/es/README.md) · [Français](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/fr/README.md) · [Bahasa Indonesia](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/id/README.md) · [Basa Betawi](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/bew/README.md) · [Basa Sunda](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/su/README.md) · [Basa Jawa](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/jv/README.md) · [Hata Batak Toba](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/bbc/README.md) · [Bahasa Melayu](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/ms/README.md)
+- **Grok Bot Integration & Reusable Template:** [Grok Bot Guide](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/grok-bot.md) · [Grok Bot Template (`TEMPLATE.md`)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/integrations/grok-bot/TEMPLATE.md) (zero-login `/pair/{token}` auto-renewing QR pairing, Bearer webhooks, `@lid` resolution, `mark_read`, and `/workspace` persistence)
 - **Web Console & API Contract:** `/console` (or `/manager`) · OpenAPI 3.2.1 (`/openapi.json` & `/openapi.yaml`) · Scalar Interactive Docs (`/docs`)
 - **License:** Apache-2.0
 
@@ -84,11 +85,11 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.6`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.8`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
+| `0.3.8` | `linux/amd64` | Complete Grok Bot kit: `mark_read`, `get_contact` (`@lid` resolution), `media_url` + MCP `send_media_message`, live `/v1/health`, 10-locale docs |
+| `0.3.7` | `linux/amd64` | Zero-login `/pair/{token}` auto-renewing QR, `qr.png`, 8-digit pairing code, webhook `bearer_token`/custom auth, `sender_name`, `from_me` phone sync, `is_history_sync` suppression |
 | `0.3.6` | `linux/amd64` | Chrome Modern Web Guidance & WebMCP (`document.modelContext` + declarative agentic forms), `--version` CLI flag |
-| `0.3.5` | `linux/amd64` | 10-language Web Console & docs (PT, EN, ES, FR, ID, Betawi, Sundanese, Javanese, Batak Toba, Malay), dropdown switcher, dynamic version, automated i18n/docs checks |
-| `0.3.4` | `linux/amd64` | Docker MCP HTTP container-bind opt-in, unexpanded placeholder rejection, safe STDIO snippets |
 
 > *Multi-arch note:* Prebuilt images currently target `linux/amd64`. `linux/arm64` builds are on our roadmap.
 
@@ -115,9 +116,10 @@ All `/v1/*` routes except `GET /v1/health` require `Authorization: Bearer <RELAY
 | `GET` / `PATCH` / `DELETE` | `/v1/webhooks/{webhook_id}` | Inspect, update, or remove a webhook |
 | `GET` | `/docs` · `/openapi.json` · `/openapi.yaml` | Scalar API Reference & OpenAPI 3.2.1 spec (JSON/YAML) |
 
-### Local MCP Server (`v0.3.0`)
+### Local MCP Server & Grok Bot Template
 - **STDIO (default local mode):** `softagon-relay mcp --stdio` (logs routed to `stderr`)
 - **Streamable HTTP:** `softagon-relay mcp --http` or `MCP_HTTP_ENABLED=true` (binds to `127.0.0.1:8091/mcp` by default; in Docker behind `-p 127.0.0.1:8091:8091`, opt in with `MCP_HTTP_HOST=0.0.0.0` + `MCP_ALLOW_CONTAINER_BIND=true`; always enforces loopback `Host`/`Origin` validation, Bearer auth, destructive tools blocked by default, and SQLite audit in `mcp_audit_log`).
+- **Grok Bot Turnkey Template:** copy our ready-to-use **[Grok Bot Template (`TEMPLATE.md`)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/integrations/grok-bot/TEMPLATE.md)** and follow the **[Grok Bot Guide](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/blob/main/docs/grok-bot.md)** for zero-login `/pair/{token}` QR pairing, `bearer_token` routine webhooks, `get_contact` (`@lid` resolution), `mark_read`, and `send_media_message` (`media_url` or base64).
 
 ---
 
