@@ -273,8 +273,14 @@ impl SessionManager {
     }
 
     pub async fn reconnect_session(&self, session_id: &str) -> Result<SessionRecord, SessionError> {
-        let rec = self.get_session(session_id).await?;
+        let (rec, live_status) = self.get_status(session_id).await?;
+        let was_logged_out = rec.status == SessionConnectionState::LoggedOut.as_str()
+            || live_status == SessionConnectionState::LoggedOut.as_str();
         let _ = self.engine.stop_session(session_id).await;
+        if was_logged_out {
+            // Clear revoked WhatsApp credentials so re-pairing generates a fresh QR code
+            let _ = self.engine.delete_session_data(session_id).await;
+        }
         self.qr_cache.write().await.remove(session_id);
         self.db
             .update_session_status(

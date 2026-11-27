@@ -370,7 +370,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
     .done {{ text-align: center; padding: 28px 12px; }}
     .done h2 {{ color: var(--ok); margin: 0 0 8px; }}
     .foot {{ margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); text-align: center; }}
-    .hide {{ display: none; }}
+    .hide {{ display: none !important; }}
     .err {{ color: #ff8f87; font-size: 13px; margin: 8px 0; }}
   </style>
 </head>
@@ -382,13 +382,13 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
     </div>
 
     <div id="connected-view" class="done hide">
-      <h2>WhatsApp Connected!</h2>
-      <p class="sub">Session <strong>{session_name}</strong> is paired and ready. You can close this tab and return to your assistant.</p>
+      <h2 id="t-connected-h">WhatsApp Connected!</h2>
+      <p id="t-connected-p" class="sub">Session <strong>{session_name}</strong> is paired and ready. You can close this tab and return to your assistant.</p>
     </div>
 
     <div id="pairing-view">
-      <h1>Scan with WhatsApp</h1>
-      <p class="sub">Zero-login temporary pairing page. The QR code refreshes automatically while this link is active.</p>
+      <h1 id="t-h1">Scan with WhatsApp</h1>
+      <p id="t-sub" class="sub">Zero-login temporary pairing page. The QR code refreshes automatically while this link is active.</p>
 
       <div class="tabs" role="tablist">
         <button id="tab-qr" class="tab active" type="button" onclick="switchTab('qr')">QR Code (Recommended)</button>
@@ -402,9 +402,9 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         </div>
         <div class="meta-row">
           <span id="qr-timer">Auto-refresh enabled</span>
-          <button type="button" class="btn" onclick="manualRefresh()">New QR</button>
+          <button id="t-new-qr" type="button" class="btn" onclick="manualRefresh()">New QR</button>
         </div>
-        <ol class="steps">
+        <ol id="t-qr-steps" class="steps">
           <li>Open <strong>WhatsApp</strong> on your phone.</li>
           <li>Go to <strong>Linked devices → Link a device</strong>.</li>
           <li>Point your camera at the <strong>QR code</strong> above.</li>
@@ -412,7 +412,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
       </section>
 
       <section id="panel-code" class="hide">
-        <p class="sub">Prefer connecting without a camera? Enter your WhatsApp number with country code (e.g. <code>5511999990001</code>).</p>
+        <p id="t-code-sub" class="sub">Prefer connecting without a camera? Enter your WhatsApp number with country code (e.g. <code>5511999990001</code>).</p>
         <form onsubmit="requestCode(event)">
           <input id="phone-input" class="inp" type="tel" placeholder="5511999990001" required />
           <button id="code-submit" type="submit" class="btn primary">Get 8-Digit Code</button>
@@ -420,8 +420,8 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         <div id="code-error" class="err hide"></div>
         <div id="code-result" class="hide">
           <div id="code-value" class="code-box">---- ----</div>
-          <button type="button" class="btn primary" onclick="copyCode()">Copy Code</button>
-          <ol class="steps" style="margin-top:14px">
+          <button id="t-copy-code" type="button" class="btn primary" onclick="copyCode()">Copy Code</button>
+          <ol id="t-code-steps" class="steps" style="margin-top:14px">
             <li>Open <strong>WhatsApp → Linked devices → Link a device</strong>.</li>
             <li>Tap <strong>Link with phone number instead</strong>.</li>
             <li>Type the 8-character code shown above.</li>
@@ -430,11 +430,145 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
       </section>
     </div>
 
-    <div class="foot">Scoped temporary link · No API key exposed · Auto-expires after pairing</div>
+    <div id="t-foot" class="foot">Scoped temporary link · No API key exposed · Auto-expires after pairing</div>
   </main>
 
   <script>
     const TOKEN = {token_json};
+    const I18N = {{
+      en: {{
+        waiting: 'Waiting for scan', connected: 'Connected', expired: 'Link expired',
+        connectedH: 'WhatsApp Connected!',
+        connectedP: 'Session is paired and ready. You can close this tab and return to your assistant.',
+        h1: 'Scan with WhatsApp',
+        sub: 'Zero-login temporary pairing page. The QR code refreshes automatically while this link is active.',
+        tabQr: 'QR Code (Recommended)', tabCode: '8-Digit Code',
+        loading: 'Generating fresh QR code…', autoOn: 'Auto-refresh enabled', newQr: 'New QR',
+        refreshing: 'Refreshing QR cycle…', autoIn: 'Auto-refreshes in {{s}}s', autoNow: 'Refreshing QR automatically…',
+        renewing: 'QR cycle expired · auto-renewing…',
+        expiredMsg: 'This temporary pairing link expired. Ask your assistant for a new link.',
+        qrSteps: ['Open <strong>WhatsApp</strong> on your phone.', 'Go to <strong>Linked devices → Link a device</strong>.', 'Point your camera at the <strong>QR code</strong> above.'],
+        codeSub: 'Prefer connecting without a camera? Enter your WhatsApp number with country code (e.g. <code>5511999990001</code>).',
+        getCode: 'Get 8-Digit Code', copyCode: 'Copy Code', copied: 'Copied!',
+        codeSteps: ['Open <strong>WhatsApp → Linked devices → Link a device</strong>.', 'Tap <strong>Link with phone number instead</strong>.', 'Type the 8-character code shown above.'],
+        foot: 'Scoped temporary link · No API key exposed · Auto-expires after pairing',
+      }},
+      pt: {{
+        waiting: 'Aguardando leitura', connected: 'Conectado', expired: 'Link expirado',
+        connectedH: 'WhatsApp Conectado!',
+        connectedP: 'A sessão está pareada e pronta. Você pode fechar esta aba e voltar para o seu assistente.',
+        h1: 'Escaneie com o WhatsApp',
+        sub: 'Página temporária sem login. O QR Code se renova automaticamente enquanto este link estiver ativo.',
+        tabQr: 'QR Code (Recomendado)', tabCode: 'Código de 8 dígitos',
+        loading: 'Gerando novo QR Code…', autoOn: 'Renovação automática ativa', newQr: 'Novo QR',
+        refreshing: 'Renovando ciclo do QR…', autoIn: 'Novo QR em {{s}}s', autoNow: 'Renovando QR automaticamente…',
+        renewing: 'QR expirado · gerando outro…',
+        expiredMsg: 'Este link temporário expirou. Peça um novo link ao seu assistente.',
+        qrSteps: ['Abra o <strong>WhatsApp</strong> no celular.', 'Toque em <strong>Aparelhos conectados → Conectar aparelho</strong>.', 'Aponte a câmera para o <strong>QR Code</strong> acima.'],
+        codeSub: 'Prefere conectar sem câmera? Digite seu número do WhatsApp com DDI e DDD (ex.: <code>5511999990001</code>).',
+        getCode: 'Gerar código de 8 dígitos', copyCode: 'Copiar código', copied: 'Copiado!',
+        codeSteps: ['Abra <strong>WhatsApp → Aparelhos conectados → Conectar aparelho</strong>.', 'Toque em <strong>Conectar com número de telefone</strong>.', 'Digite o código de 8 caracteres exibido acima.'],
+        foot: 'Link temporário restrito · Nenhuma chave exposta · Expira ao conectar',
+      }},
+      es: {{
+        waiting: 'Esperando escaneo', connected: 'Conectado', expired: 'Enlace expirado',
+        connectedH: '¡WhatsApp conectado!',
+        connectedP: 'La sesión está vinculada y lista. Puedes cerrar esta pestaña y volver a tu asistente.',
+        h1: 'Escanea con WhatsApp',
+        sub: 'Página temporal sin inicio de sesión. El código QR se renueva automáticamente mientras este enlace esté activo.',
+        tabQr: 'Código QR (Recomendado)', tabCode: 'Código de 8 dígitos',
+        loading: 'Generando nuevo código QR…', autoOn: 'Actualización automática activa', newQr: 'Nuevo QR',
+        refreshing: 'Renovando ciclo QR…', autoIn: 'Nuevo QR en {{s}}s', autoNow: 'Renovando QR automáticamente…',
+        renewing: 'QR expirado · renovando…',
+        expiredMsg: 'Este enlace temporal expiró. Pide un nuevo enlace a tu asistente.',
+        qrSteps: ['Abre <strong>WhatsApp</strong> en tu teléfono.', 'Ve a <strong>Dispositivos vinculados → Vincular dispositivo</strong>.', 'Apunta la cámara al <strong>código QR</strong> de arriba.'],
+        codeSub: '¿Prefieres conectar sin cámara? Escribe tu número con código de país (ej.: <code>5511999990001</code>).',
+        getCode: 'Obtener código de 8 dígitos', copyCode: 'Copiar código', copied: '¡Copiado!',
+        codeSteps: ['Abre <strong>WhatsApp → Dispositivos vinculados → Vincular dispositivo</strong>.', 'Toca <strong>Vincular con el número de teléfono</strong>.', 'Escribe el código de 8 caracteres mostrado arriba.'],
+        foot: 'Enlace temporal limitado · Sin clave API expuesta · Expira al conectar',
+      }},
+      fr: {{
+        waiting: 'En attente de scan', connected: 'Connecté', expired: 'Lien expiré',
+        connectedH: 'WhatsApp connecté !',
+        connectedP: 'La session est jumelée et prête. Vous pouvez fermer cet onglet et revenir à votre assistant.',
+        h1: 'Scannez avec WhatsApp',
+        sub: 'Page temporaire sans connexion. Le QR Code se renouvelle automatiquement tant que ce lien est actif.',
+        tabQr: 'QR Code (Recommandé)', tabCode: 'Code à 8 chiffres',
+        loading: 'Génération d’un nouveau QR Code…', autoOn: 'Renouvellement automatique actif', newQr: 'Nouveau QR',
+        refreshing: 'Renouvellement du QR…', autoIn: 'Nouveau QR dans {{s}}s', autoNow: 'Renouvellement automatique…',
+        renewing: 'QR expiré · renouvellement…',
+        expiredMsg: 'Ce lien temporaire a expiré. Demandez un nouveau lien à votre assistant.',
+        qrSteps: ['Ouvrez <strong>WhatsApp</strong> sur votre téléphone.', 'Allez dans <strong>Appareils connectés → Connecter un appareil</strong>.', 'Pointez la caméra vers le <strong>QR Code</strong> ci-dessus.'],
+        codeSub: 'Vous préférez sans caméra ? Saisissez votre numéro avec l’indicatif pays (ex. <code>5511999990001</code>).',
+        getCode: 'Obtenir le code à 8 chiffres', copyCode: 'Copier le code', copied: 'Copié !',
+        codeSteps: ['Ouvrez <strong>WhatsApp → Appareils connectés → Connecter un appareil</strong>.', 'Touchez <strong>Connecter avec le numéro de téléphone</strong>.', 'Saisissez le code à 8 caractères affiché ci-dessus.'],
+        foot: 'Lien temporaire restreint · Aucune clé API exposée · Expire après connexion',
+      }},
+      id: {{
+        waiting: 'Menunggu pemindaian', connected: 'Terhubung', expired: 'Tautan kedaluwarsa',
+        connectedH: 'WhatsApp Terhubung!',
+        connectedP: 'Sesi sudah tersambung dan siap. Anda dapat menutup tab ini dan kembali ke asisten Anda.',
+        h1: 'Pindai dengan WhatsApp',
+        sub: 'Halaman pairing sementara tanpa login. Kode QR diperbarui otomatis selama tautan ini aktif.',
+        tabQr: 'Kode QR (Disarankan)', tabCode: 'Kode 8 Digit',
+        loading: 'Membuat kode QR baru…', autoOn: 'Pembaruan otomatis aktif', newQr: 'QR Baru',
+        refreshing: 'Memperbarui siklus QR…', autoIn: 'QR baru dalam {{s}} dtk', autoNow: 'Memperbarui QR otomatis…',
+        renewing: 'QR kedaluwarsa · memperbarui…',
+        expiredMsg: 'Tautan sementara ini sudah kedaluwarsa. Minta tautan baru ke asisten Anda.',
+        qrSteps: ['Buka <strong>WhatsApp</strong> di ponsel Anda.', 'Buka <strong>Perangkat tertaut → Tautkan perangkat</strong>.', 'Arahkan kamera ke <strong>kode QR</strong> di atas.'],
+        codeSub: 'Lebih suka tanpa kamera? Masukkan nomor WhatsApp dengan kode negara (mis. <code>6281234567890</code>).',
+        getCode: 'Dapatkan Kode 8 Digit', copyCode: 'Salin Kode', copied: 'Tersalin!',
+        codeSteps: ['Buka <strong>WhatsApp → Perangkat tertaut → Tautkan perangkat</strong>.', 'Ketuk <strong>Tautkan dengan nomor telepon</strong>.', 'Masukkan kode 8 karakter di atas.'],
+        foot: 'Tautan sementara · Tanpa kunci API · Otomatis kedaluwarsa setelah terhubung',
+      }},
+      ms: {{
+        waiting: 'Menunggu imbasan', connected: 'Disambungkan', expired: 'Pautan tamat tempoh',
+        connectedH: 'WhatsApp Disambungkan!',
+        connectedP: 'Sesi telah digandingkan dan sedia. Anda boleh menutup tab ini dan kembali ke pembantu anda.',
+        h1: 'Imbas dengan WhatsApp',
+        sub: 'Halaman gandingan sementara tanpa log masuk. Kod QR diperbaharui secara automatik semasa pautan aktif.',
+        tabQr: 'Kod QR (Disyorkan)', tabCode: 'Kod 8 Digit',
+        loading: 'Menjana kod QR baharu…', autoOn: 'Pembaharuan automatik aktif', newQr: 'QR Baharu',
+        refreshing: 'Memperbaharui kitaran QR…', autoIn: 'QR baharu dalam {{s}}s', autoNow: 'Memperbaharui QR automatik…',
+        renewing: 'QR tamat tempoh · memperbaharui…',
+        expiredMsg: 'Pautan sementara ini telah tamat tempoh. Minta pautan baharu daripada pembantu anda.',
+        qrSteps: ['Buka <strong>WhatsApp</strong> pada telefon anda.', 'Pergi ke <strong>Peranti dipautkan → Pautkan peranti</strong>.', 'Halakan kamera ke <strong>kod QR</strong> di atas.'],
+        codeSub: 'Lebih suka tanpa kamera? Masukkan nombor WhatsApp dengan kod negara (cth. <code>60123456789</code>).',
+        getCode: 'Dapatkan Kod 8 Digit', copyCode: 'Salin Kod', copied: 'Disalin!',
+        codeSteps: ['Buka <strong>WhatsApp → Peranti dipautkan → Pautkan peranti</strong>.', 'Ketik <strong>Pautkan dengan nombor telefon</strong>.', 'Masukkan kod 8 aksara yang dipaparkan di atas.'],
+        foot: 'Pautan sementara terhad · Tiada kunci API didedahkan · Tamat selepas bersambung',
+      }},
+    }};
+
+    function detectLang() {{
+      const langs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en']);
+      for (const raw of langs) {{
+        const base = String(raw || '').toLowerCase().split(/[-_]/)[0];
+        if (base === 'in') return 'id';
+        if (I18N[base]) return base;
+      }}
+      return 'en';
+    }}
+
+    const T = I18N[detectLang()] || I18N.en;
+    document.documentElement.lang = detectLang();
+    document.getElementById('status-pill').textContent = T.waiting;
+    document.getElementById('t-connected-h').textContent = T.connectedH;
+    document.getElementById('t-connected-p').textContent = T.connectedP;
+    document.getElementById('t-h1').textContent = T.h1;
+    document.getElementById('t-sub').textContent = T.sub;
+    document.getElementById('tab-qr').textContent = T.tabQr;
+    document.getElementById('tab-code').textContent = T.tabCode;
+    document.getElementById('qr-loading').textContent = T.loading;
+    document.getElementById('qr-timer').textContent = T.autoOn;
+    document.getElementById('t-new-qr').textContent = T.newQr;
+    document.getElementById('t-qr-steps').innerHTML = T.qrSteps.map(s => `<li>${{s}}</li>`).join('');
+    document.getElementById('t-code-sub').innerHTML = T.codeSub;
+    document.getElementById('code-submit').textContent = T.getCode;
+    document.getElementById('t-copy-code').textContent = T.copyCode;
+    document.getElementById('t-code-steps').innerHTML = T.codeSteps.map(s => `<li>${{s}}</li>`).join('');
+    document.getElementById('t-foot').textContent = T.foot;
+
     let lastQrKey = '';
     let autoReconnectInFlight = false;
     let pollHandle = null;
@@ -447,7 +581,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
     }}
 
     async function manualRefresh() {{
-      document.getElementById('qr-timer').textContent = 'Refreshing QR cycle…';
+      document.getElementById('qr-timer').textContent = T.refreshing;
       await fetch(`/pair/${{TOKEN}}/reconnect`, {{ method: 'POST' }});
       setTimeout(poll, 900);
     }}
@@ -479,15 +613,20 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
 
     async function copyCode() {{
       const txt = document.getElementById('code-value').textContent.trim();
-      try {{ await navigator.clipboard.writeText(txt); }} catch {{}}
+      try {{
+        await navigator.clipboard.writeText(txt);
+        const b = document.getElementById('t-copy-code');
+        b.textContent = T.copied;
+        setTimeout(() => {{ b.textContent = T.copyCode; }}, 1800);
+      }} catch {{}}
     }}
 
     async function poll() {{
       try {{
         const res = await fetch(`/pair/${{TOKEN}}/status`, {{ cache: 'no-store' }});
         if (!res.ok) {{
-          document.getElementById('status-pill').textContent = 'Link expired';
-          document.getElementById('qr-loading').textContent = 'This temporary pairing link expired. Ask your assistant for a new link.';
+          document.getElementById('status-pill').textContent = T.expired;
+          document.getElementById('qr-loading').textContent = T.expiredMsg;
           document.getElementById('qr-loading').classList.remove('hide');
           document.getElementById('qr-img').classList.add('hide');
           clearInterval(pollHandle);
@@ -495,7 +634,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         }}
         const st = await res.json();
         if (st.status === 'connected') {{
-          document.getElementById('status-pill').textContent = 'Connected';
+          document.getElementById('status-pill').textContent = T.connected;
           document.getElementById('status-pill').classList.add('ok');
           document.getElementById('pairing-view').classList.add('hide');
           document.getElementById('connected-view').classList.remove('hide');
@@ -513,11 +652,11 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
           }}
           if (st.qr_expires_at) {{
             const secs = Math.max(0, Math.round((new Date(st.qr_expires_at).getTime() - Date.now()) / 1000));
-            document.getElementById('qr-timer').textContent = secs > 0 ? `Auto-refreshes in ${{secs}}s` : 'Refreshing QR automatically…';
+            document.getElementById('qr-timer').textContent = secs > 0 ? T.autoIn.replace('{{s}}', String(secs)) : T.autoNow;
           }}
-        }} else if ((st.status === 'disconnected' || st.status_reason === 'qr_expired') && !autoReconnectInFlight) {{
+        }} else if ((st.status === 'disconnected' || st.status === 'logged_out' || st.status_reason === 'qr_expired') && !autoReconnectInFlight) {{
           autoReconnectInFlight = true;
-          document.getElementById('qr-timer').textContent = 'QR cycle expired · auto-renewing…';
+          document.getElementById('qr-timer').textContent = T.renewing;
           try {{
             await fetch(`/pair/${{TOKEN}}/reconnect`, {{ method: 'POST' }});
           }} finally {{

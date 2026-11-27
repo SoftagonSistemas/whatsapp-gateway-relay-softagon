@@ -6,6 +6,17 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.9] — 2026-11-27
+
+### Added
+- **Browser Language Auto-Detection on `/pair/{token}`:** the zero-login temporary pairing page now automatically detects `navigator.languages` and renders in Português (`pt`), Español (`es`), Français (`fr`), Bahasa Indonesia (`id`), Bahasa Melayu (`ms`), or English (`en`).
+
+### Fixed
+- **Reconnecting `logged_out` Sessions Generates a Fresh QR Code:** `SessionManager::reconnect_session` now clears revoked WhatsApp SQLite credentials (`delete_session_data`) when reconnecting a `logged_out` session so WhatsApp does not reject the reconnect with `401` and immediately issues a new QR code.
+- **Hidden Broken QR Image on `/pair/{token}`:** fixed CSS specificity (`.hide { display: none !important; }`) so the QR `<img>` stays hidden while generating/renewing a cycle, and added `logged_out` to automatic QR renewal.
+
+---
+
 ## [0.3.8] — 2026-11-27
 
 ### Added — Complete Grok Bot Feature Set & 10-Language Documentation Sync
