@@ -41,6 +41,7 @@ pub struct NewMessage<'a> {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ChatSummaryRecord {
     pub chat_jid: String,
+    pub contact_name: Option<String>,
     pub last_message_id: String,
     pub last_direction: String,
     pub last_message_type: String,
@@ -57,6 +58,7 @@ pub struct MessageWithTranscriptionRecord {
     pub direction: String,
     pub chat_jid: String,
     pub sender_jid: Option<String>,
+    pub sender_name: Option<String>,
     pub message_type: String,
     pub text_body: Option<String>,
     pub caption: Option<String>,
@@ -117,6 +119,21 @@ impl Database {
         Ok(row)
     }
 
+    pub async fn has_message_by_external_id(
+        &self,
+        session_id: &str,
+        external_id: &str,
+    ) -> Result<bool, DbError> {
+        let found: Option<(i64,)> = sqlx::query_as(
+            "SELECT 1 FROM messages WHERE session_id = ?1 AND external_id = ?2 LIMIT 1",
+        )
+        .bind(session_id)
+        .bind(external_id)
+        .fetch_optional(self.pool())
+        .await?;
+        Ok(found.is_some())
+    }
+
     pub async fn update_message_status_by_external_id(
         &self,
         session_id: &str,
@@ -162,6 +179,16 @@ impl Database {
                 r#"
                 SELECT
                     m.chat_jid,
+                    (
+                        SELECT json_extract(cn.metadata_json, '$.sender_name')
+                        FROM messages cn
+                        WHERE cn.session_id = m.session_id
+                          AND cn.chat_jid = m.chat_jid
+                          AND cn.direction = 'inbound'
+                          AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
+                        ORDER BY cn.created_at DESC
+                        LIMIT 1
+                    ) AS contact_name,
                     m.id AS last_message_id,
                     m.direction AS last_direction,
                     m.message_type AS last_message_type,
@@ -206,6 +233,16 @@ impl Database {
                 r#"
                 SELECT
                     m.chat_jid,
+                    (
+                        SELECT json_extract(cn.metadata_json, '$.sender_name')
+                        FROM messages cn
+                        WHERE cn.session_id = m.session_id
+                          AND cn.chat_jid = m.chat_jid
+                          AND cn.direction = 'inbound'
+                          AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
+                        ORDER BY cn.created_at DESC
+                        LIMIT 1
+                    ) AS contact_name,
                     m.id AS last_message_id,
                     m.direction AS last_direction,
                     m.message_type AS last_message_type,
@@ -245,6 +282,7 @@ impl Database {
             r#"
             SELECT
                 m.id, m.session_id, m.direction, m.chat_jid, m.sender_jid,
+                json_extract(m.metadata_json, '$.sender_name') AS sender_name,
                 m.message_type, m.text_body, m.caption,
                 t.text AS transcription_text,
                 m.status, m.metadata_json, m.created_at
@@ -275,6 +313,7 @@ impl Database {
             r#"
             SELECT
                 m.id, m.session_id, m.direction, m.chat_jid, m.sender_jid,
+                json_extract(m.metadata_json, '$.sender_name') AS sender_name,
                 m.message_type, m.text_body, m.caption,
                 t.text AS transcription_text,
                 m.status, m.metadata_json, m.created_at

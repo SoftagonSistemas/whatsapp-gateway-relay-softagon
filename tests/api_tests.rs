@@ -123,6 +123,7 @@ impl TestHarness {
             sessions,
             webhooks: WebhookService::new(db),
             transcription_engine: tx_engine,
+            pairing_links: softagon_relay::core::pairing::PairingLinkStore::new(),
         };
 
         Self {
@@ -481,6 +482,10 @@ fn openapi_spec_is_valid_3_2_1_yaml() {
         "/v1/sessions",
         "/v1/sessions/{session_id}",
         "/v1/sessions/{session_id}/qr",
+        "/v1/sessions/{session_id}/qr.svg",
+        "/v1/sessions/{session_id}/qr.png",
+        "/v1/sessions/{session_id}/pair-link",
+        "/v1/sessions/{session_id}/pair-code",
         "/v1/sessions/{session_id}/status",
         "/v1/sessions/{session_id}/logout",
         "/v1/sessions/{session_id}/messages/text",
@@ -495,4 +500,203 @@ fn openapi_spec_is_valid_3_2_1_yaml() {
             "missing path {expected} in openapi.yaml"
         );
     }
+}
+
+#[tokio::test]
+async fn pairing_link_qr_png_and_eight_digit_code_flow() {
+    let app = TestHarness::new(false).await;
+
+    // Create a session ready for pairing
+    let (status, sess) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/sessions")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(json!({ "name": "grok-bot" }).to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let session_id = sess["id"].as_str().unwrap().to_string();
+
+    // Authenticated QR PNG returns valid PNG magic header
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/v1/sessions/{session_id}/qr.png"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let png_bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    assert!(png_bytes.starts_with(b"\x89PNG\r\n\x1a\n"));
+
+    // Create zero-login temporary pairing link
+    let (status, link_body) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{session_id}/pair-link"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(json!({ "ttl_seconds": 300 }).to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let pair_path = link_body["pair_path"].as_str().unwrap().to_string();
+    let qr_png_path = link_body["qr_png_path"].as_str().unwrap().to_string();
+    let status_path = link_body["status_path"].as_str().unwrap().to_string();
+
+    // Public pairing HTML page works WITHOUT Authorization header
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(&pair_path)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let html = String::from_utf8(
+        axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap()
+            .to_vec(),
+    )
+    .unwrap();
+    assert!(html.contains("Scan with WhatsApp"));
+    assert!(!html.contains(&app.api_key));
+
+    // Public QR PNG works without Authorization header
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(&qr_png_path)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let pub_png = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    assert!(pub_png.starts_with(b"\x89PNG\r\n\x1a\n"));
+
+    // Public 8-digit pairing code works on the same pairing token
+    let (status, code_body) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("{pair_path}/pair-code"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({ "phone_number": "5511999990001" }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(code_body["formatted_code"], "K7QX-2M9P");
+
+    // Once connected, status reports connected and invalidates the pairing token
+    app.engine
+        .simulate_connected(&session_id, "5511999990001", "5511999990001@s.whatsapp.net")
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let (status, st_body) = app
+        .request(
+            Request::builder()
+                .uri(&status_path)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(st_body["status"], "connected");
+
+    // Subsequent access to the same pairing link returns 404 (auto-invalidated)
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(&pair_path)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn webhook_bearer_token_and_custom_auth_header() {
+    let app = TestHarness::new(false).await;
+
+    // Create webhook with bearer_token shorthand (for Grok Bot routines)
+    let (status, body) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/webhooks")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "url": "https://example.com/grok-routine",
+                        "events": ["message.received", "message.sent"],
+                        "bearer_token": "grok_secret_token_123"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(body["auth_header_name"], "Authorization");
+    assert_eq!(body["has_auth_header"], true);
+    // Secret token must NEVER be echoed back in JSON responses
+    let body_str = body.to_string();
+    assert!(!body_str.contains("grok_secret_token_123"));
+
+    // Update to a custom header via PATCH
+    let wh_id = body["id"].as_str().unwrap();
+    let (status_patch, body_patch) = app
+        .request(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/v1/webhooks/{wh_id}"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "auth_header_name": "X-Custom-Token",
+                        "auth_header_value": "custom_val_999"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status_patch, StatusCode::OK);
+    assert_eq!(body_patch["auth_header_name"], "X-Custom-Token");
+    assert_eq!(body_patch["has_auth_header"], true);
+    assert!(!body_patch.to_string().contains("custom_val_999"));
 }

@@ -24,6 +24,30 @@ pub struct SessionIdInput {
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct CreateSessionInput {
+    /// Human-readable session name or phone number (e.g., support-sales).
+    pub name: String,
+    /// Optional ISO language code for local Whisper transcription (e.g., pt, en, id) or auto.
+    pub transcription_language: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct CreatePairingLinkInput {
+    /// WhatsApp session ID to pair.
+    pub session_id: String,
+    /// Link validity in seconds (60..1800, default 600 = 10 minutes).
+    pub ttl_seconds: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct RequestPairCodeInput {
+    /// WhatsApp session ID to pair.
+    pub session_id: String,
+    /// WhatsApp phone number with country code (digits only or E.164, e.g., 5511999990001).
+    pub phone_number: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListChatsInput {
     /// WhatsApp session ID.
     pub session_id: String,
@@ -155,6 +179,98 @@ impl RelayMcpServer {
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "sessions": sessions }))
+        })
+        .await
+    }
+
+    /// Create and start a new WhatsApp session ready for QR or 8-digit code pairing.
+    #[tool(
+        description = "Create a new WhatsApp session and start its pairing cycle. Follow up with create_pairing_link (recommended QR flow) or request_pair_code."
+    )]
+    async fn create_session(
+        &self,
+        Parameters(input): Parameters<CreateSessionInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let args = serde_json::json!({
+            "name": input.name,
+            "transcription_language": input.transcription_language,
+        });
+        self.audit_and_wrap("create_session", None, args, || async {
+            let rec = self
+                .service
+                .create_session(&input.name, input.transcription_language.as_deref())
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(rec)
+        })
+        .await
+    }
+
+    /// Create a zero-login, short-lived pairing link (/pair/{token}) with an auto-renewing QR code.
+    #[tool(
+        description = "Create a temporary, zero-login pairing page URL (/pair/{token}) for a WhatsApp session. Recommended for opening in a browser (e.g. Grok Bot Chrome) without exposing RELAY_API_KEY: displays a large auto-renewing QR code for up to 10 minutes, plus a PNG image endpoint (/pair/{token}/qr.png) and an optional 8-digit code tab."
+    )]
+    async fn create_pairing_link(
+        &self,
+        Parameters(input): Parameters<CreatePairingLinkInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "ttl_seconds": input.ttl_seconds,
+        });
+        self.audit_and_wrap("create_pairing_link", Some(&sid), args, || async {
+            let link = self
+                .service
+                .create_pairing_link(&input.session_id, input.ttl_seconds)
+                .await
+                .map_err(|e| e.to_string())?;
+            let host = if self.service.config.app_host == "0.0.0.0" {
+                "127.0.0.1"
+            } else {
+                self.service.config.app_host.as_str()
+            };
+            let base = format!("http://{}:{}", host, self.service.config.app_port);
+            Ok(serde_json::json!({
+                "session_id": link.session_id,
+                "token": link.token,
+                "pair_url": format!("{base}/pair/{}", link.token),
+                "qr_svg_url": format!("{base}/pair/{}/qr.svg", link.token),
+                "qr_png_url": format!("{base}/pair/{}/qr.png", link.token),
+                "status_url": format!("{base}/pair/{}/status", link.token),
+                "expires_at": link.expires_at,
+                "note": "Open pair_url directly in Chrome (no login or RELAY_API_KEY needed). The QR code auto-renews until connected or link expiry."
+            }))
+        })
+        .await
+    }
+
+    /// Request an 8-digit WhatsApp pairing code as a camera-free alternative to scanning a QR code.
+    #[tool(
+        description = "Request an 8-character WhatsApp phone pairing code (XXXX-XXXX, valid ~3 minutes) as an alternative when the user cannot scan a QR code with a camera."
+    )]
+    async fn request_pair_code(
+        &self,
+        Parameters(input): Parameters<RequestPairCodeInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "phone_number": input.phone_number,
+        });
+        self.audit_and_wrap("request_pair_code", Some(&sid), args, || async {
+            let payload = self
+                .service
+                .request_pair_code(&input.session_id, &input.phone_number)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "session_id": input.session_id,
+                "code": payload.code,
+                "formatted_code": payload.formatted_code,
+                "expires_at": payload.expires_at,
+                "instructions": "In WhatsApp on your phone: Linked devices -> Link a device -> Link with phone number instead -> enter formatted_code."
+            }))
         })
         .await
     }
@@ -315,7 +431,12 @@ impl RelayMcpServer {
         self.audit_and_wrap("send_text_message", Some(&sid), args, || async {
             let msg = self
                 .service
-                .send_text_message(&input.session_id, &input.to, &input.text)
+                .send_text_message(
+                    &input.session_id,
+                    &input.to,
+                    &input.text,
+                    input.idempotency_key.as_deref(),
+                )
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({

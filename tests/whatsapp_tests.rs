@@ -89,6 +89,10 @@ async fn session_manager_handles_inbound_messages_and_logout() {
                 external_id: "wamid.in1".to_string(),
                 chat_jid: "551199999999@s.whatsapp.net".to_string(),
                 sender_jid: Some("551199999999@s.whatsapp.net".to_string()),
+                sender_name: Some("Maria Clara".to_string()),
+                sender_phone: Some("551199999999".to_string()),
+                from_me: false,
+                is_history_sync: false,
                 message_type: "text".to_string(),
                 text_body: Some("Hello from customer".to_string()),
                 caption: None,
@@ -98,9 +102,101 @@ async fn session_manager_handles_inbound_messages_and_logout() {
         )
         .await;
 
+    // Simulate a human reply sent directly from the store's WhatsApp phone (from_me = true)
+    engine
+        .simulate_inbound_message(
+            &sess.id,
+            InboundMessage {
+                external_id: "wamid.phone_reply_1".to_string(),
+                chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                sender_jid: Some("551100000000@s.whatsapp.net".to_string()),
+                sender_name: Some("Atendimento Loja".to_string()),
+                sender_phone: Some("551100000000".to_string()),
+                from_me: true,
+                is_history_sync: false,
+                message_type: "text".to_string(),
+                text_body: Some("Oi Maria, ja estamos verificando!".to_string()),
+                caption: None,
+                media: None,
+                timestamp: Utc::now(),
+            },
+        )
+        .await;
+
+    // Duplicate echo of the same phone reply must be deduplicated
+    engine
+        .simulate_inbound_message(
+            &sess.id,
+            InboundMessage {
+                external_id: "wamid.phone_reply_1".to_string(),
+                chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                sender_jid: Some("551100000000@s.whatsapp.net".to_string()),
+                sender_name: Some("Atendimento Loja".to_string()),
+                sender_phone: Some("551100000000".to_string()),
+                from_me: true,
+                is_history_sync: false,
+                message_type: "text".to_string(),
+                text_body: Some("Oi Maria, ja estamos verificando!".to_string()),
+                caption: None,
+                media: None,
+                timestamp: Utc::now(),
+            },
+        )
+        .await;
+
+    // Simulate a history-sync message (older than 5 minutes): stored in DB, does NOT emit webhook
+    engine
+        .simulate_inbound_message(
+            &sess.id,
+            InboundMessage {
+                external_id: "wamid.hist1".to_string(),
+                chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                sender_jid: Some("551199999999@s.whatsapp.net".to_string()),
+                sender_name: Some("Maria Clara".to_string()),
+                sender_phone: Some("551199999999".to_string()),
+                from_me: false,
+                is_history_sync: true,
+                message_type: "text".to_string(),
+                text_body: Some("Old message from yesterday".to_string()),
+                caption: None,
+                media: None,
+                timestamp: Utc::now() - chrono::Duration::hours(12),
+            },
+        )
+        .await;
+
     tokio::time::sleep(std::time::Duration::from_millis(150)).await;
     let (_, status) = sessions.get_status(&sess.id).await.unwrap();
     assert_eq!(status, "connected");
+    let listed = sessions.list_sessions().await.unwrap();
+    assert_eq!(listed[0].status, "connected");
+
+    // Verify contact_name, sender_phone, and outbound phone reply are persisted
+    let chats = db.list_chats(&sess.id, None, 10).await.unwrap();
+    assert_eq!(chats.len(), 1);
+    assert_eq!(chats[0].contact_name.as_deref(), Some("Maria Clara"));
+    assert_eq!(chats[0].message_count, 3);
+
+    let history = db
+        .get_chat_messages(&sess.id, "551199999999@s.whatsapp.net", 10)
+        .await
+        .unwrap();
+    assert_eq!(history.len(), 3);
+    assert!(history.iter().any(|m| {
+        m.direction == "inbound"
+            && m.sender_name.as_deref() == Some("Maria Clara")
+            && m.metadata_json
+                .contains("\"sender_phone\":\"551199999999\"")
+    }));
+    assert!(history.iter().any(|m| {
+        m.direction == "outbound"
+            && m.text_body.as_deref() == Some("Oi Maria, ja estamos verificando!")
+            && m.metadata_json.contains("\"device_sync\"")
+    }));
+    assert!(history.iter().any(|m| {
+        m.text_body.as_deref() == Some("Old message from yesterday")
+            && m.metadata_json.contains("\"is_history_sync\":true")
+    }));
 
     sessions.logout_session(&sess.id).await.unwrap();
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;

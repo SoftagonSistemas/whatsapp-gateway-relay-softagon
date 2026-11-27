@@ -316,6 +316,80 @@ export function useWebMcp(router: Router) {
     registerSafe(
       mc,
       {
+        name: 'relay_create_pairing_link',
+        title: 'Create Zero-Login WhatsApp Pairing Link',
+        description:
+          'Generate a temporary, zero-login pairing URL (/pair/{token}) with an auto-renewing QR code and optional 8-digit code tab. Recommended for opening in a browser without exposing RELAY_API_KEY.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            session_id: {
+              type: 'string',
+              description: 'WhatsApp session ID to pair.',
+            },
+            ttl_seconds: {
+              type: 'number',
+              description: 'Optional link lifetime in seconds (60..1800, default 600).',
+            },
+          },
+          required: ['session_id'],
+          additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false },
+        execute: async (input) => {
+          const sessionId = String(input.session_id ?? '').trim();
+          if (!sessionId) return { ok: false, error: 'session_id is required' };
+          const ttl = typeof input.ttl_seconds === 'number' ? input.ttl_seconds : undefined;
+          const res = await api.createPairLink(sessionId, ttl);
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+          return {
+            ...res,
+            pair_url: `${origin}${res.pair_path}`,
+            qr_png_url: `${origin}${res.qr_png_path}`,
+          };
+        },
+      },
+      signal,
+    );
+
+    registerSafe(
+      mc,
+      {
+        name: 'relay_request_pair_code',
+        title: 'Request 8-Digit WhatsApp Pairing Code',
+        description:
+          'Request an 8-character WhatsApp pairing code (XXXX-XXXX) as a camera-free alternative to scanning a QR code.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            session_id: {
+              type: 'string',
+              description: 'WhatsApp session ID.',
+            },
+            phone_number: {
+              type: 'string',
+              description: 'WhatsApp phone number with country code (e.g., 5511999990001).',
+            },
+          },
+          required: ['session_id', 'phone_number'],
+          additionalProperties: false,
+        },
+        annotations: { readOnlyHint: false },
+        execute: async (input) => {
+          const sessionId = String(input.session_id ?? '').trim();
+          const phone = String(input.phone_number ?? '').trim();
+          if (!sessionId || !phone) {
+            return { ok: false, error: 'session_id and phone_number are required' };
+          }
+          return await api.requestPairCode(sessionId, phone);
+        },
+      },
+      signal,
+    );
+
+    registerSafe(
+      mc,
+      {
         name: 'relay_send_text_message',
         title: 'Send WhatsApp Text Message',
         description:

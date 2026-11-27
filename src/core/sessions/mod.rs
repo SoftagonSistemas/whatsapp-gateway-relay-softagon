@@ -189,7 +189,13 @@ impl SessionManager {
     }
 
     pub async fn list_sessions(&self) -> Result<Vec<SessionRecord>, SessionError> {
-        Ok(self.db.list_sessions().await?)
+        let mut sessions = self.db.list_sessions().await?;
+        for rec in &mut sessions {
+            if let Ok(live) = self.engine.get_status(&rec.id).await {
+                rec.status = live.as_str().to_string();
+            }
+        }
+        Ok(sessions)
     }
 
     pub async fn get_session(&self, session_id: &str) -> Result<SessionRecord, SessionError> {
@@ -205,6 +211,53 @@ impl SessionManager {
             return Ok(Some(qr));
         }
         Ok(self.qr_cache.read().await.get(session_id).cloned())
+    }
+
+    pub async fn request_pair_code(
+        &self,
+        session_id: &str,
+        phone_number: &str,
+    ) -> Result<crate::engines::whatsapp::PairCodePayload, SessionError> {
+        let digits: String = phone_number
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .collect();
+        if digits.len() < 8 || digits.len() > 15 {
+            return Err(SessionError::BadRequest(
+                "phone_number must contain 8 to 15 digits including country code (e.g., 5511999990001)"
+                    .into(),
+            ));
+        }
+        let (rec, live_status) = self.get_status(session_id).await?;
+        if live_status == SessionConnectionState::Connected.as_str()
+            || rec.status == SessionConnectionState::Connected.as_str()
+        {
+            return Err(SessionError::Conflict(
+                "session is already connected".into(),
+            ));
+        }
+        // Ensure session socket is running before requesting pair code
+        if self.engine.get_status(session_id).await.is_err()
+            || live_status == SessionConnectionState::Disconnected.as_str()
+            || live_status == SessionConnectionState::LoggedOut.as_str()
+        {
+            self.engine
+                .start_session(session_id, self.event_tx.clone())
+                .await?;
+        }
+        let payload = self.engine.request_pair_code(session_id, &digits).await?;
+        Ok(payload)
+    }
+
+    pub async fn get_pair_code(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<crate::engines::whatsapp::PairCodePayload>, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        match self.engine.get_pair_code(session_id).await {
+            Ok(p) => Ok(p),
+            Err(_) => Ok(None),
+        }
     }
 
     pub async fn get_status(
@@ -584,6 +637,17 @@ impl SessionManager {
                 session_id,
                 message,
             } => {
+                // Deduplicate device-synced echoes of messages already sent via Relay API/MCP
+                if message.from_me
+                    && self
+                        .db
+                        .has_message_by_external_id(&session_id, &message.external_id)
+                        .await
+                        .unwrap_or(false)
+                {
+                    return;
+                }
+
                 let mut media_id_opt = None;
                 let mut is_audio = false;
 
@@ -619,6 +683,27 @@ impl SessionManager {
                     }
                 }
 
+                let direction = if message.from_me {
+                    "outbound"
+                } else {
+                    "inbound"
+                };
+                let status = if message.from_me { "sent" } else { "received" };
+                let source = if message.from_me {
+                    "device_sync"
+                } else {
+                    "contact"
+                };
+                let metadata = serde_json::json!({
+                    "sender_name": message.sender_name,
+                    "sender_phone": message.sender_phone,
+                    "from_me": message.from_me,
+                    "source": source,
+                    "message_timestamp": message.timestamp.to_rfc3339(),
+                    "is_history_sync": message.is_history_sync,
+                });
+                let metadata_str = metadata.to_string();
+
                 let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
                 let saved = self
                     .db
@@ -626,48 +711,63 @@ impl SessionManager {
                         id: &msg_id,
                         session_id: &session_id,
                         external_id: Some(&message.external_id),
-                        direction: "inbound",
+                        direction,
                         chat_jid: &message.chat_jid,
                         sender_jid: message.sender_jid.as_deref(),
                         message_type: &message.message_type,
                         text_body: message.text_body.as_deref(),
                         caption: message.caption.as_deref(),
                         media_id: media_id_opt.as_deref(),
-                        status: "received",
-                        metadata_json: "{}",
+                        status,
+                        metadata_json: &metadata_str,
                     })
                     .await;
 
                 match saved {
                     Ok(rec) => {
-                        let _ = self
-                            .events
-                            .publish(
-                                "message.received",
-                                &session_id,
-                                serde_json::json!({
-                                    "message_id": rec.id,
-                                    "external_id": rec.external_id,
-                                    "chat_jid": rec.chat_jid,
-                                    "sender_jid": rec.sender_jid,
-                                    "message_type": rec.message_type,
-                                    "text": rec.text_body,
-                                    "caption": rec.caption,
-                                    "media_id": rec.media_id,
-                                }),
-                            )
-                            .await;
+                        if !message.is_history_sync {
+                            let event_type = if message.from_me {
+                                "message.sent"
+                            } else {
+                                "message.received"
+                            };
+                            let _ = self
+                                .events
+                                .publish(
+                                    event_type,
+                                    &session_id,
+                                    serde_json::json!({
+                                        "message_id": rec.id,
+                                        "external_id": rec.external_id,
+                                        "direction": rec.direction,
+                                        "chat_jid": rec.chat_jid,
+                                        "sender_jid": rec.sender_jid,
+                                        "sender_name": message.sender_name,
+                                        "sender_phone": message.sender_phone,
+                                        "from_me": message.from_me,
+                                        "source": source,
+                                        "timestamp": message.timestamp.to_rfc3339(),
+                                        "is_history_sync": message.is_history_sync,
+                                        "message_type": rec.message_type,
+                                        "text": rec.text_body,
+                                        "caption": rec.caption,
+                                        "media_id": rec.media_id,
+                                    }),
+                                )
+                                .await;
 
-                        if is_audio
-                            && self.config.transcription.enabled
-                            && media_id_opt.is_some()
-                            && let Err(err) = self.request_transcription(&rec.id, None).await
-                        {
-                            warn!(message_id = %rec.id, error = %err, "failed to enqueue voice transcription");
+                            if !message.from_me
+                                && is_audio
+                                && self.config.transcription.enabled
+                                && media_id_opt.is_some()
+                                && let Err(err) = self.request_transcription(&rec.id, None).await
+                            {
+                                warn!(message_id = %rec.id, error = %err, "failed to enqueue voice transcription");
+                            }
                         }
                     }
                     Err(err) => {
-                        error!(session_id = %session_id, error = %err, "failed to persist inbound message");
+                        error!(session_id = %session_id, error = %err, "failed to persist whatsapp message");
                     }
                 }
             }

@@ -54,6 +54,26 @@ pub struct QrPayload {
     pub expires_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PairCodePayload {
+    pub code: String,
+    pub formatted_code: String,
+    pub expires_at: DateTime<Utc>,
+}
+
+pub fn format_pair_code(raw: &str) -> String {
+    let clean: String = raw
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_uppercase())
+        .collect();
+    if clean.len() == 8 {
+        format!("{}-{}", &clean[..4], &clean[4..])
+    } else {
+        clean
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MediaKind {
@@ -88,6 +108,10 @@ pub struct InboundMessage {
     pub external_id: String,
     pub chat_jid: String,
     pub sender_jid: Option<String>,
+    pub sender_name: Option<String>,
+    pub sender_phone: Option<String>,
+    pub from_me: bool,
+    pub is_history_sync: bool,
     pub message_type: String,
     pub text_body: Option<String>,
     pub caption: Option<String>,
@@ -110,7 +134,7 @@ pub enum EngineEvent {
     },
     MessageReceived {
         session_id: String,
-        message: InboundMessage,
+        message: Box<InboundMessage>,
     },
     MessageAck {
         session_id: String,
@@ -166,6 +190,23 @@ pub trait WhatsAppEngine: Send + Sync {
     async fn get_status(&self, session_id: &str) -> Result<SessionConnectionState, EngineError>;
 
     async fn get_qr(&self, session_id: &str) -> Result<Option<QrPayload>, EngineError>;
+
+    async fn request_pair_code(
+        &self,
+        _session_id: &str,
+        _phone_number: &str,
+    ) -> Result<PairCodePayload, EngineError> {
+        Err(EngineError::Protocol(
+            "pair code authentication is not supported by this engine".into(),
+        ))
+    }
+
+    async fn get_pair_code(
+        &self,
+        _session_id: &str,
+    ) -> Result<Option<PairCodePayload>, EngineError> {
+        Ok(None)
+    }
 
     async fn send_text(
         &self,

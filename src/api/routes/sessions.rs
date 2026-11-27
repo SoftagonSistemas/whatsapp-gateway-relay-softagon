@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::AppState;
 use crate::api::error::ApiError;
-use crate::engines::whatsapp::QrPayload;
+use crate::api::pairing::render_qr_png;
+use crate::engines::whatsapp::{PairCodePayload, QrPayload};
 use crate::storage::database::sessions::SessionRecord;
 
 #[derive(Debug, Deserialize)]
@@ -41,6 +42,35 @@ pub struct SessionStatusResponse {
 pub struct LogoutResponse {
     pub session_id: String,
     pub status: &'static str,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RequestPairCodeBody {
+    pub phone_number: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PairCodeResponse {
+    pub session_id: String,
+    pub code: String,
+    pub formatted_code: String,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct CreatePairLinkBody {
+    pub ttl_seconds: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreatePairLinkResponse {
+    pub session_id: String,
+    pub token: String,
+    pub pair_path: String,
+    pub qr_svg_path: String,
+    pub qr_png_path: String,
+    pub status_path: String,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
 pub async fn list_sessions(
@@ -111,6 +141,74 @@ pub async fn get_qr_svg(
         svg_str,
     )
         .into_response())
+}
+
+pub async fn get_qr_png(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+) -> Result<Response, ApiError> {
+    let Some(qr) = state.sessions.get_qr(&session_id).await? else {
+        return Err(ApiError::NotFound(
+            "no active QR code for this session (already connected or expired)".into(),
+        ));
+    };
+    let png = render_qr_png(&qr.code)?;
+    Ok((
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, HeaderValue::from_static("image/png")),
+            (
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("no-store, max-age=0"),
+            ),
+        ],
+        png,
+    )
+        .into_response())
+}
+
+pub async fn request_pair_code(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+    Json(body): Json<RequestPairCodeBody>,
+) -> Result<Json<PairCodeResponse>, ApiError> {
+    let PairCodePayload {
+        code,
+        formatted_code,
+        expires_at,
+    } = state
+        .sessions
+        .request_pair_code(&session_id, &body.phone_number)
+        .await?;
+    Ok(Json(PairCodeResponse {
+        session_id,
+        code,
+        formatted_code,
+        expires_at,
+    }))
+}
+
+pub async fn create_pair_link(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+    body: Option<Json<CreatePairLinkBody>>,
+) -> Result<(StatusCode, Json<CreatePairLinkResponse>), ApiError> {
+    let _ = state.sessions.get_session(&session_id).await?;
+    let ttl = body.and_then(|b| b.0.ttl_seconds);
+    let link = state.pairing_links.create(&session_id, ttl).await;
+    let token = link.token;
+    Ok((
+        StatusCode::CREATED,
+        Json(CreatePairLinkResponse {
+            session_id,
+            pair_path: format!("/pair/{token}"),
+            qr_svg_path: format!("/pair/{token}/qr.svg"),
+            qr_png_path: format!("/pair/{token}/qr.png"),
+            status_path: format!("/pair/{token}/status"),
+            token,
+            expires_at: link.expires_at,
+        }),
+    ))
 }
 
 pub async fn reconnect_session(

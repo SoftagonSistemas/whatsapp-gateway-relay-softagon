@@ -9,6 +9,7 @@ use chrono::{Duration, Utc};
 use tokio::sync::{RwLock, mpsc};
 use tracing::{debug, info, warn};
 use whatsapp_rust::download::Downloadable;
+use whatsapp_rust::pair_code::PairCodeOptions;
 use whatsapp_rust::prelude::*;
 use whatsapp_rust::upload::UploadOptions;
 use whatsapp_rust::wacore::download::MediaType;
@@ -16,14 +17,16 @@ use whatsapp_rust::wacore::store::device::DevicePropsOverride;
 use whatsapp_rust::wacore::types::events::Event;
 
 use super::{
-    EngineError, EngineEvent, InboundMedia, InboundMessage, MediaKind, QrPayload, SendMediaParams,
-    SendResult, SendTextParams, SessionConnectionState, WhatsAppEngine,
+    EngineError, EngineEvent, InboundMedia, InboundMessage, MediaKind, PairCodePayload, QrPayload,
+    SendMediaParams, SendResult, SendTextParams, SessionConnectionState, WhatsAppEngine,
+    format_pair_code,
 };
 
 struct ActiveSession {
     handle: BotHandle,
     status: Arc<RwLock<SessionConnectionState>>,
     qr: Arc<RwLock<Option<QrPayload>>>,
+    pair_code: Arc<RwLock<Option<PairCodePayload>>>,
 }
 
 pub struct WhatsAppRustEngine {
@@ -179,11 +182,13 @@ impl WhatsAppEngine for WhatsAppRustEngine {
 
         let status_cell = Arc::new(RwLock::new(SessionConnectionState::Connecting));
         let qr_cell = Arc::new(RwLock::new(None::<QrPayload>));
+        let pair_code_cell = Arc::new(RwLock::new(None::<PairCodePayload>));
 
         let sid_ev = session_id.to_string();
         let tx_ev = event_tx.clone();
         let status_ev = status_cell.clone();
         let qr_ev = qr_cell.clone();
+        let pair_code_ev = pair_code_cell.clone();
 
         let bot = Bot::builder()
             .with_backend(store)
@@ -197,8 +202,9 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                 let tx = tx_ev.clone();
                 let status = status_ev.clone();
                 let qr = qr_ev.clone();
+                let pair_code = pair_code_ev.clone();
                 async move {
-                    handle_wa_event(&sid, event, client, &tx, &status, &qr).await;
+                    handle_wa_event(&sid, event, client, &tx, &status, &qr, &pair_code).await;
                 }
             })
             .build()
@@ -215,6 +221,7 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                 handle,
                 status: status_cell,
                 qr: qr_cell,
+                pair_code: pair_code_cell,
             },
         );
 
@@ -274,6 +281,69 @@ impl WhatsAppEngine for WhatsAppRustEngine {
         };
         let qr = active.qr.read().await.clone();
         Ok(qr)
+    }
+
+    async fn request_pair_code(
+        &self,
+        session_id: &str,
+        phone_number: &str,
+    ) -> Result<PairCodePayload, EngineError> {
+        let (client, pair_code_cell) = {
+            let guard = self.sessions.read().await;
+            let Some(active) = guard.get(session_id) else {
+                return Err(EngineError::SessionNotFound(session_id.to_string()));
+            };
+            if *active.status.read().await == SessionConnectionState::Connected {
+                return Err(EngineError::Protocol("session is already connected".into()));
+            }
+            if let Some(existing) = active
+                .pair_code
+                .read()
+                .await
+                .clone()
+                .filter(|p| p.expires_at > Utc::now())
+            {
+                return Ok(existing);
+            }
+            (active.handle.client(), active.pair_code.clone())
+        };
+
+        let digits: String = phone_number
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .collect();
+        let code = client
+            .pair_with_code(PairCodeOptions {
+                phone_number: digits,
+                ..Default::default()
+            })
+            .await
+            .map_err(|e| EngineError::Protocol(format!("pair code request failed: {e}")))?;
+
+        let payload = PairCodePayload {
+            formatted_code: format_pair_code(&code),
+            code,
+            expires_at: Utc::now() + Duration::seconds(180),
+        };
+        *pair_code_cell.write().await = Some(payload.clone());
+        Ok(payload)
+    }
+
+    async fn get_pair_code(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<PairCodePayload>, EngineError> {
+        let guard = self.sessions.read().await;
+        let Some(active) = guard.get(session_id) else {
+            return Err(EngineError::SessionNotFound(session_id.to_string()));
+        };
+        let current = active
+            .pair_code
+            .read()
+            .await
+            .clone()
+            .filter(|p| p.expires_at > Utc::now());
+        Ok(current)
     }
 
     async fn send_text(
@@ -418,6 +488,7 @@ async fn handle_wa_event(
     tx: &mpsc::Sender<EngineEvent>,
     status_cell: &Arc<RwLock<SessionConnectionState>>,
     qr_cell: &Arc<RwLock<Option<QrPayload>>>,
+    pair_code_cell: &Arc<RwLock<Option<PairCodePayload>>>,
 ) {
     match event.as_ref() {
         Event::PairingQrCode(qr) => {
@@ -447,6 +518,7 @@ async fn handle_wa_event(
         Event::Connected(_) => {
             *status_cell.write().await = SessionConnectionState::Connected;
             *qr_cell.write().await = None;
+            *pair_code_cell.write().await = None;
             let _ = tx
                 .send(EngineEvent::StatusChanged {
                     session_id: session_id.to_string(),
@@ -460,6 +532,7 @@ async fn handle_wa_event(
         Event::PairSuccess(pair) => {
             *status_cell.write().await = SessionConnectionState::Connected;
             *qr_cell.write().await = None;
+            *pair_code_cell.write().await = None;
             let jid_str = pair.id.to_string();
             let phone = pair.id.user.to_string();
             let _ = tx
@@ -500,6 +573,7 @@ async fn handle_wa_event(
         Event::LoggedOut(lo) => {
             *status_cell.write().await = SessionConnectionState::LoggedOut;
             *qr_cell.write().await = None;
+            *pair_code_cell.write().await = None;
             let raw_reason = format!("{:?}", lo.reason);
             let normalized = normalize_logout_reason(&raw_reason);
             let _ = tx
@@ -520,7 +594,7 @@ async fn handle_wa_event(
                     let _ = tx
                         .send(EngineEvent::MessageReceived {
                             session_id: session_id.to_string(),
-                            message: inbound,
+                            message: Box::new(inbound),
                         })
                         .await;
                 }
@@ -558,15 +632,79 @@ async fn handle_wa_event(
     }
 }
 
+fn unwrap_message_content(mut msg: &wa::Message) -> &wa::Message {
+    // Unwrap device-sent (messages sent from the primary phone/WhatsApp Web) and ephemeral wrappers
+    for _ in 0..4 {
+        if let Some(dsm) = msg.device_sent_message.as_option()
+            && let Some(inner) = dsm.message.as_option()
+        {
+            msg = inner;
+            continue;
+        }
+        if let Some(eph) = msg.ephemeral_message.as_option()
+            && let Some(inner) = eph.message.as_option()
+        {
+            msg = inner;
+            continue;
+        }
+        if let Some(vo) = msg.view_once_message.as_option()
+            && let Some(inner) = vo.message.as_option()
+        {
+            msg = inner;
+            continue;
+        }
+        break;
+    }
+    msg
+}
+
+fn extract_phone_from_jid(jid: &str) -> Option<String> {
+    let (user_part, server) = jid.split_once('@')?;
+    if !server.eq_ignore_ascii_case("s.whatsapp.net") {
+        return None;
+    }
+    let user = user_part.split(':').next().unwrap_or(user_part);
+    let digits: String = user.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.len() >= 7 {
+        Some(digits)
+    } else {
+        None
+    }
+}
+
 async fn convert_inbound_message(
-    msg: &wa::Message,
+    raw_msg: &wa::Message,
     info: &whatsapp_rust::wacore::types::message::MessageInfo,
     client: &Arc<whatsapp_rust::Client>,
 ) -> Option<InboundMessage> {
+    let msg = unwrap_message_content(raw_msg);
     let external_id = info.id.clone();
     let chat_jid = info.source.chat.to_string();
     let sender_jid = Some(info.source.sender.to_string());
-    let timestamp = Utc::now();
+    let sender_name = {
+        let trimmed = info.push_name.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    };
+    let sender_phone = info
+        .source
+        .sender_alt
+        .as_ref()
+        .and_then(|j| extract_phone_from_jid(&j.to_string()))
+        .or_else(|| extract_phone_from_jid(&info.source.sender.to_string()))
+        .or_else(|| {
+            info.source
+                .recipient_alt
+                .as_ref()
+                .and_then(|j| extract_phone_from_jid(&j.to_string()))
+        })
+        .or_else(|| extract_phone_from_jid(&chat_jid));
+    let from_me = info.source.is_from_me;
+    let timestamp = info.timestamp;
+    let is_history_sync = (Utc::now() - timestamp).num_seconds() > 300;
 
     if let Some(audio) = msg.audio_message.as_option() {
         let bytes = download_media_bytes(client, audio).await?;
@@ -579,6 +717,10 @@ async fn convert_inbound_message(
             external_id,
             chat_jid,
             sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
             message_type: "audio".to_string(),
             text_body: None,
             caption: None,
@@ -599,6 +741,10 @@ async fn convert_inbound_message(
             external_id,
             chat_jid,
             sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
             message_type: "image".to_string(),
             text_body: None,
             caption: image.caption.clone(),
@@ -622,6 +768,10 @@ async fn convert_inbound_message(
             external_id,
             chat_jid,
             sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
             message_type: "video".to_string(),
             text_body: None,
             caption: video.caption.clone(),
@@ -645,6 +795,10 @@ async fn convert_inbound_message(
             external_id,
             chat_jid,
             sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
             message_type: "document".to_string(),
             text_body: None,
             caption: doc.caption.clone(),
@@ -662,6 +816,101 @@ async fn convert_inbound_message(
         });
     }
 
+    if msg.sticker_message.as_option().is_some() {
+        return Some(InboundMessage {
+            external_id,
+            chat_jid,
+            sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
+            message_type: "sticker".to_string(),
+            text_body: None,
+            caption: None,
+            media: None,
+            timestamp,
+        });
+    }
+
+    if let Some(reaction) = msg.reaction_message.as_option() {
+        return Some(InboundMessage {
+            external_id,
+            chat_jid,
+            sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
+            message_type: "reaction".to_string(),
+            text_body: reaction.text.clone(),
+            caption: None,
+            media: None,
+            timestamp,
+        });
+    }
+
+    if let Some(loc) = msg.location_message.as_option() {
+        let summary = match (loc.degrees_latitude, loc.degrees_longitude) {
+            (Some(lat), Some(lon)) => {
+                if let Some(name) = loc.name.as_deref().filter(|s| !s.trim().is_empty()) {
+                    Some(format!("{name} ({lat:.6}, {lon:.6})"))
+                } else {
+                    Some(format!("{lat:.6}, {lon:.6}"))
+                }
+            }
+            _ => loc.name.clone().or_else(|| loc.address.clone()),
+        };
+        return Some(InboundMessage {
+            external_id,
+            chat_jid,
+            sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
+            message_type: "location".to_string(),
+            text_body: summary,
+            caption: loc.comment.clone(),
+            media: None,
+            timestamp,
+        });
+    }
+
+    if let Some(contact) = msg.contact_message.as_option() {
+        return Some(InboundMessage {
+            external_id,
+            chat_jid,
+            sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
+            message_type: "contact".to_string(),
+            text_body: contact.display_name.clone(),
+            caption: None,
+            media: None,
+            timestamp,
+        });
+    }
+
+    if let Some(contacts) = msg.contacts_array_message.as_option() {
+        return Some(InboundMessage {
+            external_id,
+            chat_jid,
+            sender_jid,
+            sender_name,
+            sender_phone,
+            from_me,
+            is_history_sync,
+            message_type: "contacts".to_string(),
+            text_body: contacts.display_name.clone(),
+            caption: None,
+            media: None,
+            timestamp,
+        });
+    }
+
     let text_body = msg.conversation.clone().or_else(|| {
         msg.extended_text_message
             .as_option()
@@ -672,6 +921,10 @@ async fn convert_inbound_message(
         external_id,
         chat_jid,
         sender_jid,
+        sender_name,
+        sender_phone,
+        from_me,
+        is_history_sync,
         message_type: "text".to_string(),
         text_body: Some(text),
         caption: None,

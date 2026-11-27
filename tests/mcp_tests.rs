@@ -264,6 +264,10 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
                 external_id: "wamid_joao_1".to_string(),
                 chat_jid: "5511988887777@s.whatsapp.net".to_string(),
                 sender_jid: Some("5511988887777@s.whatsapp.net".to_string()),
+                sender_name: Some("João Silva".to_string()),
+                sender_phone: Some("5511988887777".to_string()),
+                from_me: false,
+                is_history_sync: false,
                 message_type: "text".to_string(),
                 text_body: Some("Oi, aqui é o João! Que horas é nossa reunião?".to_string()),
                 caption: None,
@@ -317,7 +321,7 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
     let chats_text = body_chats["result"]["content"][0]["text"].as_str().unwrap();
     assert!(chats_text.contains("5511988887777@s.whatsapp.net"));
 
-    // 3. Agent sends the rescheduled meeting message to João
+    // 3. Agent sends the rescheduled meeting message to João (with idempotency_key)
     let (st_send, body_send) = post_mcp_json(
         &router,
         key,
@@ -331,7 +335,8 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
                 "arguments": {
                     "session_id": session.id,
                     "to": "5511988887777@s.whatsapp.net",
-                    "text": "Nossa reunião foi remarcada para amanhã às 14h."
+                    "text": "Nossa reunião foi remarcada para amanhã às 14h.",
+                    "idempotency_key": "mcp-idem-joao-1"
                 }
             }
         }),
@@ -343,6 +348,38 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
         "send_text_message failed: {body_send}"
     );
     assert_eq!(body_send["result"]["isError"], Value::Bool(false));
+    let first_msg: Value =
+        serde_json::from_str(body_send["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
+
+    // Retry with the same idempotency_key must return the exact same message_id without duplicating
+    let (st_send_dup, body_send_dup) = post_mcp_json(
+        &router,
+        key,
+        None,
+        json!({
+            "jsonrpc": "2.0",
+            "id": 30,
+            "method": "tools/call",
+            "params": {
+                "name": "send_text_message",
+                "arguments": {
+                    "session_id": session.id,
+                    "to": "5511988887777@s.whatsapp.net",
+                    "text": "Nossa reunião foi remarcada para amanhã às 14h.",
+                    "idempotency_key": "mcp-idem-joao-1"
+                }
+            }
+        }),
+    )
+    .await;
+    assert_eq!(st_send_dup, StatusCode::OK);
+    let second_msg: Value = serde_json::from_str(
+        body_send_dup["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(first_msg["message_id"], second_msg["message_id"]);
 
     // 4. Destructive logout_session must be blocked by default
     let (st_block, body_block) = post_mcp_json(

@@ -160,6 +160,29 @@ export function useApi() {
       request<SessionQrResponse>(`/v1/sessions/${encodeURIComponent(id)}/qr`),
     getSessionQrSvg: (id: string) =>
       request<string>(`/v1/sessions/${encodeURIComponent(id)}/qr.svg`, { rawText: true }),
+    requestPairCode: (id: string, phoneNumber: string) =>
+      request<{
+        session_id: string;
+        code: string;
+        formatted_code: string;
+        expires_at: string;
+      }>(`/v1/sessions/${encodeURIComponent(id)}/pair-code`, {
+        method: 'POST',
+        body: { phone_number: phoneNumber },
+      }),
+    createPairLink: (id: string, ttlSeconds?: number) =>
+      request<{
+        session_id: string;
+        token: string;
+        pair_path: string;
+        qr_svg_path: string;
+        qr_png_path: string;
+        status_path: string;
+        expires_at: string;
+      }>(`/v1/sessions/${encodeURIComponent(id)}/pair-link`, {
+        method: 'POST',
+        body: ttlSeconds ? { ttl_seconds: ttlSeconds } : {},
+      }),
     getSessionStatus: (id: string) =>
       request<SessionStatusResponse>(`/v1/sessions/${encodeURIComponent(id)}/status`),
     reconnectSession: (id: string) =>

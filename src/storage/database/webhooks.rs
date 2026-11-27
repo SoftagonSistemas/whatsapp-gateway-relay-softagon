@@ -9,6 +9,8 @@ pub struct WebhookRecord {
     pub id: String,
     pub url: String,
     pub secret: String,
+    pub auth_header_name: Option<String>,
+    pub auth_header_value: Option<String>,
     pub session_id: Option<String>,
     pub events_json: String,
     pub enabled: bool,
@@ -33,6 +35,8 @@ pub struct WebhookDeliveryRow {
     pub webhook_id: String,
     pub url: String,
     pub secret: String,
+    pub auth_header_name: Option<String>,
+    pub auth_header_value: Option<String>,
     pub event_type: String,
     pub payload_json: String,
     pub attempts: i64,
@@ -44,6 +48,8 @@ pub struct NewWebhook<'a> {
     pub id: &'a str,
     pub url: &'a str,
     pub secret: &'a str,
+    pub auth_header_name: Option<&'a str>,
+    pub auth_header_value: Option<&'a str>,
     pub session_id: Option<&'a str>,
     pub events: &'a [String],
     pub enabled: bool,
@@ -54,6 +60,8 @@ pub struct NewWebhook<'a> {
 pub struct UpdateWebhook<'a> {
     pub url: Option<&'a str>,
     pub secret: Option<&'a str>,
+    pub auth_header_name: Option<Option<&'a str>>,
+    pub auth_header_value: Option<Option<&'a str>>,
     pub events: Option<&'a [String]>,
     pub enabled: Option<bool>,
     pub description: Option<Option<&'a str>>,
@@ -65,13 +73,18 @@ impl Database {
         let events_json = serde_json::to_string(input.events)?;
         sqlx::query(
             r#"
-            INSERT INTO webhooks (id, url, secret, session_id, events_json, enabled, description, created_at, updated_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)
+            INSERT INTO webhooks (
+                id, url, secret, auth_header_name, auth_header_value,
+                session_id, events_json, enabled, description, created_at, updated_at
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)
             "#,
         )
         .bind(input.id)
         .bind(input.url)
         .bind(input.secret)
+        .bind(input.auth_header_name)
+        .bind(input.auth_header_value)
         .bind(input.session_id)
         .bind(&events_json)
         .bind(input.enabled)
@@ -88,7 +101,8 @@ impl Database {
     pub async fn get_webhook(&self, id: &str) -> Result<Option<WebhookRecord>, DbError> {
         let row = sqlx::query_as::<_, WebhookRecord>(
             r#"
-            SELECT id, url, secret, session_id, events_json, enabled, description, created_at, updated_at
+            SELECT id, url, secret, auth_header_name, auth_header_value,
+                   session_id, events_json, enabled, description, created_at, updated_at
             FROM webhooks
             WHERE id = ?1
             "#,
@@ -102,7 +116,8 @@ impl Database {
     pub async fn list_webhooks(&self) -> Result<Vec<WebhookRecord>, DbError> {
         let rows = sqlx::query_as::<_, WebhookRecord>(
             r#"
-            SELECT id, url, secret, session_id, events_json, enabled, description, created_at, updated_at
+            SELECT id, url, secret, auth_header_name, auth_header_value,
+                   session_id, events_json, enabled, description, created_at, updated_at
             FROM webhooks
             ORDER BY created_at DESC
             "#,
@@ -122,6 +137,14 @@ impl Database {
         };
         let url = patch.url.unwrap_or(&existing.url);
         let secret = patch.secret.unwrap_or(&existing.secret);
+        let auth_header_name = match patch.auth_header_name {
+            Some(v) => v.map(ToString::to_string),
+            None => existing.auth_header_name,
+        };
+        let auth_header_value = match patch.auth_header_value {
+            Some(v) => v.map(ToString::to_string),
+            None => existing.auth_header_value,
+        };
         let events_json = match patch.events {
             Some(ev) => serde_json::to_string(ev)?,
             None => existing.events_json,
@@ -136,13 +159,16 @@ impl Database {
         sqlx::query(
             r#"
             UPDATE webhooks
-            SET url = ?2, secret = ?3, events_json = ?4, enabled = ?5, description = ?6, updated_at = ?7
+            SET url = ?2, secret = ?3, auth_header_name = ?4, auth_header_value = ?5,
+                events_json = ?6, enabled = ?7, description = ?8, updated_at = ?9
             WHERE id = ?1
             "#,
         )
         .bind(id)
         .bind(url)
         .bind(secret)
+        .bind(auth_header_name)
+        .bind(auth_header_value)
         .bind(&events_json)
         .bind(enabled)
         .bind(description)
@@ -188,7 +214,8 @@ impl Database {
 
         let candidates = sqlx::query_as::<_, WebhookRecord>(
             r#"
-            SELECT id, url, secret, session_id, events_json, enabled, description, created_at, updated_at
+            SELECT id, url, secret, auth_header_name, auth_header_value,
+                   session_id, events_json, enabled, description, created_at, updated_at
             FROM webhooks
             WHERE enabled = 1 AND (session_id IS NULL OR session_id = ?1)
             "#,
@@ -237,6 +264,7 @@ impl Database {
         let rows = sqlx::query_as::<_, WebhookDeliveryRow>(
             r#"
             SELECT d.id, d.event_id, d.webhook_id, w.url, w.secret,
+                   w.auth_header_name, w.auth_header_value,
                    e.event_type, e.payload_json, d.attempts, d.max_attempts
             FROM webhook_deliveries d
             INNER JOIN webhooks w ON w.id = d.webhook_id

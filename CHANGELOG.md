@@ -6,6 +6,26 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.7] — 2026-11-27
+
+### Added — Grok Bot Turnkey Experience, Zero-Login Pairing & Webhook Auth
+- **Zero-Login Temporary Pairing Link (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` and MCP `create_pairing_link` mint a short-lived, cryptographically random, session-scoped URL (`GET /pair/{token}`) that displays the WhatsApp **QR Code** directly without requiring login or exposing `RELAY_API_KEY`. Auto-renews expired 60-second QR cycles continuously for up to **10 minutes** and invalidates immediately once paired.
+- **Native PNG QR Endpoint (`qr.png`):** added pure-Rust PNG QR rendering on `GET /v1/sessions/{id}/qr.png` and `GET /pair/{token}/qr.png` for chat/file workflows.
+- **8-Digit Phone Pairing Code (Secondary Alternative):** added `POST /v1/sessions/{id}/pair-code`, `POST /pair/{token}/pair-code`, MCP `request_pair_code`, WebMCP `relay_request_pair_code`, and a secondary tab in `ConnectView.vue` powered by `whatsapp-rust`'s native `pair_with_code`.
+- **Contact Name (`sender_name` / `contact_name`) & `@lid` Phone Resolution (`sender_phone`):** extracts WhatsApp `push_name` and resolves `@s.whatsapp.net` phone digits from `sender_alt` / `recipient_alt` even when primary JIDs are `@lid`. Exposed in `message.received` / `message.sent` webhooks, `list_chats` (`contact_name`), and `get_chat_messages` (`sender_name`).
+- **Phone-Sent Team Messages (`from_me` / `device_sync`):** unwraps `device_sent_message`, `ephemeral_message`, and `view_once_message` so messages sent by store staff directly from the WhatsApp phone are persisted as `direction: "outbound"` (`source: "device_sync"`), deduplicated by `external_id`, and emitted as `message.sent` webhooks.
+- **Webhook Custom Auth Headers & Bearer Shorthand (`migrations/0004_webhook_auth_headers.sql`):** `POST /v1/webhooks` and `PATCH /v1/webhooks/{id}` now accept `bearer_token` (or `auth_header_name` + `auth_header_value`) so Relay talks directly to Grok Bot routines (`Authorization: Bearer ...`) without needing a proxy forwarder. Secret values are never echoed back in API responses.
+- **Additional WhatsApp Message Types:** records `sticker`, `reaction`, `location`, `contact`, and `contacts` messages instead of dropping them.
+- **Grok Bot Turnkey Kit:** added `integrations/grok-bot/setup.sh`, `ensure-running.sh`, `TEMPLATE.md`, and `docs/grok-bot.md`, plus MCP tools `create_session`, `create_pairing_link`, and `request_pair_code`.
+
+### Fixed
+- **Live Session Status in `list_sessions`:** `GET /v1/sessions` and MCP `list_sessions` now merge live WhatsApp engine connection status instead of returning stale SQLite values.
+- **Real Message Timestamp & History Sync Suppression:** uses the real WhatsApp `info.timestamp` and marks messages older than 5 minutes as `is_history_sync: true`, storing them in SQLite for search without firing webhooks or queueing voice transcription.
+- **Stop Retrying Webhooks on HTTP 401/403:** permanent authentication errors (`401`/`403`) no longer enter the retry backoff loop.
+- **MCP `send_text_message` Idempotency:** properly enforces `idempotency_key` deduplication via `idempotency_keys` (matching the REST API) so retried agent calls never send duplicate messages.
+
+---
+
 ## [0.3.6] — 2026-11-25
 
 ### Added — Chrome Modern Web Guidance & WebMCP Support

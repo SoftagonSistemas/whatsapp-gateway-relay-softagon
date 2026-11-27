@@ -2,6 +2,7 @@ pub mod auth;
 pub mod console;
 pub mod docs;
 pub mod error;
+pub mod pairing;
 pub mod routes;
 
 use std::sync::Arc;
@@ -15,6 +16,7 @@ use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::config::AppConfig;
+use crate::core::pairing::PairingLinkStore;
 use crate::core::service::RelayService;
 use crate::core::sessions::SessionManager;
 use crate::core::webhooks::WebhookService;
@@ -30,6 +32,7 @@ pub struct AppState {
     pub sessions: Arc<SessionManager>,
     pub webhooks: WebhookService,
     pub transcription_engine: Arc<dyn TranscriptionEngine>,
+    pub pairing_links: PairingLinkStore,
 }
 
 impl From<RelayService> for AppState {
@@ -41,6 +44,7 @@ impl From<RelayService> for AppState {
             sessions: svc.sessions,
             webhooks: svc.webhooks,
             transcription_engine: svc.transcription_engine,
+            pairing_links: svc.pairing_links,
         }
     }
 }
@@ -62,6 +66,18 @@ pub fn build_router(state: AppState) -> Router {
         .route(
             "/v1/sessions/{session_id}/qr.svg",
             get(routes::sessions::get_qr_svg),
+        )
+        .route(
+            "/v1/sessions/{session_id}/qr.png",
+            get(routes::sessions::get_qr_png),
+        )
+        .route(
+            "/v1/sessions/{session_id}/pair-code",
+            post(routes::sessions::request_pair_code),
+        )
+        .route(
+            "/v1/sessions/{session_id}/pair-link",
+            post(routes::sessions::create_pair_link),
         )
         .route(
             "/v1/sessions/{session_id}/status",
@@ -123,6 +139,12 @@ pub fn build_router(state: AppState) -> Router {
         .route("/console", get(console::redirect_to_console))
         .route("/console/", get(console::console_index))
         .route("/console/{*path}", get(console::console_fallback))
+        .route("/pair/{token}", get(pairing::pair_page))
+        .route("/pair/{token}/status", get(pairing::pair_status))
+        .route("/pair/{token}/qr.svg", get(pairing::pair_qr_svg))
+        .route("/pair/{token}/qr.png", get(pairing::pair_qr_png))
+        .route("/pair/{token}/reconnect", post(pairing::pair_reconnect))
+        .route("/pair/{token}/pair-code", post(pairing::pair_request_code))
         .route("/v1/health", get(routes::health::health));
     if state.config.docs_enabled && state.config.docs_public {
         public = public

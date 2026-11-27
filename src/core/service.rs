@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use crate::config::AppConfig;
+use crate::core::pairing::{PairingLinkRecord, PairingLinkStore};
 use crate::core::sessions::{SessionError, SessionManager};
 use crate::core::webhooks::WebhookService;
+use crate::engines::whatsapp::PairCodePayload;
 use crate::storage::database::Database;
 use crate::storage::database::audit::{McpAuditRecord, NewMcpAudit};
 use crate::storage::database::messages::{
@@ -26,6 +28,7 @@ pub struct RelayService {
     pub sessions: Arc<SessionManager>,
     pub webhooks: WebhookService,
     pub transcription_engine: Arc<dyn TranscriptionEngine>,
+    pub pairing_links: PairingLinkStore,
 }
 
 impl RelayService {
@@ -44,7 +47,37 @@ impl RelayService {
             sessions,
             webhooks,
             transcription_engine,
+            pairing_links: PairingLinkStore::new(),
         }
+    }
+
+    pub async fn create_session(
+        &self,
+        name: &str,
+        transcription_language: Option<&str>,
+    ) -> Result<SessionRecord, SessionError> {
+        self.sessions
+            .create_session(name, transcription_language)
+            .await
+    }
+
+    pub async fn request_pair_code(
+        &self,
+        session_id: &str,
+        phone_number: &str,
+    ) -> Result<PairCodePayload, SessionError> {
+        self.sessions
+            .request_pair_code(session_id, phone_number)
+            .await
+    }
+
+    pub async fn create_pairing_link(
+        &self,
+        session_id: &str,
+        ttl_seconds: Option<i64>,
+    ) -> Result<PairingLinkRecord, SessionError> {
+        let _ = self.sessions.get_session(session_id).await?;
+        Ok(self.pairing_links.create(session_id, ttl_seconds).await)
     }
 
     pub async fn list_sessions(&self) -> Result<Vec<SessionRecord>, SessionError> {
@@ -104,8 +137,43 @@ impl RelayService {
         session_id: &str,
         to: &str,
         text: &str,
+        idempotency_key: Option<&str>,
     ) -> Result<MessageRecord, SessionError> {
-        self.sessions.send_text(session_id, to, text).await
+        let key = idempotency_key.map(str::trim).filter(|k| !k.is_empty());
+        let req_hash = if key.is_some() {
+            use sha2::{Digest, Sha256};
+            let mut h = Sha256::new();
+            h.update(format!("text:{to}:{text}").as_bytes());
+            Some(hex::encode(h.finalize()))
+        } else {
+            None
+        };
+
+        if let (Some(k), Some(hash)) = (key, req_hash.as_deref())
+            && let Some(existing) = self.db.get_idempotency_key(k, session_id).await?
+        {
+            if existing.request_hash != hash {
+                return Err(SessionError::Conflict(
+                    "idempotency_key already used with a different request payload".into(),
+                ));
+            }
+            if let Ok(cached) = serde_json::from_str::<MessageRecord>(&existing.response_body) {
+                return Ok(cached);
+            }
+        }
+
+        let record = self.sessions.send_text(session_id, to, text).await?;
+
+        if let (Some(k), Some(hash)) = (key, req_hash.as_deref())
+            && let Ok(json_body) = serde_json::to_string(&record)
+        {
+            let _ = self
+                .db
+                .save_idempotency_key(k, session_id, hash, 201, &json_body)
+                .await;
+        }
+
+        Ok(record)
     }
 
     pub async fn get_message_transcription(

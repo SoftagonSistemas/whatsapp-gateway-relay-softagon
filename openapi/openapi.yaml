@@ -1,7 +1,7 @@
 openapi: 3.2.1
 info:
   title: Softagon Relay API
-  version: 0.3.6
+  version: 0.3.7
   summary: Open-source, self-hosted WhatsApp messaging gateway
   description: |
     Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
@@ -150,6 +150,112 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/qr.png:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [Sessions]
+      operationId: getSessionQrPng
+      summary: Obtain pairing QR code rendered as PNG (ready for chat or file sharing)
+      responses:
+        "200":
+          description: Current pairing QR code PNG image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/pair-link:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Sessions]
+      operationId: createSessionPairLink
+      summary: Create a zero-login, short-lived pairing page URL (/pair/{token}) with auto-renewing QR code
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ttl_seconds:
+                  type: integer
+                  minimum: 60
+                  maximum: 1800
+                  default: 600
+      responses:
+        "201":
+          description: Scoped temporary pairing link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  token:
+                    type: string
+                  pair_path:
+                    type: string
+                  qr_svg_path:
+                    type: string
+                  qr_png_path:
+                    type: string
+                  status_path:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/pair-code:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      tags: [Sessions]
+      operationId: requestSessionPairCode
+      summary: Request an 8-character WhatsApp phone pairing code (camera-free alternative to QR)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone_number]
+              properties:
+                phone_number:
+                  type: string
+                  example: "5511999990001"
+      responses:
+        "200":
+          description: 8-character WhatsApp pairing code generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  code:
+                    type: string
+                  formatted_code:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/sessions/{session_id}/reconnect:
     parameters:
       - $ref: "#/components/parameters/SessionId"
@@ -719,6 +825,15 @@ components:
           default: true
         description:
           type: ["string", "null"]
+        bearer_token:
+          type: ["string", "null"]
+          description: "Shorthand to send `Authorization: Bearer <token>` on every delivery (never returned in responses)"
+        auth_header_name:
+          type: ["string", "null"]
+          description: Custom HTTP header name sent on every delivery (e.g., `Authorization` or `X-Api-Key`)
+        auth_header_value:
+          type: ["string", "null"]
+          description: Custom HTTP header value sent on every delivery (never returned in responses)
     UpdateWebhookRequest:
       type: object
       properties:
@@ -735,9 +850,15 @@ components:
           type: boolean
         description:
           type: ["string", "null"]
+        bearer_token:
+          type: ["string", "null"]
+        auth_header_name:
+          type: ["string", "null"]
+        auth_header_value:
+          type: ["string", "null"]
     Webhook:
       type: object
-      required: [id, url, events, enabled, created_at, updated_at]
+      required: [id, url, events, enabled, has_auth_header, created_at, updated_at]
       properties:
         id:
           type: string
@@ -756,6 +877,10 @@ components:
           type: boolean
         description:
           type: ["string", "null"]
+        auth_header_name:
+          type: ["string", "null"]
+        has_auth_header:
+          type: boolean
         created_at:
           type: string
           format: date-time

@@ -38,6 +38,9 @@ pub struct WebhookView {
     pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub secret: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_header_name: Option<String>,
+    pub has_auth_header: bool,
     pub session_id: Option<String>,
     pub events: Vec<String>,
     pub enabled: bool,
@@ -49,6 +52,7 @@ pub struct WebhookView {
 impl WebhookView {
     pub fn from_record(rec: WebhookRecord, include_secret: bool) -> Self {
         let events = serde_json::from_str(&rec.events_json).unwrap_or_default();
+        let has_auth_header = rec.auth_header_name.is_some() && rec.auth_header_value.is_some();
         Self {
             id: rec.id,
             url: rec.url,
@@ -57,6 +61,8 @@ impl WebhookView {
             } else {
                 None
             },
+            auth_header_name: rec.auth_header_name,
+            has_auth_header,
             session_id: rec.session_id,
             events,
             enabled: rec.enabled,
@@ -129,10 +135,13 @@ impl WebhookService {
         Self { db }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         url: &str,
         secret: Option<&str>,
+        auth_header_name: Option<&str>,
+        auth_header_value: Option<&str>,
         session_id: Option<&str>,
         events: Vec<String>,
         enabled: bool,
@@ -151,6 +160,9 @@ impl WebhookService {
             .map(ToString::to_string)
             .unwrap_or_else(generate_webhook_secret);
 
+        let clean_hdr_name = auth_header_name.map(str::trim).filter(|s| !s.is_empty());
+        let clean_hdr_val = auth_header_value.map(str::trim).filter(|s| !s.is_empty());
+
         let id = format!("wh_{}", uuid::Uuid::now_v7());
         let rec = self
             .db
@@ -158,6 +170,8 @@ impl WebhookService {
                 id: &id,
                 url,
                 secret: &secret_val,
+                auth_header_name: clean_hdr_name,
+                auth_header_value: clean_hdr_val,
                 session_id,
                 events: &normalized_events,
                 enabled,
@@ -185,11 +199,14 @@ impl WebhookService {
         Ok(WebhookView::from_record(rec, false))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update(
         &self,
         id: &str,
         url: Option<&str>,
         secret: Option<&str>,
+        auth_header_name: Option<Option<&str>>,
+        auth_header_value: Option<Option<&str>>,
         events: Option<&[String]>,
         enabled: Option<bool>,
         description: Option<Option<&str>>,
@@ -207,6 +224,8 @@ impl WebhookService {
                 UpdateWebhook {
                     url,
                     secret,
+                    auth_header_name,
+                    auth_header_value,
                     events,
                     enabled,
                     description,
@@ -288,17 +307,25 @@ impl WebhookDispatcher {
         let ts = Utc::now().timestamp();
         let signature = sign_payload(&delivery.secret, ts, delivery.payload_json.as_bytes());
 
-        let result = self
+        let mut req = self
             .client
             .post(&delivery.url)
             .header("Content-Type", "application/json")
             .header("X-Relay-Event-Id", &delivery.event_id)
             .header("X-Relay-Event-Type", &delivery.event_type)
             .header("X-Relay-Timestamp", ts.to_string())
-            .header("X-Relay-Signature", signature)
-            .body(delivery.payload_json.clone())
-            .send()
-            .await;
+            .header("X-Relay-Signature", signature);
+
+        if let (Some(hdr_name), Some(hdr_val)) = (
+            delivery.auth_header_name.as_deref(),
+            delivery.auth_header_value.as_deref(),
+        ) && !hdr_name.is_empty()
+            && !hdr_val.is_empty()
+        {
+            req = req.header(hdr_name, hdr_val);
+        }
+
+        let result = req.body(delivery.payload_json.clone()).send().await;
 
         let attempts_after = delivery.attempts + 1;
 
@@ -317,12 +344,17 @@ impl WebhookDispatcher {
             }
             Ok(resp) => {
                 let code = resp.status().as_u16();
-                let next = compute_next_attempt(
-                    Utc::now(),
-                    attempts_after,
-                    delivery.max_attempts,
-                    self.config.backoff_base_seconds,
-                );
+                // Do not retry permanent authentication/authorization rejections (401/403)
+                let next = if code == 401 || code == 403 {
+                    None
+                } else {
+                    compute_next_attempt(
+                        Utc::now(),
+                        attempts_after,
+                        delivery.max_attempts,
+                        self.config.backoff_base_seconds,
+                    )
+                };
                 let msg = format!("non-2xx HTTP status: {code}");
                 let _ = self
                     .db

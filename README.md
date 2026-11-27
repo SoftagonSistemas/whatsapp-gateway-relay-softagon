@@ -8,7 +8,7 @@ Self-hosted WhatsApp Web gateway, embedded Web Console, and native local MCP Ser
 [![Release](https://img.shields.io/github/v/release/SoftagonSistemas/whatsapp-gateway-relay-softagon)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases)
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-softagon%2Frelay-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/softagon/relay)
 
-> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Grok Bot Guide](docs/grok-bot.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Quick Start (One-Line Docker Run)
 
@@ -82,7 +82,9 @@ Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compil
 
 If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries are attached to [GitHub Releases](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases).
 
-Tools exposed: `list_sessions`, `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, and (disabled unless `MCP_ALLOW_DESTRUCTIVE=true` + `confirm: true`) `logout_session` / `delete_session`.
+Tools exposed: `list_sessions`, `create_session`, `create_pairing_link` (zero-login auto-renewing QR page `/pair/{token}` + `qr.png`), `request_pair_code` (8-digit phone code alternative), `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `send_text_message`, and (disabled unless `MCP_ALLOW_DESTRUCTIVE=true` + `confirm: true`) `logout_session` / `delete_session`.
+
+> **Using Grok Bot?** See our turnkey **[Grok Bot Integration Guide](docs/grok-bot.md)** and reusable **[Bot Template](integrations/grok-bot/TEMPLATE.md)** (zero-login `/pair/{token}` QR pairing, `/workspace` persistence, and `ensure-running.sh`).
 
 ---
 

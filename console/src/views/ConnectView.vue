@@ -25,6 +25,13 @@ const liveStatus = ref<string>('created');
 const loading = ref(false);
 const errorMsg = ref<string | null>(null);
 const isMobile = ref(false);
+const pairMethod = ref<'qr' | 'code'>('qr');
+const pairCodePhone = ref('');
+const pairCodeValue = ref<string | null>(null);
+const pairCodeLoading = ref(false);
+const pairCodeError = ref<string | null>(null);
+const pairCodeCopied = ref(false);
+let autoReconnectAt = 0;
 
 let pollTimer: number | null = null;
 let tickTimer: number | null = null;
@@ -39,6 +46,7 @@ const displayPhone = computed(() => {
 });
 
 const qrSteps = computed(() => tm('connect.sQr') as Array<{ a: string; b: string; c: string }>);
+const codeSteps = computed(() => tm('connect.sCode') as Array<{ a: string; b: string; c: string }>);
 
 const progressPct = computed(() => Math.max(0, Math.min(100, (secondsLeft.value / 60) * 100)));
 
@@ -100,9 +108,56 @@ async function refreshStatusAndQr() {
       }
     } catch {
       qrSvg.value = null;
+      // Auto-renew expired QR cycle seamlessly (rate-limited to once every 12s)
+      if (
+        pairMethod.value === 'qr' &&
+        (st.status === 'disconnected' || st.status_reason === 'qr_expired') &&
+        Date.now() - autoReconnectAt > 12_000
+      ) {
+        autoReconnectAt = Date.now();
+        try {
+          await api.reconnectSession(session.value.id);
+        } catch {
+          // ignore transient auto-reconnect errors
+        }
+      }
     }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : 'Failed to poll status';
+  }
+}
+
+async function requestEightDigitCode() {
+  if (!session.value) return;
+  const raw = (pairCodePhone.value || phoneInput.value || session.value.name).trim();
+  const parsed = parsePhoneInput(raw);
+  const digits = parsed.isPhone ? parsed.digits : raw.replace(/\D/g, '');
+  if (digits.length < 8) {
+    pairCodeError.value = t('connectMobile.bad');
+    return;
+  }
+  pairCodeLoading.value = true;
+  pairCodeError.value = null;
+  try {
+    const res = await api.requestPairCode(session.value.id, digits);
+    pairCodeValue.value = res.formatted_code;
+  } catch (err) {
+    pairCodeError.value = err instanceof Error ? err.message : 'Failed to generate pairing code';
+  } finally {
+    pairCodeLoading.value = false;
+  }
+}
+
+async function copyPairCode() {
+  if (!pairCodeValue.value) return;
+  try {
+    await navigator.clipboard.writeText(pairCodeValue.value);
+    pairCodeCopied.value = true;
+    window.setTimeout(() => {
+      pairCodeCopied.value = false;
+    }, 1800);
+  } catch {
+    // ignore clipboard errors
   }
 }
 
@@ -219,63 +274,111 @@ onUnmounted(() => {
         </button>
       </form>
 
-      <!-- Step 2: Live QR Code + Progress -->
+      <!-- Step 2: Live QR Code (default) + Secondary 8-Digit Code Tab -->
       <div v-else class="connect-grid">
         <div class="qr-col pad-sm">
-          <!-- Mobile notice: pair-code endpoint is listed in section 9 API gaps -->
-          <p v-if="isMobile" role="status" class="mobile-note">
-            {{ t('connectMobile.desk') }}
-          </p>
-
-          <div class="qr-tile" :aria-busy="loading">
-            <div
-              v-if="qrSvg"
-              class="qr-svg-wrap"
-              role="img"
-              :aria-label="t('connect.qrAlt')"
-              v-html="qrSvg"
-            ></div>
-            <div v-else class="qr-placeholder">
-              <span v-if="errorMsg" role="alert" style="color: var(--danger)">{{ errorMsg }}</span>
-              <span v-else>{{ t('connect.waiting') }}…</span>
-            </div>
-            <span v-if="qrSvg" class="qr-center-logo" aria-hidden="true">
-              <img :src="iconImg" alt="" style="width: 36px; height: 36px; display: block" />
-            </span>
-          </div>
-
-          <div v-if="qrSvg" class="countdown-wrap">
-            <div class="countdown-labels">
-              <span>{{ t('connect.newQrIn') }}</span>
-              <span class="mono" style="color: var(--text)">{{ secondsLeft }} s</span>
-            </div>
-            <div
-              role="progressbar"
-              :aria-label="t('connect.newQrIn')"
-              aria-valuemin="0"
-              aria-valuemax="60"
-              :aria-valuenow="secondsLeft"
-              class="countdown-track"
+          <div role="tablist" :aria-label="t('connect.method')" class="method-tabs">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="pairMethod === 'qr'"
+              class="method-tab"
+              :class="{ active: pairMethod === 'qr' }"
+              @click="pairMethod = 'qr'"
             >
-              <div class="countdown-bar" :style="{ width: `${progressPct}%` }"></div>
-            </div>
+              {{ t('connect.tabQr') }}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="pairMethod === 'code'"
+              class="method-tab"
+              :class="{ active: pairMethod === 'code' }"
+              @click="pairMethod = 'code'"
+            >
+              {{ t('connect.tabCode') }}
+            </button>
           </div>
 
-          <button
-            type="button"
-            class="btn hov"
-            :disabled="loading"
-            @click="regenerateQr"
-          >
-            <RefreshCw :size="15" aria-hidden="true" />
-            <span>{{ t('connect.regen') }}</span>
-            <span class="kbd hide-sm">r</span>
-          </button>
+          <template v-if="pairMethod === 'qr'">
+            <div class="qr-tile" :aria-busy="loading">
+              <div
+                v-if="qrSvg"
+                class="qr-svg-wrap"
+                role="img"
+                :aria-label="t('connect.qrAlt')"
+                v-html="qrSvg"
+              ></div>
+              <div v-else class="qr-placeholder">
+                <span v-if="errorMsg" role="alert" style="color: var(--danger)">{{ errorMsg }}</span>
+                <span v-else>{{ t('connect.waiting') }}…</span>
+              </div>
+              <span v-if="qrSvg" class="qr-center-logo" aria-hidden="true">
+                <img :src="iconImg" alt="" style="width: 36px; height: 36px; display: block" />
+              </span>
+            </div>
+
+            <div v-if="qrSvg" class="countdown-wrap">
+              <div class="countdown-labels">
+                <span>{{ t('connect.newQrIn') }}</span>
+                <span class="mono" style="color: var(--text)">{{ secondsLeft }} s</span>
+              </div>
+              <div
+                role="progressbar"
+                :aria-label="t('connect.newQrIn')"
+                aria-valuemin="0"
+                aria-valuemax="60"
+                :aria-valuenow="secondsLeft"
+                class="countdown-track"
+              >
+                <div class="countdown-bar" :style="{ width: `${progressPct}%` }"></div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn hov"
+              :disabled="loading"
+              @click="regenerateQr"
+            >
+              <RefreshCw :size="15" aria-hidden="true" />
+              <span>{{ t('connect.regen') }}</span>
+              <span class="kbd hide-sm">r</span>
+            </button>
+          </template>
+
+          <template v-else>
+            <p class="mobile-note" style="margin: 0">{{ t('connect.codeHint') }}</p>
+            <form class="code-form" @submit.prevent="requestEightDigitCode">
+              <div class="field phone-field">
+                <input
+                  v-model="pairCodePhone"
+                  type="tel"
+                  class="inp mono phone-input"
+                  :placeholder="phoneInput || '5511999990001'"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary" :disabled="pairCodeLoading">
+                {{ t('connectMobile.cta') }}
+              </button>
+            </form>
+            <p v-if="pairCodeError" role="alert" style="color: var(--danger); font-size: 13px; margin: 0">
+              {{ pairCodeError }}
+            </p>
+            <div v-if="pairCodeValue" class="pair-code-box">
+              <span class="mono pair-code-val">{{ pairCodeValue }}</span>
+              <button type="button" class="btn hov" @click="copyPairCode">
+                {{ pairCodeCopied ? t('connect.copied') : t('connect.copy') }}
+              </button>
+            </div>
+          </template>
         </div>
 
         <div class="steps-col pad-sm">
           <div>
-            <h1 id="cx-h" class="cx-h1">{{ t('connect.h1Qr') }}</h1>
+            <h1 id="cx-h" class="cx-h1">
+              {{ pairMethod === 'qr' ? t('connect.h1Qr') : t('connect.h1Code') }}
+            </h1>
             <p v-if="session" class="cx-sub">
               {{ t('connect.lead1') }}
               <span class="mono" style="color: var(--text-2)">{{ session.name }}</span>
@@ -284,7 +387,11 @@ onUnmounted(() => {
           </div>
 
           <ol class="steps-list">
-            <li v-for="(s, idx) in qrSteps" :key="idx" class="step-item">
+            <li
+              v-for="(s, idx) in pairMethod === 'qr' ? qrSteps : codeSteps"
+              :key="idx"
+              class="step-item"
+            >
               <span aria-hidden="true" class="step-num mono">{{ idx + 1 }}</span>
               <span class="step-text">
                 {{ s.a }}<b style="color: var(--text)">{{ s.b }}</b>{{ s.c }}
@@ -670,6 +777,61 @@ onUnmounted(() => {
   border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted);
+}
+
+.method-tabs {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  max-width: 280px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+}
+
+.method-tab {
+  flex: 1;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: 700 12px 'Montserrat', sans-serif;
+  cursor: pointer;
+}
+
+.method-tab.active {
+  background: var(--sel);
+  color: var(--text);
+}
+
+.code-form {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pair-code-box {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--sunken);
+  border: 1px solid var(--sel-border);
+}
+
+.pair-code-val {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent);
 }
 
 @media (max-width: 780px) {

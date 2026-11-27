@@ -6,13 +6,14 @@ use chrono::{Duration, Utc};
 use tokio::sync::{RwLock, mpsc};
 
 use super::{
-    EngineError, EngineEvent, InboundMessage, QrPayload, SendMediaParams, SendResult,
-    SendTextParams, SessionConnectionState, WhatsAppEngine,
+    EngineError, EngineEvent, InboundMessage, PairCodePayload, QrPayload, SendMediaParams,
+    SendResult, SendTextParams, SessionConnectionState, WhatsAppEngine, format_pair_code,
 };
 
 struct MockSessionState {
     status: SessionConnectionState,
     qr: Option<QrPayload>,
+    pair_code: Option<PairCodePayload>,
     event_tx: mpsc::Sender<EngineEvent>,
 }
 
@@ -34,6 +35,7 @@ impl MockWhatsAppEngine {
             if let Some(s) = guard.get_mut(session_id) {
                 s.status = SessionConnectionState::Connected;
                 s.qr = None;
+                s.pair_code = None;
                 Some(s.event_tx.clone())
             } else {
                 None
@@ -61,7 +63,7 @@ impl MockWhatsAppEngine {
             let _ = tx
                 .send(EngineEvent::MessageReceived {
                     session_id: session_id.to_string(),
-                    message,
+                    message: Box::new(message),
                 })
                 .await;
         }
@@ -86,6 +88,7 @@ impl WhatsAppEngine for MockWhatsAppEngine {
                 MockSessionState {
                     status: SessionConnectionState::PairingRequired,
                     qr: Some(qr.clone()),
+                    pair_code: None,
                     event_tx: event_tx.clone(),
                 },
             );
@@ -124,6 +127,7 @@ impl WhatsAppEngine for MockWhatsAppEngine {
             };
             s.status = SessionConnectionState::LoggedOut;
             s.qr = None;
+            s.pair_code = None;
             s.event_tx.clone()
         };
         let _ = tx
@@ -152,6 +156,48 @@ impl WhatsAppEngine for MockWhatsAppEngine {
             .get(session_id)
             .map(|s| s.qr.clone())
             .ok_or_else(|| EngineError::SessionNotFound(session_id.to_string()))
+    }
+
+    async fn request_pair_code(
+        &self,
+        session_id: &str,
+        phone_number: &str,
+    ) -> Result<PairCodePayload, EngineError> {
+        let digits: String = phone_number
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .collect();
+        if digits.len() < 8 || digits.len() > 15 {
+            return Err(EngineError::InvalidRecipient(
+                "phone_number must contain 8 to 15 digits including country code".into(),
+            ));
+        }
+        let mut guard = self.sessions.write().await;
+        let Some(s) = guard.get_mut(session_id) else {
+            return Err(EngineError::SessionNotFound(session_id.to_string()));
+        };
+        if s.status == SessionConnectionState::Connected {
+            return Err(EngineError::Protocol("session is already connected".into()));
+        }
+        let code = "K7QX2M9P".to_string();
+        let payload = PairCodePayload {
+            formatted_code: format_pair_code(&code),
+            code,
+            expires_at: Utc::now() + Duration::seconds(180),
+        };
+        s.pair_code = Some(payload.clone());
+        Ok(payload)
+    }
+
+    async fn get_pair_code(
+        &self,
+        session_id: &str,
+    ) -> Result<Option<PairCodePayload>, EngineError> {
+        let guard = self.sessions.read().await;
+        let Some(s) = guard.get(session_id) else {
+            return Err(EngineError::SessionNotFound(session_id.to_string()));
+        };
+        Ok(s.pair_code.clone().filter(|p| p.expires_at > Utc::now()))
     }
 
     async fn send_text(
