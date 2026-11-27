@@ -159,7 +159,7 @@ O Softagon Relay inclui um **MCP Server (Model Context Protocol)** nativo em Rus
 
 ### 6.2 Grok Bot, Pareamento Sem Login e Recursos de Atendimento (`v0.3.8`)
 
-- **Grok Bot (Guia + Template pronto):** veja [`docs/grok-bot.md`](../grok-bot.md) e [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) para instalar o binário nativo em `/workspace/softagon-relay`.
+- **Grok Bot (Template 1 clique + Guia):** importe direto com **[Adicionar ao Grok Bot](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)** ou veja [`docs/grok-bot.md`](../grok-bot.md) e [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) para instalar o binário nativo em `/workspace/softagon-relay`.
 - **Link temporário de pareamento (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (ou MCP `create_pairing_link`) abre o **QR Code** direto no navegador sem pedir `RELAY_API_KEY`, renova automaticamente ciclos expirados por até 10 min e oferece `qr.png` nativo e **código de 8 dígitos** (`POST /v1/sessions/{id}/pair-code` / MCP `request_pair_code`) como alternativa.
 - **Webhooks com autenticação Bearer ou cabeçalho customizado:** passe `bearer_token` ou `auth_header_name`/`auth_header_value` em `POST`/`PATCH /v1/webhooks` (sem precisar de proxy para rotinas do Grok Bot). Respostas `401`/`403` interrompem retentativas automaticamente.
 - **Contexto completo de atendimento:** webhooks e histórico incluem `sender_name` (nome no WhatsApp), `sender_phone` (resolvido inclusive para contatos `@lid`), mensagens enviadas pela equipe pelo celular (`from_me: true`, `source: "device_sync"`), timestamp real sem flood de `is_history_sync`, além de `sticker`, `reaction`, `location` e `contact`.

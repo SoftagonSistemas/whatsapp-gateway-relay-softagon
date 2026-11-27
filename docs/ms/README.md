@@ -157,7 +157,7 @@ Softagon Relay disertakan dengan **MCP Server (Model Context Protocol)** Rust na
 
 ### 6.2 Grok Bot, Gandingan Tanpa Log Masuk & Ciri Ejen (`v0.3.8`)
 
-- **Kit Sedia Guna Grok Bot:** lihat [`docs/grok-bot.md`](../grok-bot.md) dan [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) untuk memasang binari asli di `/workspace/softagon-relay`.
+- **Kit Sedia Guna Grok Bot:** import 1 klik dengan **[Tambah ke Grok Bot](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)** atau lihat [`docs/grok-bot.md`](../grok-bot.md) dan [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) untuk memasang binari asli di `/workspace/softagon-relay`.
 - **Pautan Gandingan Sementara (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (atau MCP `create_pairing_link`) membuka **Kod QR** terus tanpa log masuk atau mendedahkan `RELAY_API_KEY`, memperbaharui kitaran QR tamat tempoh secara automatik sehingga 10 minit, serta menyediakan `qr.png` dan **kod 8 digit** (`POST /v1/sessions/{id}/pair-code` / MCP `request_pair_code`).
 - **Webhook Bearer & Pengepala Tersuai:** hantarkan `bearer_token` atau `auth_header_name`/`auth_header_value` pada `POST`/`PATCH /v1/webhooks`. Respons `401`/`403` menghentikan cubaan semula serta-merta.
 - **Konteks Perbualan Lengkap:** merangkumi `sender_name`, `sender_phone` (termasuk resolusi `@lid`), balasan pasukan daripada telefon (`from_me: true`, `source: "device_sync"`), cap masa sebenar tanpa mencetuskan webhook bagi `is_history_sync`, serta mesej `sticker`, `reaction`, `location` dan `contact`.

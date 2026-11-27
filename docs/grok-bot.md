@@ -54,9 +54,10 @@ Open the returned `http://127.0.0.1:8080/pair/<token>` directly in Chrome on the
 
 ---
 
-## 3. Ready-to-Use Grok Bot Template
+## 3. Ready-to-Use Grok Bot Template (1-Click Import)
 
-Copy the instructions from [`integrations/grok-bot/TEMPLATE.md`](../integrations/grok-bot/TEMPLATE.md) into your Grok Bot (**Settings → Instructions**). It follows xAI's *"Recipe, Not a Meal"* guideline (zero personal secrets or hardcoded keys).
+- **1-Click Import on xAI:** **[Add Softagon Relay to Grok Bot](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)**
+- **Manual copy:** [`integrations/grok-bot/TEMPLATE.md`](../integrations/grok-bot/TEMPLATE.md) — follows xAI's *"Recipe, Not a Meal"* guideline (zero personal secrets or hardcoded keys).
 
 ---
 

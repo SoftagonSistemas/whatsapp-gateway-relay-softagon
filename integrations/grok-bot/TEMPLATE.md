@@ -1,6 +1,7 @@
 # Grok Bot Template Blueprint — WhatsApp Assistant with Softagon Relay
 
-> Copy the instructions below into your Grok Bot (**Settings → Instructions**).
+> **1-Click Import:** **[Add Softagon Relay to Grok Bot](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)**  
+> Or copy the instructions below into your Grok Bot (**Conhecimento → Habilidades** / **Settings → Instructions**).
 > Follows xAI's *"Recipe, Not a Meal"* template standard: **contains zero API keys, phone numbers, or personal credentials**.
 
 ---

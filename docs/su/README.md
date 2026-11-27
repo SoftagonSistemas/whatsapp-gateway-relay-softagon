@@ -157,7 +157,7 @@ Softagon Relay dilengkepan ku **MCP Server (Model Context Protocol)** Rust nativ
 
 ### 6.2 Grok Bot, Pairing Tanpa Login & Fitur Agén (`v0.3.8`)
 
-- **Kit Siap Anggo Grok Bot:** tingali [`docs/grok-bot.md`](../grok-bot.md) sareng [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) kanggo masang binér lokal di `/workspace/softagon-relay`.
+- **Kit Siap Anggo Grok Bot:** impor 1 klik ku **[Tambihan ka Grok Bot](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)** atawa tingali [`docs/grok-bot.md`](../grok-bot.md) sareng [`integrations/grok-bot/TEMPLATE.md`](../../integrations/grok-bot/TEMPLATE.md) kanggo masang binér lokal di `/workspace/softagon-relay`.
 - **Tautan Pairing Samentawis (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (atawa MCP `create_pairing_link`) muka **QR Code** tanpa login `RELAY_API_KEY`, nganyarankeun QR otomatis dugi ka 10 menit, kalayan `qr.png` sareng **kode 8 digit** (`POST /v1/sessions/{id}/pair-code`).
 - **Webhook Bearer & Header Khusus:** lebetkeun `bearer_token` atawa `auth_header_name`/`auth_header_value` dina `POST`/`PATCH /v1/webhooks`. Réspon `401`/`403` langsung ngeureunkeun nyobaan deui.
 - **Kontéks Obrolan Lengkep:** nyadiakeun `sender_name`, `sender_phone` (kaasup résolusi `@lid`), waleran tim tina HP (`from_me: true`, `source: "device_sync"`), waktos asli tanpa ngahirupkeun webhook dina `is_history_sync`, sarta `sticker`, `reaction`, `location`, sareng `contact`.

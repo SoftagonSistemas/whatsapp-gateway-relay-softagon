@@ -8,7 +8,7 @@ Self-hosted WhatsApp Web gateway, embedded Web Console, and native local MCP Ser
 [![Release](https://img.shields.io/github/v/release/SoftagonSistemas/whatsapp-gateway-relay-softagon)](https://github.com/SoftagonSistemas/whatsapp-gateway-relay-softagon/releases)
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-softagon%2Frelay-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/softagon/relay)
 
-> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Grok Bot Guide](docs/grok-bot.md) · [Grok Bot Template](integrations/grok-bot/TEMPLATE.md) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+> **Docs:** [Português (BR)](docs/pt-BR/README.md) · [English](docs/en/README.md) · [Español](docs/es/README.md) · [Français](docs/fr/README.md) · [Bahasa Indonesia](docs/id/README.md) · [Basa Betawi](docs/bew/README.md) · [Basa Sunda](docs/su/README.md) · [Basa Jawa](docs/jv/README.md) · [Hata Batak Toba](docs/bbc/README.md) · [Bahasa Melayu](docs/ms/README.md) · [Grok Bot Guide](docs/grok-bot.md) · [Add to Grok Bot (1-Click Template)](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363) · [Changelog & Roadmap](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Quick Start (One-Line Docker Run)
 
@@ -84,7 +84,7 @@ If you prefer running natively without Docker, prebuilt `linux-x86_64` binaries 
 
 Tools exposed: `list_sessions`, `create_session`, `create_pairing_link` (zero-login auto-renewing QR page `/pair/{token}` + `qr.png`), `request_pair_code` (8-digit phone code alternative), `get_session_status`, `list_chats`, `search_messages`, `get_chat_messages`, `get_message_transcription`, `get_contact` (`@lid` phone & display name resolution), `mark_read`, `send_text_message`, `send_media_message` (`media_url` or `data_base64`), and (disabled unless `MCP_ALLOW_DESTRUCTIVE=true` + `confirm: true`) `logout_session` / `delete_session`.
 
-> **Using Grok Bot?** Copy our ready-to-use **[Grok Bot Template (`integrations/grok-bot/TEMPLATE.md`)](integrations/grok-bot/TEMPLATE.md)** and follow the **[Grok Bot Integration Guide](docs/grok-bot.md)** — zero-login `/pair/{token}` QR pairing, direct `bearer_token` routine webhooks, `@lid` phone resolution, `mark_read`, `/workspace` persistence, and `ensure-running.sh`.
+> **Using Grok Bot?** Import our official **[1-Click Grok Bot Template](https://x.ai/bot/Xe4LpCGaepuE-J2BYH363)** (or copy [`integrations/grok-bot/TEMPLATE.md`](integrations/grok-bot/TEMPLATE.md)) and follow the **[Grok Bot Integration Guide](docs/grok-bot.md)** — zero-login `/pair/{token}` QR pairing, direct `bearer_token` routine webhooks, `@lid` phone resolution, `mark_read`, `/workspace` persistence, and `ensure-running.sh`.
 
 ---
 
