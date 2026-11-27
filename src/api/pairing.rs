@@ -384,6 +384,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
     <div id="connected-view" class="done hide">
       <h2 id="t-connected-h">WhatsApp Connected!</h2>
       <p id="t-connected-p" class="sub">Session <strong>{session_name}</strong> is paired and ready. You can close this tab and return to your assistant.</p>
+      <a id="t-open-console" href="/console" class="btn" style="margin-top:16px;text-decoration:none">Open Web Console →</a>
     </div>
 
     <div id="pairing-view">
@@ -440,6 +441,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'Waiting for scan', connected: 'Connected', expired: 'Link expired',
         connectedH: 'WhatsApp Connected!',
         connectedP: 'Session is paired and ready. You can close this tab and return to your assistant.',
+        openConsole: 'Open Web Console →',
         h1: 'Scan with WhatsApp',
         sub: 'Zero-login temporary pairing page. The QR code refreshes automatically while this link is active.',
         tabQr: 'QR Code (Recommended)', tabCode: '8-Digit Code',
@@ -457,6 +459,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'Aguardando leitura', connected: 'Conectado', expired: 'Link expirado',
         connectedH: 'WhatsApp Conectado!',
         connectedP: 'A sessão está pareada e pronta. Você pode fechar esta aba e voltar para o seu assistente.',
+        openConsole: 'Abrir Console Web →',
         h1: 'Escaneie com o WhatsApp',
         sub: 'Página temporária sem login. O QR Code se renova automaticamente enquanto este link estiver ativo.',
         tabQr: 'QR Code (Recomendado)', tabCode: 'Código de 8 dígitos',
@@ -474,6 +477,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'Esperando escaneo', connected: 'Conectado', expired: 'Enlace expirado',
         connectedH: '¡WhatsApp conectado!',
         connectedP: 'La sesión está vinculada y lista. Puedes cerrar esta pestaña y volver a tu asistente.',
+        openConsole: 'Abrir Consola Web →',
         h1: 'Escanea con WhatsApp',
         sub: 'Página temporal sin inicio de sesión. El código QR se renueva automáticamente mientras este enlace esté activo.',
         tabQr: 'Código QR (Recomendado)', tabCode: 'Código de 8 dígitos',
@@ -491,6 +495,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'En attente de scan', connected: 'Connecté', expired: 'Lien expiré',
         connectedH: 'WhatsApp connecté !',
         connectedP: 'La session est jumelée et prête. Vous pouvez fermer cet onglet et revenir à votre assistant.',
+        openConsole: 'Ouvrir la Console Web →',
         h1: 'Scannez avec WhatsApp',
         sub: 'Page temporaire sans connexion. Le QR Code se renouvelle automatiquement tant que ce lien est actif.',
         tabQr: 'QR Code (Recommandé)', tabCode: 'Code à 8 chiffres',
@@ -508,6 +513,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'Menunggu pemindaian', connected: 'Terhubung', expired: 'Tautan kedaluwarsa',
         connectedH: 'WhatsApp Terhubung!',
         connectedP: 'Sesi sudah tersambung dan siap. Anda dapat menutup tab ini dan kembali ke asisten Anda.',
+        openConsole: 'Buka Konsol Web →',
         h1: 'Pindai dengan WhatsApp',
         sub: 'Halaman pairing sementara tanpa login. Kode QR diperbarui otomatis selama tautan ini aktif.',
         tabQr: 'Kode QR (Disarankan)', tabCode: 'Kode 8 Digit',
@@ -525,6 +531,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
         waiting: 'Menunggu imbasan', connected: 'Disambungkan', expired: 'Pautan tamat tempoh',
         connectedH: 'WhatsApp Disambungkan!',
         connectedP: 'Sesi telah digandingkan dan sedia. Anda boleh menutup tab ini dan kembali ke pembantu anda.',
+        openConsole: 'Buka Konsol Web →',
         h1: 'Imbas dengan WhatsApp',
         sub: 'Halaman gandingan sementara tanpa log masuk. Kod QR diperbaharui secara automatik semasa pautan aktif.',
         tabQr: 'Kod QR (Disyorkan)', tabCode: 'Kod 8 Digit',
@@ -555,6 +562,7 @@ fn build_pair_page_html(token: &str, session_name: &str) -> String {
     document.getElementById('status-pill').textContent = T.waiting;
     document.getElementById('t-connected-h').textContent = T.connectedH;
     document.getElementById('t-connected-p').textContent = T.connectedP;
+    document.getElementById('t-open-console').textContent = T.openConsole;
     document.getElementById('t-h1').textContent = T.h1;
     document.getElementById('t-sub').textContent = T.sub;
     document.getElementById('tab-qr').textContent = T.tabQr;
