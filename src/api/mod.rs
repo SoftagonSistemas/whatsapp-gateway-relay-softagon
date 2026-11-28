@@ -136,6 +136,10 @@ pub fn build_router(state: AppState) -> Router {
             get(routes::messages::get_profile_picture),
         )
         .route(
+            "/v1/sessions/{session_id}/contacts/{jid}/presence-subscribe",
+            post(routes::messages::subscribe_presence),
+        )
+        .route(
             "/v1/sessions/{session_id}/groups",
             get(routes::messages::list_groups),
         )

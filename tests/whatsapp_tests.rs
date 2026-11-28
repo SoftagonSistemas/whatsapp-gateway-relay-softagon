@@ -61,6 +61,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             delivery_timeout_seconds: 5,
             max_attempts: 3,
             backoff_base_seconds: 1,
+            coalesce_seconds: 0,
         },
         mcp: McpConfig::default(),
     };

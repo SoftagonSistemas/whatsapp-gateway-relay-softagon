@@ -84,6 +84,7 @@ impl TestHarness {
                 delivery_timeout_seconds: 5,
                 max_attempts: 3,
                 backoff_base_seconds: 1,
+                coalesce_seconds: 0,
             },
             mcp: McpConfig::default(),
         };

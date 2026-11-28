@@ -227,6 +227,7 @@ pub struct WebhookConfig {
     pub delivery_timeout_seconds: u64,
     pub max_attempts: u32,
     pub backoff_base_seconds: u64,
+    pub coalesce_seconds: u64,
 }
 
 impl AppConfig {
@@ -476,6 +477,7 @@ impl AppConfig {
                 delivery_timeout_seconds: webhook_timeout,
                 max_attempts: webhook_max_attempts,
                 backoff_base_seconds: webhook_backoff_base,
+                coalesce_seconds: parse_u64(&lookup, "WEBHOOK_COALESCE_SECONDS", 0)?,
             },
             mcp,
         })

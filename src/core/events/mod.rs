@@ -9,6 +9,7 @@ use crate::storage::database::{Database, DbError};
 
 pub const ALL_EVENT_TYPES: &[&str] = &[
     "session.status",
+    "session.disconnected",
     "message.received",
     "message.sent",
     "message.edited",

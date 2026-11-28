@@ -3,11 +3,13 @@ Description=Softagon Relay — Self-Hosted WhatsApp Gateway & Local MCP Server
 After=network-online.target
 Wants=network-online.target
 
+# Template unit file — run setup.sh to generate a copy with your actual RELAY_HOME path,
+# or replace {{RELAY_HOME}} below with your installation directory (e.g. /workspace/softagon-relay).
 [Service]
 Type=simple
-WorkingDirectory=/workspace/softagon-relay
-EnvironmentFile=/workspace/softagon-relay/.env
-ExecStart=/workspace/softagon-relay/bin/softagon-relay serve
+WorkingDirectory={{RELAY_HOME}}
+EnvironmentFile={{RELAY_HOME}}/.env
+ExecStart={{RELAY_HOME}}/bin/softagon-relay serve
 Restart=always
 RestartSec=5
 NoNewPrivileges=true

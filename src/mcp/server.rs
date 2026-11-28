@@ -988,6 +988,33 @@ impl RelayMcpServer {
         .await
     }
 
+    /// Subscribe to a contact's WhatsApp presence updates (online/typing/recording).
+    #[tool(
+        description = "Subscribe to a WhatsApp contact's presence updates so chat.presence webhooks (typing/recording/online) are delivered for that contact."
+    )]
+    async fn subscribe_presence(
+        &self,
+        Parameters(input): Parameters<GetContactInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "jid_or_phone": input.jid_or_phone,
+        });
+        self.audit_and_wrap("subscribe_presence", Some(&sid), args, || async {
+            self.service
+                .subscribe_presence(&input.session_id, &input.jid_or_phone)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "session_id": input.session_id,
+                "jid_or_phone": input.jid_or_phone,
+                "subscribed": true,
+            }))
+        })
+        .await
+    }
+
     /// Resolve a WhatsApp contact (@lid, JID, or phone number) to its phone number, canonical JID, and display name.
     #[tool(
         description = "Resolve a WhatsApp @lid, JID, or phone number into canonical phone_number, jid, lid, and push_name using WhatsApp's LID-to-PN mapping and message history."

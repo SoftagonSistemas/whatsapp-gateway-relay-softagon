@@ -743,6 +743,16 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             .map_err(|e| EngineError::Protocol(format!("edit_message failed: {e}")))
     }
 
+    async fn subscribe_presence(&self, session_id: &str, jid: &str) -> Result<(), EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let target = resolve_recipient_jid(&client, jid).await?;
+        client
+            .presence()
+            .subscribe(target)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("subscribe_presence failed: {e}")))
+    }
+
     async fn revoke_message(
         &self,
         session_id: &str,

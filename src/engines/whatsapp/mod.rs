@@ -371,6 +371,10 @@ pub trait WhatsAppEngine: Send + Sync {
         Ok(())
     }
 
+    async fn subscribe_presence(&self, _session_id: &str, _jid: &str) -> Result<(), EngineError> {
+        Ok(())
+    }
+
     async fn send_location(
         &self,
         _session_id: &str,

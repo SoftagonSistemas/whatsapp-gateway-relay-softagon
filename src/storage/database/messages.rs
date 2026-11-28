@@ -203,9 +203,13 @@ impl Database {
                     SELECT chat_jid, MAX(created_at) AS max_created, COUNT(*) AS message_count
                     FROM messages
                     WHERE session_id = ?1
+                      AND chat_jid != 'status@broadcast'
+                      AND chat_jid NOT LIKE '%@newsletter'
                     GROUP BY chat_jid
                 ) agg ON agg.chat_jid = m.chat_jid AND agg.max_created = m.created_at
                 WHERE m.session_id = ?1
+                  AND m.chat_jid != 'status@broadcast'
+                  AND m.chat_jid NOT LIKE '%@newsletter'
                   AND EXISTS (
                       SELECT 1 FROM messages sm
                       LEFT JOIN transcriptions st ON st.message_id = sm.id
@@ -257,9 +261,13 @@ impl Database {
                     SELECT chat_jid, MAX(created_at) AS max_created, COUNT(*) AS message_count
                     FROM messages
                     WHERE session_id = ?1
+                      AND chat_jid != 'status@broadcast'
+                      AND chat_jid NOT LIKE '%@newsletter'
                     GROUP BY chat_jid
                 ) agg ON agg.chat_jid = m.chat_jid AND agg.max_created = m.created_at
                 WHERE m.session_id = ?1
+                  AND m.chat_jid != 'status@broadcast'
+                  AND m.chat_jid NOT LIKE '%@newsletter'
                 GROUP BY m.chat_jid
                 ORDER BY m.created_at DESC
                 LIMIT ?2
@@ -271,6 +279,80 @@ impl Database {
             .await?
         };
         Ok(rows)
+    }
+
+    /// Look up a human-readable summary of a stored message by its external WhatsApp stanza ID,
+    /// used as a SQLite fallback when WhatsApp omits `quoted_message` content on replies.
+    pub async fn find_message_summary_by_external_id(
+        &self,
+        session_id: &str,
+        external_id: &str,
+    ) -> Result<Option<String>, DbError> {
+        let row: Option<(String,)> = sqlx::query_as(
+            r#"
+            SELECT COALESCE(
+                NULLIF(TRIM(m.text_body), ''),
+                NULLIF(TRIM(m.caption), ''),
+                NULLIF(TRIM(t.text), ''),
+                '[' || m.message_type || ']'
+            )
+            FROM messages m
+            LEFT JOIN transcriptions t ON t.message_id = m.id
+            WHERE m.session_id = ?1 AND m.external_id = ?2
+            LIMIT 1
+            "#,
+        )
+        .bind(session_id)
+        .bind(external_id)
+        .fetch_optional(self.pool())
+        .await?;
+        Ok(row.map(|(s,)| s))
+    }
+
+    /// Return all distinct legacy `@lid` chat_jids in a session alongside any known `sender_phone`
+    /// already captured in `metadata_json`.
+    pub async fn list_legacy_lid_chats(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<(String, Option<String>)>, DbError> {
+        let rows: Vec<(String, Option<String>)> = sqlx::query_as(
+            r#"
+            SELECT
+                chat_jid,
+                MAX(NULLIF(TRIM(json_extract(metadata_json, '$.sender_phone')), '')) AS phone
+            FROM messages
+            WHERE session_id = ?1 AND chat_jid LIKE '%@lid'
+            GROUP BY chat_jid
+            "#,
+        )
+        .bind(session_id)
+        .fetch_all(self.pool())
+        .await?;
+        Ok(rows)
+    }
+
+    /// Rewrite legacy `@lid` rows to their canonical `{phone}@s.whatsapp.net` JID while preserving
+    /// the original `@lid` in `metadata_json.chat_lid`.
+    pub async fn rewrite_chat_jid_from_lid(
+        &self,
+        session_id: &str,
+        old_lid: &str,
+        canonical_jid: &str,
+    ) -> Result<u64, DbError> {
+        let res = sqlx::query(
+            r#"
+            UPDATE messages
+            SET chat_jid = ?3,
+                metadata_json = json_set(COALESCE(NULLIF(TRIM(metadata_json), ''), '{}'), '$.chat_lid', ?2)
+            WHERE session_id = ?1 AND chat_jid = ?2
+            "#,
+        )
+        .bind(session_id)
+        .bind(old_lid)
+        .bind(canonical_jid)
+        .execute(self.pool())
+        .await?;
+        Ok(res.rows_affected())
     }
 
     pub async fn get_chat_messages(

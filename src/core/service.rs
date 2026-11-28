@@ -399,6 +399,14 @@ impl RelayService {
             .await
     }
 
+    pub async fn subscribe_presence(
+        &self,
+        session_id: &str,
+        jid: &str,
+    ) -> Result<(), SessionError> {
+        self.sessions.subscribe_presence(session_id, jid).await
+    }
+
     pub async fn send_location(
         &self,
         session_id: &str,

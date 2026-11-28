@@ -161,7 +161,7 @@ Softagon Relay adong **MCP Server (Model Context Protocol)** Rust native marhite
 - **Link Pairing Satongkin (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (manang MCP `create_pairing_link`) mambuka **QR Code** tanpa login `RELAY_API_KEY`, mambahen QR baru otomatis sahat tu 10 menit, jala adong `qr.png` dohot **kode 8 digit** (`POST /v1/sessions/{id}/pair-code`).
 - **Webhook Bearer & Header Kustom:** bahen `bearer_token` manang `auth_header_name`/`auth_header_value` di `POST`/`PATCH /v1/webhooks`. Alus `401`/`403` pintor mansohot mangulahi.
 - **Konteks Pangkataion Lengkap:** adong `sender_name`, `sender_phone` (dohot resolusi `@lid`), alus ni tim sian HP (`from_me: true`, `source: "device_sync"`), tingki asli tanpa mambahen webhook di `is_history_sync`, jala `sticker`, `reaction`, `location`, dohot `contact`.
-- **Alat MCP & REST Baru:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), dohot `send_media_message` marhite `media_url` manang `data_base64` dohot `idempotency_key`.
+- **Alat MCP & REST Gok (`v0.4.0`–`v0.4.1`):** `reply_to_message_id`, `send_reaction`, `send_chat_presence`, `subscribe_presence`, `as_voice_note` (PTT), `sticker`, `send_location`, `send_contact`, `edit_message`, `revoke_message`, `check_whatsapp`, `get_profile_picture`, `list_groups`, `get_group_info`, `GET /v1/media/{media_id}`, `MEDIA_RETENTION_DAYS`, `softagon-relay backup`, metrik Prometheus `GET /v1/metrics`, boaboa `session.disconnected`, migrasi otomatis riwayat `@lid`, fallback SQLite `quoted.text`, dohot panggabungan tona marudut `WEBHOOK_COALESCE_SECONDS` (default global `0`; `4s` di kit Grok Bot).
 
 ---
 

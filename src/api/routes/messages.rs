@@ -302,6 +302,18 @@ pub async fn send_chat_presence(
     })))
 }
 
+pub async fn subscribe_presence(
+    State(state): State<AppState>,
+    Path((session_id, jid)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    state.sessions.subscribe_presence(&session_id, &jid).await?;
+    Ok(Json(serde_json::json!({
+        "session_id": session_id,
+        "jid": jid,
+        "subscribed": true,
+    })))
+}
+
 pub async fn send_location(
     State(state): State<AppState>,
     Path(session_id): Path<String>,

@@ -6,6 +6,21 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.1] — 2026-11-28
+
+### Added
+- **Webhook Burst Coalescing (`WEBHOOK_COALESCE_SECONDS`):** optional per-chat debounce window (global default `0` = immediate; pre-configured to `4` in the Grok Bot kit) that merges rapid consecutive inbound messages from the same `chat_jid` into a single `message.received` webhook with `coalesced: true`, `coalesced_count`, `combined_text`, and `messages[]` — preserving hourly routine execution quotas.
+- **Dedicated Disconnection Alerts (`session.disconnected`):** new webhook event emitted whenever a session becomes `disconnected` or `logged_out` (with `requires_reauth` flag) and included automatically in default webhook subscriptions (`["message.received", "message.sent", "session.disconnected"]`).
+- **Presence Subscription (`subscribe_presence`):** automatically subscribes to WhatsApp presence updates for active 1:1 chats so `chat.presence` events (`composing`/`recording`/`online`) are delivered, plus explicit `POST /v1/sessions/{id}/contacts/{jid}/presence-subscribe` and MCP `subscribe_presence`.
+- **SQLite Fallback for `quoted.text`:** when WhatsApp omits `quoted_message` content on a reply, Relay now looks up the original message in SQLite by `stanza_id` (`text_body`, `caption`, `transcription`, or `[type]`).
+- **Automatic Legacy `@lid` History Migration:** when a session connects, Relay automatically migrates legacy `@lid` rows in SQLite to canonical `{phone}@s.whatsapp.net` JIDs (preserving `metadata_json.chat_lid`), unifying pre-`0.3.11` conversations.
+
+### Fixed
+- **Clean `list_chats`:** filters out `status@broadcast` and `@newsletter` entries directly in SQL.
+- **Dynamic `RELAY_HOME` in Grok Bot Kit:** removed hardcoded `/workspace/softagon-relay` paths from `integrations/grok-bot/softagon-relay.service` and `integrations/grok-bot/TEMPLATE.md`, and enabled `WEBHOOK_COALESCE_SECONDS=4` by default in `setup.sh`.
+
+---
+
 ## [0.4.0] — 2026-11-27
 
 ### Added — Full Interactive WhatsApp Messaging, Groups, Contacts & Observability

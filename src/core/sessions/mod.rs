@@ -76,6 +76,8 @@ impl RateLimiter {
     }
 }
 
+type CoalesceMap = Arc<Mutex<HashMap<(String, String), Vec<serde_json::Value>>>>;
+
 pub struct SessionManager {
     db: Database,
     media: Arc<dyn MediaStorage>,
@@ -86,6 +88,8 @@ pub struct SessionManager {
     event_tx: mpsc::Sender<EngineEvent>,
     qr_cache: RwLock<HashMap<String, QrPayload>>,
     rate_limiter: RateLimiter,
+    presence_subscribed: Mutex<std::collections::HashSet<(String, String)>>,
+    coalesce_buffers: CoalesceMap,
 }
 
 impl SessionManager {
@@ -109,6 +113,8 @@ impl SessionManager {
             event_tx,
             qr_cache: RwLock::new(HashMap::new()),
             rate_limiter,
+            presence_subscribed: Mutex::new(std::collections::HashSet::new()),
+            coalesce_buffers: Arc::new(Mutex::new(HashMap::new())),
         });
         (manager, event_rx)
     }
@@ -667,6 +673,70 @@ impl SessionManager {
         Ok(())
     }
 
+    pub async fn subscribe_presence(
+        &self,
+        session_id: &str,
+        jid: &str,
+    ) -> Result<(), SessionError> {
+        let _ = self.get_session(session_id).await?;
+        self.engine.subscribe_presence(session_id, jid).await?;
+        self.presence_subscribed
+            .lock()
+            .await
+            .insert((session_id.to_string(), jid.to_string()));
+        Ok(())
+    }
+
+    async fn maybe_auto_subscribe_presence(&self, session_id: &str, jid: &str) {
+        if jid.ends_with("@g.us") || jid.ends_with("@newsletter") || jid == "status@broadcast" {
+            return;
+        }
+        let key = (session_id.to_string(), jid.to_string());
+        {
+            let mut set = self.presence_subscribed.lock().await;
+            if set.contains(&key) {
+                return;
+            }
+            set.insert(key);
+        }
+        let _ = self.engine.subscribe_presence(session_id, jid).await;
+    }
+
+    /// Migrate legacy `@lid` chats in SQLite to canonical `{phone}@s.whatsapp.net` JIDs.
+    pub async fn migrate_legacy_lid_history(&self, session_id: &str) -> u64 {
+        let Ok(rows) = self.db.list_legacy_lid_chats(session_id).await else {
+            return 0;
+        };
+        let mut migrated = 0u64;
+        for (lid, cached_phone) in rows {
+            let canonical_jid = if let Some(phone) = cached_phone
+                .as_deref()
+                .map(|p| p.chars().filter(|c| c.is_ascii_digit()).collect::<String>())
+                .filter(|p| !p.is_empty())
+            {
+                Some(format!("{phone}@s.whatsapp.net"))
+            } else if let Ok(contact) = self.get_contact(session_id, &lid).await
+                && !contact.jid.ends_with("@lid")
+            {
+                Some(contact.jid)
+            } else {
+                None
+            };
+            if let Some(target_jid) = canonical_jid
+                && let Ok(n) = self
+                    .db
+                    .rewrite_chat_jid_from_lid(session_id, &lid, &target_jid)
+                    .await
+            {
+                migrated += n;
+            }
+        }
+        if migrated > 0 {
+            info!(session_id = %session_id, migrated_rows = migrated, "migrated legacy @lid chat history to canonical phone JIDs");
+        }
+        migrated
+    }
+
     pub async fn send_location(
         &self,
         session_id: &str,
@@ -1107,10 +1177,31 @@ impl SessionManager {
                         }),
                     )
                     .await;
+                if status == SessionConnectionState::LoggedOut
+                    || status == SessionConnectionState::Disconnected
+                {
+                    let _ = self
+                        .events
+                        .publish(
+                            "session.disconnected",
+                            &session_id,
+                            serde_json::json!({
+                                "session_id": session_id,
+                                "status": status.as_str(),
+                                "reason": reason,
+                                "phone_number": phone_number,
+                                "jid": jid,
+                                "requires_reauth": status == SessionConnectionState::LoggedOut,
+                            }),
+                        )
+                        .await;
+                } else if status == SessionConnectionState::Connected {
+                    let _ = self.migrate_legacy_lid_history(&session_id).await;
+                }
             }
             EngineEvent::MessageReceived {
                 session_id,
-                message,
+                mut message,
             } => {
                 // Deduplicate device-synced echoes of messages already sent via Relay API/MCP
                 if message.from_me
@@ -1121,6 +1212,24 @@ impl SessionManager {
                         .unwrap_or(false)
                 {
                     return;
+                }
+
+                // Auto-subscribe to presence for active 1:1 chats so WhatsApp delivers chat.presence events.
+                if !message.is_group && !message.is_history_sync {
+                    self.maybe_auto_subscribe_presence(&session_id, &message.chat_jid)
+                        .await;
+                }
+
+                // Fallback to SQLite when WhatsApp omits quoted_message content on replies.
+                if let Some(ref mut q) = message.quoted
+                    && q.text.as_deref().map(str::trim).unwrap_or("").is_empty()
+                    && let Some(ref stanza_id) = q.stanza_id
+                    && let Ok(Some(found)) = self
+                        .db
+                        .find_message_summary_by_external_id(&session_id, stanza_id)
+                        .await
+                {
+                    q.text = Some(found);
                 }
 
                 let mut media_id_opt = None;
@@ -1238,34 +1347,109 @@ impl SessionManager {
                             } else {
                                 "message.received"
                             };
-                            let _ = self
-                                .events
-                                .publish(
-                                    event_type,
-                                    &session_id,
-                                    serde_json::json!({
-                                        "message_id": rec.id,
-                                        "external_id": rec.external_id,
-                                        "direction": rec.direction,
-                                        "chat_jid": rec.chat_jid,
-                                        "chat_lid": message.chat_lid,
-                                        "sender_jid": rec.sender_jid,
-                                        "sender_name": message.sender_name,
-                                        "sender_phone": message.sender_phone,
-                                        "from_me": message.from_me,
-                                        "is_group": message.is_group,
-                                        "quoted": message.quoted,
-                                        "source": source,
-                                        "timestamp": msg_ts,
-                                        "is_history_sync": message.is_history_sync,
-                                        "message_type": rec.message_type,
-                                        "text": rec.text_body,
-                                        "caption": rec.caption,
-                                        "media_id": rec.media_id,
-                                        "transcription": inline_transcription,
-                                    }),
-                                )
-                                .await;
+                            let payload = serde_json::json!({
+                                "message_id": rec.id,
+                                "external_id": rec.external_id,
+                                "direction": rec.direction,
+                                "chat_jid": rec.chat_jid,
+                                "chat_lid": message.chat_lid,
+                                "sender_jid": rec.sender_jid,
+                                "sender_name": message.sender_name,
+                                "sender_phone": message.sender_phone,
+                                "from_me": message.from_me,
+                                "is_group": message.is_group,
+                                "quoted": message.quoted,
+                                "source": source,
+                                "timestamp": msg_ts,
+                                "is_history_sync": message.is_history_sync,
+                                "message_type": rec.message_type,
+                                "text": rec.text_body,
+                                "caption": rec.caption,
+                                "media_id": rec.media_id,
+                                "transcription": inline_transcription,
+                            });
+
+                            let coalesce_secs = self.config.webhooks.coalesce_seconds;
+                            if event_type == "message.received" && coalesce_secs > 0 {
+                                let key = (session_id.clone(), rec.chat_jid.clone());
+                                let should_spawn = {
+                                    let mut map = self.coalesce_buffers.lock().await;
+                                    let entry = map.entry(key.clone()).or_default();
+                                    let first = entry.is_empty();
+                                    entry.push(payload);
+                                    first
+                                };
+                                if should_spawn {
+                                    let buffers = Arc::clone(&self.coalesce_buffers);
+                                    let events = self.events.clone();
+                                    let sid_clone = session_id.clone();
+                                    tokio::spawn(async move {
+                                        tokio::time::sleep(Duration::from_secs(coalesce_secs))
+                                            .await;
+                                        let items = {
+                                            let mut map = buffers.lock().await;
+                                            map.remove(&key).unwrap_or_default()
+                                        };
+                                        if items.is_empty() {
+                                            return;
+                                        }
+                                        let out = if items.len() == 1 {
+                                            items.into_iter().next().unwrap()
+                                        } else {
+                                            let combined_parts: Vec<String> = items
+                                                .iter()
+                                                .filter_map(|m| {
+                                                    m.get("text")
+                                                        .and_then(|v| v.as_str())
+                                                        .or_else(|| {
+                                                            m.get("caption")
+                                                                .and_then(|v| v.as_str())
+                                                        })
+                                                        .or_else(|| {
+                                                            m.get("transcription")
+                                                                .and_then(|v| v.as_str())
+                                                        })
+                                                        .map(str::trim)
+                                                        .filter(|s| !s.is_empty())
+                                                        .map(ToString::to_string)
+                                                })
+                                                .collect();
+                                            let combined_text = combined_parts.join("\n");
+                                            let mut base = items.last().cloned().unwrap();
+                                            if let Some(obj) = base.as_object_mut() {
+                                                obj.insert(
+                                                    "coalesced".to_string(),
+                                                    serde_json::json!(true),
+                                                );
+                                                obj.insert(
+                                                    "coalesced_count".to_string(),
+                                                    serde_json::json!(items.len()),
+                                                );
+                                                if !combined_text.is_empty() {
+                                                    obj.insert(
+                                                        "combined_text".to_string(),
+                                                        serde_json::json!(combined_text),
+                                                    );
+                                                    obj.insert(
+                                                        "text".to_string(),
+                                                        serde_json::json!(combined_text),
+                                                    );
+                                                }
+                                                obj.insert(
+                                                    "messages".to_string(),
+                                                    serde_json::Value::Array(items),
+                                                );
+                                            }
+                                            base
+                                        };
+                                        let _ = events
+                                            .publish("message.received", &sid_clone, out)
+                                            .await;
+                                    });
+                                }
+                            } else {
+                                let _ = self.events.publish(event_type, &session_id, payload).await;
+                            }
                         }
                     }
                     Err(err) => {

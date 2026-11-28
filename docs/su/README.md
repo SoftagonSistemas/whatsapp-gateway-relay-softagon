@@ -161,7 +161,7 @@ Softagon Relay dilengkepan ku **MCP Server (Model Context Protocol)** Rust nativ
 - **Tautan Pairing Samentawis (`/pair/{token}`):** `POST /v1/sessions/{id}/pair-link` (atawa MCP `create_pairing_link`) muka **QR Code** tanpa login `RELAY_API_KEY`, nganyarankeun QR otomatis dugi ka 10 menit, kalayan `qr.png` sareng **kode 8 digit** (`POST /v1/sessions/{id}/pair-code`).
 - **Webhook Bearer & Header Khusus:** lebetkeun `bearer_token` atawa `auth_header_name`/`auth_header_value` dina `POST`/`PATCH /v1/webhooks`. Réspon `401`/`403` langsung ngeureunkeun nyobaan deui.
 - **Kontéks Obrolan Lengkep:** nyadiakeun `sender_name`, `sender_phone` (kaasup résolusi `@lid`), waleran tim tina HP (`from_me: true`, `source: "device_sync"`), waktos asli tanpa ngahirupkeun webhook dina `is_history_sync`, sarta `sticker`, `reaction`, `location`, sareng `contact`.
-- **Alat MCP & Endpoint REST Anyar:** `get_contact` (`GET /v1/sessions/{id}/contacts/{jid}`), `mark_read` (`POST /v1/sessions/{id}/chats/read`), sareng `send_media_message` nganggo `media_url` atawa `data_base64` kalayan `idempotency_key`.
+- **Alat MCP & Endpoint REST Lengkep (`v0.4.0`–`v0.4.1`):** `reply_to_message_id`, `send_reaction`, `send_chat_presence`, `subscribe_presence`, `as_voice_note` (PTT), `sticker`, `send_location`, `send_contact`, `edit_message`, `revoke_message`, `check_whatsapp`, `get_profile_picture`, `list_groups`, `get_group_info`, `GET /v1/media/{media_id}`, `MEDIA_RETENTION_DAYS`, `softagon-relay backup`, métrik Prometheus `GET /v1/metrics`, bewara `session.disconnected`, migrasi otomatis riwayat `@lid`, fallback SQLite `quoted.text`, sareng ngagabungkeun pesen ngaruntuy `WEBHOOK_COALESCE_SECONDS` (default global `0`; `4s` dina kit Grok Bot).
 
 ---
 
