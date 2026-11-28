@@ -666,11 +666,26 @@ impl WhatsAppEngine for WhatsAppRustEngine {
     }
 
     async fn sync_contacts(&self, session_id: &str) -> Result<(), EngineError> {
+        use whatsapp_rust::wacore::appstate::hash::HashState;
+        use whatsapp_rust::wacore::appstate::patch_decode::WAPatchName;
+
         let client = self.connected_client(session_id).await?;
+        let name = WAPatchName::CriticalUnblockLow;
+        let backend = client.persistence_manager().backend();
+        // Reset CriticalUnblockLow version + mutation MACs to 0 before requesting a
+        // full snapshot so wacore does not discard the snapshot as stale or fail with
+        // "patch version mismatch: expected N+1, got N".
+        backend
+            .clear_mutation_macs(name.as_str())
+            .await
+            .map_err(|e| EngineError::Protocol(format!("clear_mutation_macs failed: {e}")))?;
+        backend
+            .set_version(name.as_str(), HashState::default())
+            .await
+            .map_err(|e| EngineError::Protocol(format!("set_version reset failed: {e}")))?;
         client
             .process_sync_task(whatsapp_rust::sync_task::MajorSyncTask::AppStateSync {
-                name:
-                    whatsapp_rust::wacore::appstate::patch_decode::WAPatchName::CriticalUnblockLow,
+                name,
                 full_sync: true,
             })
             .await;

@@ -6,6 +6,13 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.4] — 2026-11-28
+
+### Fixed
+- **Fix `patch version mismatch` on `sync_contacts` for Previously Paired Sessions:** `sync_contacts` now resets `CriticalUnblockLow`'s local `app_state` version (`HashState::default()`) and stale mutation MACs (`clear_mutation_macs`) before requesting `MajorSyncTask::AppStateSync { full_sync: true }`. This prevents `wacore`'s `snapshot_is_stale` check from discarding the incoming address-book snapshot and eliminates `patch version mismatch: expected N+1, got N` — existing sessions now pull the full WhatsApp address book cleanly without re-scanning a QR code.
+
+---
+
 ## [0.4.3] — 2026-11-28
 
 ### Added — Full Address-Book Sync for Existing Sessions
