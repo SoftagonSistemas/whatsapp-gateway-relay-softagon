@@ -167,7 +167,23 @@ Softagon Relay ships with a native Rust **MCP Server (Model Context Protocol)** 
 
 ---
 
-## 7. Support & Contact
+## 7. Real Production Benchmark (8-Hour Continuous Soak Test)
+
+Measured in real-world production (**2026-11-27/28**, 16 checkpoints every 30 min, `linux/amd64`, `--features whisper`, 1 real WhatsApp account connected):
+
+| Metric | Measured Result (8h Continuous) |
+|---|---|
+| **Steady-state RAM** | **31.7–32.1 MiB** (zero memory leak after 8h) |
+| **Peak RAM (Whisper `base` active)** | **286.4 MiB** with automatic idle unload back to **~32 MiB** |
+| **Average CPU** | **0.04%–0.19%** |
+| **Signed webhooks delivered (Bearer + HMAC)** | **1,083** (`0` auth failures, `0` `status@broadcast` leaks) |
+| **`@lid` → phone resolution** | **100% (`127/127`)** across private chats and groups |
+| **Offline audio transcription (CPU)** | **100% (`5/5`)**, up to **4.5× faster than real-time** |
+| **Critical errors (`ERROR`) in 8h** | **`0`** (longest unbroken connected streak: **6h20**) |
+
+---
+
+## 8. Support & Contact
 
 Need dedicated support, custom integrations, or AI & messaging engineering?  
 Visit **[softagon.com.br](https://softagon.com.br)** and talk to the **Softagon Sistemas** team.

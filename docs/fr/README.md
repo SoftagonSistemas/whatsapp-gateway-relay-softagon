@@ -167,7 +167,23 @@ Softagon Relay intègre un **serveur MCP (Model Context Protocol)** natif en Rus
 
 ---
 
-## 7. Support et Contact
+## 7. Benchmark Réel en Production (Test Continu de 8 Heures)
+
+Mesuré en production réelle (**2026-11-27/28**, 16 relevés toutes les 30 min, `linux/amd64`, `--features whisper`, 1 compte WhatsApp réel connecté) :
+
+| Indicateur | Résultat Mesuré (8h Continues) |
+|---|---|
+| **RAM en régime établi** | **31,7–32,1 MiB** (zéro fuite mémoire après 8h) |
+| **Pic RAM (Whisper `base` actif)** | **286,4 MiB** avec déchargement automatique au repos vers **~32 MiB** |
+| **CPU moyen** | **0,04 %–0,19 %** |
+| **Webhooks livrés (Bearer + HMAC)** | **1 083** (`0` échec d'auth, `0` fuite `status@broadcast`) |
+| **Résolution `@lid` → téléphone** | **100 % (`127/127`)** sur les discussions privées et groupes |
+| **Transcription audio hors ligne (CPU)** | **100 % (`5/5`)**, jusqu'à **4,5× plus rapide que le temps réel** |
+| **Erreurs critiques (`ERROR`) en 8h** | **`0`** (plus longue séquence connectée sans coupure : **6h20**) |
+
+---
+
+## 8. Support et Contact
 
 Besoin d'un support dédié, d'intégrations sur mesure ou de conseil en IA et messagerie ?  
 Visitez **[softagon.com.br](https://softagon.com.br)** et contactez l'équipe de **Softagon Sistemas**.

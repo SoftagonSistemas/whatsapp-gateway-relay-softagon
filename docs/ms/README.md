@@ -165,7 +165,23 @@ Softagon Relay disertakan dengan **MCP Server (Model Context Protocol)** Rust na
 
 ---
 
-## 7. Sokongan & Hubungi
+## 7. Penanda Aras Produksi Sebenar (Ujian Ketahanan 8 Jam Berterusan)
+
+Diukur dalam produksi sebenar (**2026-11-27/28**, 16 semakan setiap 30 minit, `linux/amd64`, `--features whisper`, 1 akaun WhatsApp aktif):
+
+| Metrik | Keputusan Diukur (8 Jam Berterusan) |
+|---|---|
+| **RAM keadaan stabil** | **31.7–32.1 MiB** (sifar kebocoran memori selepas 8 jam) |
+| **RAM puncak (Whisper `base` aktif)** | **286.4 MiB** dengan pelepasan automatik semasa melahu kembali ke **~32 MiB** |
+| **Purata CPU** | **0.04%–0.19%** |
+| **Webhook dihantar (Bearer + HMAC)** | **1,083** (`0` kegagalan auth, `0` kebocoran `status@broadcast`) |
+| **Resolusi `@lid` → nombor telefon** | **100% (`127/127`)** merentas sembang peribadi dan kumpulan |
+| **Transkripsi audio luar talian (CPU)** | **100% (`5/5`)**, sehingga **4.5× lebih pantas daripada masa nyata** |
+| **Ralat kritikal (`ERROR`) dalam 8 jam** | **`0`** (sambungan berterusan paling lama: **6 jam 20 minit**) |
+
+---
+
+## 8. Sokongan & Hubungi
 
 Perlukan sokongan khusus, integrasi tersuai, atau kejuruteraan AI & pemesejan?  
 Layari **[softagon.com.br](https://softagon.com.br)** dan berhubung dengan pasukan **Softagon Sistemas**.

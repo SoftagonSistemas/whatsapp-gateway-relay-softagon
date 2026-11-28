@@ -38,16 +38,21 @@ Open **`http://localhost:8080/console`** (or `/manager`), paste the printed `REL
 
 ---
 
-## Measured Resource Footprint (Real Scenarios)
+## Measured Resource Footprint & 8-Hour Production Soak Test
 
-Measured on **2026-11-25** against `softagon/relay:0.3.0` (`linux/amd64`, compiled with `--features whisper`) using `docker stats --no-stream` via [`scripts/monitor.sh`](scripts/monitor.sh) on Docker 29.1.3 / Linux (x86_64):
+Measured in continuous real-world production (**2026-11-27/28**, `linux/amd64`, compiled with `--features whisper`, 1 real WhatsApp account connected, 16 automated 30-minute checkpoints over **8 hours**) using `docker stats --no-stream` on Docker 29.1.3 / Linux (`x86_64`):
 
-| Scenario | RAM | CPU | Notes |
-|---|---:|---:|---|
-| **Boot / Idle (0 paired sessions)** | ~4–5 MiB | ~0.05% | Measured right after container start, before pairing |
-| **1 paired WhatsApp session (steady state)** | **~38 MiB** | **~0.1–0.2%** | Measured with 1 real WhatsApp account connected via WebSocket |
-| **Active voice-note transcription (`whisper` base)** | **~212–338 MiB** | Burst | Model loads lazily on incoming voice note and unloads after `180s` idle (~100 MiB RSS after unload) |
-| **Docker image size (`linux/amd64`)** | **~55 MB compressed (Docker Hub)** | — | Rust binary, Console SPA, SQLite, Opus decoder, `rmcp`, `whisper.cpp` |
+| Metric | Measured Result (8h Soak Test) | Notes |
+|---|---:|---|
+| **Docker image size (`linux/amd64`)** | **~55 MB compressed** | Rust binary, Vue 3 Console, SQLite, Opus decoder, `rmcp`, `whisper.cpp` |
+| **Boot / Idle (0 paired sessions)** | **~4–5 MiB RAM** | Right after container startup, before pairing |
+| **Steady-state RAM (1 active session, 8h)** | **31.7–32.1 MiB RAM** | Returned below initial 48 MiB baseline after Whisper idle unload — **zero memory leak** |
+| **Peak RAM (Whisper `base` transcribing)** | **286.4 MiB RAM** | Lazy-loaded on voice note, auto-unloaded after `180s` idle back to **~32 MiB** |
+| **Average CPU** | **0.04%–0.19%** | Continuous WebSocket + SQLite WAL + webhook dispatcher |
+| **Signed webhooks delivered (Bearer + HMAC)** | **1,083** | `0` auth failures, `0` missing signatures, `0` `status@broadcast` leaks |
+| **`@lid` → phone resolution (human chats)** | **100% (127/127)** | Resolved across private `@lid`, `@s.whatsapp.net`, and `@g.us` group chats |
+| **Offline Whisper `base` audio transcription** | **100% (5/5)** | Pure-Rust OGG/Opus decode + CPU inference up to **4.5× faster than real-time** |
+| **Critical errors (`level: ERROR`) in 8h** | **0** | Longest continuous unbroken streak: **6h20** (plus 2 automatic WebSocket reconnects) |
 
 > *Architecture note:* Prebuilt Docker images currently publish **`linux/amd64`**. Multi-arch **`linux/arm64`** support is tracked on our roadmap (you can also build locally on ARM64 with `docker build`).
 

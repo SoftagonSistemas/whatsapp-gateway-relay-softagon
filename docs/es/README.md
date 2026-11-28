@@ -167,7 +167,23 @@ Softagon Relay incluye un **MCP Server (Model Context Protocol)** nativo en Rust
 
 ---
 
-## 7. Soporte y Contacto
+## 7. Benchmark Real de Producción (Prueba Continua de 8 Horas)
+
+Medido en producción real (**2026-11-27/28**, 16 controles cada 30 min, `linux/amd64`, `--features whisper`, 1 cuenta real de WhatsApp conectada):
+
+| Indicador | Resultado Medido (8h Continuas) |
+|---|---|
+| **RAM en estado estable** | **31,7–32,1 MiB** (sin fugas de memoria tras 8h) |
+| **RAM pico (Whisper `base` activo)** | **286,4 MiB** con descarga automática en reposo de vuelta a **~32 MiB** |
+| **CPU promedio** | **0,04%–0,19%** |
+| **Webhooks entregados (Bearer + HMAC)** | **1.083** (`0` fallos de auth, `0` filtraciones de `status@broadcast`) |
+| **Resolución `@lid` → teléfono** | **100% (`127/127`)** en chats privados y grupos |
+| **Transcripción offline de audio (CPU)** | **100% (`5/5`)**, hasta **4,5× más rápido que en tiempo real** |
+| **Errores críticos (`ERROR`) en 8h** | **`0`** (mayor racha continua conectada: **6h20**) |
+
+---
+
+## 8. Soporte y Contacto
 
 ¿Necesitas soporte dedicado, integraciones a medida o consultoría en IA y mensajería?  
 Visita **[softagon.com.br](https://softagon.com.br)** y habla con el equipo de **Softagon Sistemas**.

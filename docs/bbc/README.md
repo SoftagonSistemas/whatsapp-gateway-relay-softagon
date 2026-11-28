@@ -165,7 +165,23 @@ Softagon Relay adong **MCP Server (Model Context Protocol)** Rust native marhite
 
 ---
 
-## 7. Pangurupion & Kontak
+## 7. Benchmark Produksi Sintong (Uji Stabilitas 8 Jom Nonstop)
+
+Diukur di produksi sintong (**2026-11-27/28**, 16 pamareksaan ganup 30 menit, `linux/amd64`, `--features whisper`, 1 akun WhatsApp aktif):
+
+| Indikator | Hasil Pangukuran (8 Jom Nonstop) |
+|---|---|
+| **RAM kondisi stabil** | **31,7–32,1 MiB** (ndang adong memori bocor dung 8 jom) |
+| **RAM puncak (Whisper `base` aktif)** | **286,4 MiB**, otomatis turun mulak tu **~32 MiB** tingki so adong ulaon |
+| **Rata-rata CPU** | **0,04%–0,19%** |
+| **Webhook tartongos (Bearer + HMAC)** | **1.083** (`0` gagal auth, `0` bocor `status@broadcast`) |
+| **Resolusi `@lid` → nomor telepon** | **100% (`127/127`)** di chat pribadi dohot grup |
+| **Transkripsi audio offline (CPU)** | **100% (`5/5`)**, sahat tu **4,5× umhatop sian tingki sintong** |
+| **Eror kritis (`ERROR`) di 8 jom** | **`0`** (sambung torus umleleng: **6 jom 20 menit**) |
+
+---
+
+## 8. Pangurupion & Kontak
 
 Porlu pangurupion khusus, integrasi kustom, manang rekayasa AI & WhatsApp?  
 Buka **[softagon.com.br](https://softagon.com.br)** jala hubungi tim **Softagon Sistemas**.
