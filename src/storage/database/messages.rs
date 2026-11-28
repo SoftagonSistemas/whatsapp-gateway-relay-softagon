@@ -181,15 +181,24 @@ impl Database {
                 r#"
                 SELECT
                     m.chat_jid,
-                    (
-                        SELECT json_extract(cn.metadata_json, '$.sender_name')
-                        FROM messages cn
-                        WHERE cn.session_id = m.session_id
-                          AND cn.chat_jid = m.chat_jid
-                          AND cn.direction = 'inbound'
-                          AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
-                        ORDER BY cn.created_at DESC
-                        LIMIT 1
+                    COALESCE(
+                        (
+                            SELECT COALESCE(c.full_name, c.push_name)
+                            FROM contacts c
+                            WHERE c.session_id = m.session_id
+                              AND (c.jid = m.chat_jid OR c.lid = m.chat_jid)
+                            LIMIT 1
+                        ),
+                        (
+                            SELECT json_extract(cn.metadata_json, '$.sender_name')
+                            FROM messages cn
+                            WHERE cn.session_id = m.session_id
+                              AND cn.chat_jid = m.chat_jid
+                              AND cn.direction = 'inbound'
+                              AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
+                            ORDER BY cn.created_at DESC
+                            LIMIT 1
+                        )
                     ) AS contact_name,
                     m.id AS last_message_id,
                     m.direction AS last_direction,
@@ -210,19 +219,32 @@ impl Database {
                 WHERE m.session_id = ?1
                   AND m.chat_jid != 'status@broadcast'
                   AND m.chat_jid NOT LIKE '%@newsletter'
-                  AND EXISTS (
-                      SELECT 1 FROM messages sm
-                      LEFT JOIN transcriptions st ON st.message_id = sm.id
-                      WHERE sm.session_id = ?1
-                        AND sm.chat_jid = m.chat_jid
-                        AND (
-                            LOWER(sm.chat_jid) LIKE ?2
-                            OR LOWER(COALESCE(sm.sender_jid, '')) LIKE ?2
-                            OR LOWER(COALESCE(sm.text_body, '')) LIKE ?2
-                            OR LOWER(COALESCE(sm.caption, '')) LIKE ?2
-                            OR LOWER(COALESCE(sm.metadata_json, '')) LIKE ?2
-                            OR LOWER(COALESCE(st.text, '')) LIKE ?2
-                        )
+                  AND (
+                      EXISTS (
+                          SELECT 1 FROM messages sm
+                          LEFT JOIN transcriptions st ON st.message_id = sm.id
+                          WHERE sm.session_id = ?1
+                            AND sm.chat_jid = m.chat_jid
+                            AND (
+                                LOWER(sm.chat_jid) LIKE ?2
+                                OR LOWER(COALESCE(sm.sender_jid, '')) LIKE ?2
+                                OR LOWER(COALESCE(sm.text_body, '')) LIKE ?2
+                                OR LOWER(COALESCE(sm.caption, '')) LIKE ?2
+                                OR LOWER(COALESCE(sm.metadata_json, '')) LIKE ?2
+                                OR LOWER(COALESCE(st.text, '')) LIKE ?2
+                            )
+                      )
+                      OR EXISTS (
+                          SELECT 1 FROM contacts sc
+                          WHERE sc.session_id = ?1
+                            AND (sc.jid = m.chat_jid OR sc.lid = m.chat_jid)
+                            AND (
+                                LOWER(COALESCE(sc.full_name, '')) LIKE ?2
+                                OR LOWER(COALESCE(sc.first_name, '')) LIKE ?2
+                                OR LOWER(COALESCE(sc.push_name, '')) LIKE ?2
+                                OR LOWER(COALESCE(sc.phone_number, '')) LIKE ?2
+                            )
+                      )
                   )
                 GROUP BY m.chat_jid
                 ORDER BY m.created_at DESC
@@ -239,15 +261,24 @@ impl Database {
                 r#"
                 SELECT
                     m.chat_jid,
-                    (
-                        SELECT json_extract(cn.metadata_json, '$.sender_name')
-                        FROM messages cn
-                        WHERE cn.session_id = m.session_id
-                          AND cn.chat_jid = m.chat_jid
-                          AND cn.direction = 'inbound'
-                          AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
-                        ORDER BY cn.created_at DESC
-                        LIMIT 1
+                    COALESCE(
+                        (
+                            SELECT COALESCE(c.full_name, c.push_name)
+                            FROM contacts c
+                            WHERE c.session_id = m.session_id
+                              AND (c.jid = m.chat_jid OR c.lid = m.chat_jid)
+                            LIMIT 1
+                        ),
+                        (
+                            SELECT json_extract(cn.metadata_json, '$.sender_name')
+                            FROM messages cn
+                            WHERE cn.session_id = m.session_id
+                              AND cn.chat_jid = m.chat_jid
+                              AND cn.direction = 'inbound'
+                              AND json_extract(cn.metadata_json, '$.sender_name') IS NOT NULL
+                            ORDER BY cn.created_at DESC
+                            LIMIT 1
+                        )
                     ) AS contact_name,
                     m.id AS last_message_id,
                     m.direction AS last_direction,

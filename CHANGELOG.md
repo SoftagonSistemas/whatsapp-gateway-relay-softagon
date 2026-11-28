@@ -6,6 +6,17 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.2] — 2026-11-28
+
+### Added — Persistent Contacts Directory & Address-Book Sync
+- **Dedicated SQLite `contacts` Table (`migrations/0005_contacts.sql`):** stores `(session_id, jid, lid, phone_number, full_name, first_name, push_name, updated_at)` automatically populated from WhatsApp's `app-state` address-book sync (`Event::ContactUpdate`), real-time `Event::PushNameUpdate`, and inbound messages.
+- **Smart Contact Name Resolution:** `list_chats`, `get_contact`, and inbound `message.received` webhooks now prioritize the address-book `full_name` (when saved on the phone) with automatic fallback to `push_name`.
+- **Contacts Directory Endpoints & MCP Tools:**
+  - `GET /v1/sessions/{id}/contacts?q=...&limit=...` & MCP `list_contacts`: search saved contacts by name, phone number, JID, or `@lid`.
+  - `PUT /v1/sessions/{id}/contacts/{jid}` & MCP `save_contact`: save or rename a contact directly in the phone's WhatsApp address book (`client.chat_actions().save_contact`) and SQLite.
+
+---
+
 ## [0.4.1] — 2026-11-28
 
 ### Added

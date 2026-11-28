@@ -231,6 +231,35 @@ pub struct GetGroupInfoInput {
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct ListContactsInput {
+    /// WhatsApp session ID.
+    pub session_id: String,
+    /// Optional search query matching full_name, first_name, push_name, phone_number, JID, or @lid.
+    pub query: Option<String>,
+    /// Maximum number of contacts to return (1..500, default 100).
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct SaveContactInput {
+    /// Connected WhatsApp session ID.
+    pub session_id: String,
+    /// Contact phone number (with country code) or JID.
+    pub jid_or_phone: String,
+    /// Full display name to save in the WhatsApp address book (e.g., "Maria Silva - Cliente VIP").
+    pub full_name: Option<String>,
+    /// Optional first name.
+    pub first_name: Option<String>,
+    /// Whether to sync to the phone's primary address book (default true).
+    #[serde(default = "default_true")]
+    pub save_on_primary_addressbook: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetContactInput {
     /// WhatsApp session ID.
     pub session_id: String,
@@ -1011,6 +1040,65 @@ impl RelayMcpServer {
                 "jid_or_phone": input.jid_or_phone,
                 "subscribed": true,
             }))
+        })
+        .await
+    }
+
+    /// List or search synced WhatsApp contacts (address book full_name + push_name + phone_number + @lid).
+    #[tool(
+        description = "List or search saved WhatsApp contacts (address book full_name, first_name, push_name, phone_number, jid, lid) synced in SQLite."
+    )]
+    async fn list_contacts(
+        &self,
+        Parameters(input): Parameters<ListContactsInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let limit = input.limit.unwrap_or(100);
+        let args = serde_json::json!({
+            "session_id": sid,
+            "query": input.query,
+            "limit": limit,
+        });
+        self.audit_and_wrap("list_contacts", Some(&sid), args, || async {
+            let contacts = self
+                .service
+                .list_contacts(&input.session_id, input.query.as_deref(), limit)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "session_id": input.session_id,
+                "contacts": contacts,
+            }))
+        })
+        .await
+    }
+
+    /// Save or update a contact's name in the WhatsApp address book and local SQLite contacts table.
+    #[tool(
+        description = "Save or update a contact's full_name/first_name in WhatsApp's address book and the local SQLite contacts table."
+    )]
+    async fn save_contact(
+        &self,
+        Parameters(input): Parameters<SaveContactInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        let args = serde_json::json!({
+            "session_id": sid,
+            "jid_or_phone": input.jid_or_phone,
+            "full_name": input.full_name,
+            "first_name": input.first_name,
+        });
+        self.audit_and_wrap("save_contact", Some(&sid), args, || async {
+            self.service
+                .save_contact(
+                    &input.session_id,
+                    &input.jid_or_phone,
+                    input.full_name.as_deref(),
+                    input.first_name.as_deref(),
+                    input.save_on_primary_addressbook,
+                )
+                .await
+                .map_err(|e| e.to_string())
         })
         .await
     }

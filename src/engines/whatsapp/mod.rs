@@ -181,6 +181,15 @@ pub enum EngineEvent {
         sender_jid: Option<String>,
         timestamp: DateTime<Utc>,
     },
+    ContactSynced {
+        session_id: String,
+        jid: String,
+        lid: Option<String>,
+        phone_number: Option<String>,
+        full_name: Option<String>,
+        first_name: Option<String>,
+        push_name: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -276,6 +285,8 @@ pub struct ContactInfo {
     pub jid: String,
     pub lid: Option<String>,
     pub phone_number: Option<String>,
+    pub full_name: Option<String>,
+    pub first_name: Option<String>,
     pub push_name: Option<String>,
 }
 
@@ -348,7 +359,28 @@ pub trait WhatsAppEngine: Send + Sync {
             jid: jid_or_phone.to_string(),
             lid: None,
             phone_number: None,
+            full_name: None,
+            first_name: None,
             push_name: None,
+        })
+    }
+
+    async fn save_contact(
+        &self,
+        _session_id: &str,
+        jid_or_phone: &str,
+        _full_name: Option<&str>,
+        _first_name: Option<&str>,
+        _save_on_primary_addressbook: bool,
+    ) -> Result<String, EngineError> {
+        let digits: String = jid_or_phone
+            .chars()
+            .filter(|c| c.is_ascii_digit())
+            .collect();
+        Ok(if jid_or_phone.contains('@') {
+            jid_or_phone.to_string()
+        } else {
+            format!("{digits}@s.whatsapp.net")
         })
     }
 

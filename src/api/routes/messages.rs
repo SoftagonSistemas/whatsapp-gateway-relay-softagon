@@ -487,6 +487,57 @@ pub async fn mark_read(
     })))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ListContactsQuery {
+    pub q: Option<String>,
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveContactRequest {
+    pub full_name: Option<String>,
+    pub first_name: Option<String>,
+    #[serde(default = "default_true")]
+    pub save_on_primary_addressbook: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+pub async fn list_contacts(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+    Query(query): Query<ListContactsQuery>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let contacts = state
+        .sessions
+        .list_contacts(&session_id, query.q.as_deref(), query.limit.unwrap_or(100))
+        .await?;
+    Ok(Json(serde_json::json!({
+        "session_id": session_id,
+        "contacts": contacts,
+    })))
+}
+
+pub async fn save_contact(
+    State(state): State<AppState>,
+    Path((session_id, jid)): Path<(String, String)>,
+    Json(body): Json<SaveContactRequest>,
+) -> Result<Json<crate::storage::database::contacts::ContactRecord>, ApiError> {
+    let rec = state
+        .sessions
+        .save_contact(
+            &session_id,
+            &jid,
+            body.full_name.as_deref(),
+            body.first_name.as_deref(),
+            body.save_on_primary_addressbook,
+        )
+        .await?;
+    Ok(Json(rec))
+}
+
 pub async fn get_contact(
     State(state): State<AppState>,
     Path((session_id, jid)): Path<(String, String)>,

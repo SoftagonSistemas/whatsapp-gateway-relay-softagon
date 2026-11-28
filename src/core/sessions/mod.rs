@@ -997,9 +997,32 @@ impl SessionManager {
                     None
                 },
                 phone_number: None,
+                full_name: None,
+                first_name: None,
                 push_name: None,
             },
         };
+
+        if let Ok(Some(saved)) = self.db.get_contact_by_any(session_id, query).await {
+            if info.full_name.is_none() {
+                info.full_name = saved.full_name;
+            }
+            if info.first_name.is_none() {
+                info.first_name = saved.first_name;
+            }
+            if info.push_name.is_none() {
+                info.push_name = saved.push_name;
+            }
+            if info.lid.is_none() {
+                info.lid = saved.lid;
+            }
+            if info.phone_number.is_none() {
+                info.phone_number = saved.phone_number;
+            }
+            if (info.jid == query || info.jid.ends_with("@lid")) && !saved.jid.ends_with("@lid") {
+                info.jid = saved.jid;
+            }
+        }
 
         if let Ok(Some((hist_jid, hist_name, hist_phone))) =
             self.db.lookup_contact_from_history(session_id, query).await
@@ -1022,6 +1045,61 @@ impl SessionManager {
         }
 
         Ok(info)
+    }
+
+    pub async fn list_contacts(
+        &self,
+        session_id: &str,
+        query: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<crate::storage::database::contacts::ContactRecord>, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        Ok(self.db.list_contacts(session_id, query, limit).await?)
+    }
+
+    pub async fn save_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        full_name: Option<&str>,
+        first_name: Option<&str>,
+        save_on_primary_addressbook: bool,
+    ) -> Result<crate::storage::database::contacts::ContactRecord, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        let trimmed = jid_or_phone.trim();
+        if trimmed.is_empty() {
+            return Err(SessionError::BadRequest(
+                "jid_or_phone cannot be empty".into(),
+            ));
+        }
+        let canonical_jid = self
+            .engine
+            .save_contact(
+                session_id,
+                trimmed,
+                full_name,
+                first_name,
+                save_on_primary_addressbook,
+            )
+            .await?;
+        let phone = canonical_jid
+            .split('@')
+            .next()
+            .map(|u| u.split(':').next().unwrap_or(u))
+            .filter(|u| !u.is_empty() && u.chars().all(|c| c.is_ascii_digit()));
+        let rec = self
+            .db
+            .upsert_contact(crate::storage::database::contacts::UpsertContact {
+                session_id,
+                jid: &canonical_jid,
+                lid: None,
+                phone_number: phone,
+                full_name,
+                first_name,
+                push_name: None,
+            })
+            .await?;
+        Ok(rec)
     }
 
     pub async fn fetch_media_from_url(
@@ -1218,6 +1296,38 @@ impl SessionManager {
                 if !message.is_group && !message.is_history_sync {
                     self.maybe_auto_subscribe_presence(&session_id, &message.chat_jid)
                         .await;
+                }
+
+                // Upsert contact metadata (push_name / @lid / phone_number) and enrich sender_name with saved address-book full_name.
+                if !message.from_me && !message.chat_jid.ends_with("@newsletter") {
+                    let contact_jid = if message.is_group {
+                        message
+                            .sender_phone
+                            .as_ref()
+                            .map(|p| format!("{p}@s.whatsapp.net"))
+                            .or_else(|| message.sender_jid.clone())
+                    } else {
+                        Some(message.chat_jid.clone())
+                    };
+                    if let Some(ref cjid) = contact_jid
+                        && !cjid.ends_with("@g.us")
+                        && cjid != "status@broadcast"
+                        && let Ok(saved) = self
+                            .db
+                            .upsert_contact(crate::storage::database::contacts::UpsertContact {
+                                session_id: &session_id,
+                                jid: cjid,
+                                lid: message.chat_lid.as_deref(),
+                                phone_number: message.sender_phone.as_deref(),
+                                full_name: None,
+                                first_name: None,
+                                push_name: message.sender_name.as_deref(),
+                            })
+                            .await
+                        && let Some(full) = saved.full_name
+                    {
+                        message.sender_name = Some(full);
+                    }
                 }
 
                 // Fallback to SQLite when WhatsApp omits quoted_message content on replies.
@@ -1579,6 +1689,31 @@ impl SessionManager {
                         }),
                     )
                     .await;
+            }
+            EngineEvent::ContactSynced {
+                session_id,
+                jid,
+                lid,
+                phone_number,
+                full_name,
+                first_name,
+                push_name,
+            } => {
+                if let Err(err) = self
+                    .db
+                    .upsert_contact(crate::storage::database::contacts::UpsertContact {
+                        session_id: &session_id,
+                        jid: &jid,
+                        lid: lid.as_deref(),
+                        phone_number: phone_number.as_deref(),
+                        full_name: full_name.as_deref(),
+                        first_name: first_name.as_deref(),
+                        push_name: push_name.as_deref(),
+                    })
+                    .await
+                {
+                    warn!(session_id = %session_id, jid = %jid, error = %err, "failed to upsert synced contact");
+                }
             }
         }
     }

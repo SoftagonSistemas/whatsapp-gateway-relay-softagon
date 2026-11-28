@@ -624,8 +624,45 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             jid: canonical_jid,
             lid,
             phone_number,
+            full_name: None,
+            first_name: None,
             push_name: None,
         })
+    }
+
+    async fn save_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        full_name: Option<&str>,
+        first_name: Option<&str>,
+        save_on_primary_addressbook: bool,
+    ) -> Result<String, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let mut target = resolve_recipient_jid(&client, jid_or_phone).await?;
+        if target.is_lid() {
+            if let Ok(Some(entry)) = client.get_lid_pn_entry(&target).await
+                && !entry.phone_number.is_empty()
+            {
+                target = Jid::pn(entry.phone_number.to_string());
+            } else {
+                return Err(EngineError::Protocol(
+                    "save_contact requires a phone-number JID; @lid could not be resolved to a phone number".into(),
+                ));
+            }
+        }
+        let bare = target.to_non_ad();
+        client
+            .chat_actions()
+            .save_contact(
+                &bare,
+                full_name.map(ToString::to_string),
+                first_name.map(ToString::to_string),
+                save_on_primary_addressbook,
+            )
+            .await
+            .map_err(|e| EngineError::Protocol(format!("save_contact failed: {e}")))?;
+        Ok(bare.to_string())
     }
 
     async fn send_reaction(
@@ -1124,6 +1161,87 @@ async fn handle_wa_event(
                     sender_jid: Some(p.from.to_string()),
                     state: state.to_string(),
                     last_seen: p.last_seen,
+                })
+                .await;
+        }
+        Event::ContactUpdate(cu) => {
+            if is_ignored_jid(&cu.jid) {
+                return;
+            }
+            let raw_lid = cu
+                .action
+                .lid_jid
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| cu.jid.is_lid().then(|| cu.jid.to_string()));
+            let raw_pn = cu
+                .action
+                .pn_jid
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .or_else(|| (!cu.jid.is_lid()).then(|| cu.jid.to_non_ad().to_string()));
+            let phone_number = raw_pn
+                .as_deref()
+                .and_then(|j| j.split('@').next())
+                .map(|u| u.split(':').next().unwrap_or(u))
+                .filter(|u| !u.is_empty() && u.chars().all(|c| c.is_ascii_digit()))
+                .map(ToString::to_string);
+            let canonical_jid = phone_number
+                .as_ref()
+                .map(|p| format!("{p}@s.whatsapp.net"))
+                .or(raw_pn)
+                .unwrap_or_else(|| cu.jid.to_non_ad().to_string());
+            let _ = tx
+                .send(EngineEvent::ContactSynced {
+                    session_id: session_id.to_string(),
+                    jid: canonical_jid,
+                    lid: raw_lid,
+                    phone_number,
+                    full_name: cu.action.full_name.clone().filter(|s| !s.trim().is_empty()),
+                    first_name: cu
+                        .action
+                        .first_name
+                        .clone()
+                        .filter(|s| !s.trim().is_empty()),
+                    push_name: None,
+                })
+                .await;
+        }
+        Event::PushNameUpdate(pnu) => {
+            if is_ignored_jid(&pnu.jid) || pnu.new_push_name.trim().is_empty() {
+                return;
+            }
+            let bare = pnu.jid.to_non_ad();
+            let (jid, lid, phone_number) = if bare.is_lid() {
+                if let Ok(Some(entry)) = client.get_lid_pn_entry(&bare).await
+                    && !entry.phone_number.is_empty()
+                {
+                    let pn = entry.phone_number.to_string();
+                    (
+                        format!("{pn}@s.whatsapp.net"),
+                        Some(bare.to_string()),
+                        Some(pn),
+                    )
+                } else {
+                    (bare.to_string(), Some(bare.to_string()), None)
+                }
+            } else {
+                let pn = bare
+                    .user
+                    .chars()
+                    .all(|c| c.is_ascii_digit())
+                    .then(|| bare.user.to_string());
+                (bare.to_string(), None, pn)
+            };
+            let _ = tx
+                .send(EngineEvent::ContactSynced {
+                    session_id: session_id.to_string(),
+                    jid,
+                    lid,
+                    phone_number,
+                    full_name: None,
+                    first_name: None,
+                    push_name: Some(pnu.new_push_name.clone()),
                 })
                 .await;
         }

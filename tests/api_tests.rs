@@ -1121,4 +1121,41 @@ async fn v040_phase1_and_phase2_endpoints_work_end_to_end() {
     assert!(metrics_text.contains("softagon_relay_sessions_connected 1"));
     assert!(metrics_text.contains("softagon_relay_messages_total"));
     assert!(metrics_text.contains("softagon_relay_media_storage_bytes"));
+
+    // 10. Contacts table: save_contact, list_contacts, get_contact with full_name
+    let (st, saved_contact) = app
+        .request(
+            Request::builder()
+                .method("PUT")
+                .uri(format!("/v1/sessions/{sid}/contacts/5511988887777"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "full_name": "Maria Silva - Cliente VIP",
+                        "first_name": "Maria"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(saved_contact["full_name"], "Maria Silva - Cliente VIP");
+
+    let (st, listed_contacts) = app
+        .request(
+            Request::builder()
+                .uri(format!("/v1/sessions/{sid}/contacts?q=VIP"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(listed_contacts["contacts"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        listed_contacts["contacts"][0]["full_name"],
+        "Maria Silva - Cliente VIP"
+    );
 }

@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod contacts;
 pub mod idempotency;
 pub mod media;
 pub mod messages;

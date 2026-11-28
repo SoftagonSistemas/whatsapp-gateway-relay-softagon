@@ -524,6 +524,34 @@ impl RelayService {
         self.sessions.get_contact(session_id, jid_or_phone).await
     }
 
+    pub async fn list_contacts(
+        &self,
+        session_id: &str,
+        query: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<crate::storage::database::contacts::ContactRecord>, SessionError> {
+        self.sessions.list_contacts(session_id, query, limit).await
+    }
+
+    pub async fn save_contact(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        full_name: Option<&str>,
+        first_name: Option<&str>,
+        save_on_primary_addressbook: bool,
+    ) -> Result<crate::storage::database::contacts::ContactRecord, SessionError> {
+        self.sessions
+            .save_contact(
+                session_id,
+                jid_or_phone,
+                full_name,
+                first_name,
+                save_on_primary_addressbook,
+            )
+            .await
+    }
+
     pub async fn get_message_transcription(
         &self,
         message_id: &str,

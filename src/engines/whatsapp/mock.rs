@@ -294,6 +294,8 @@ impl WhatsAppEngine for MockWhatsAppEngine {
             jid,
             lid,
             phone_number,
+            full_name: None,
+            first_name: None,
             push_name: None,
         })
     }

@@ -124,12 +124,16 @@ pub fn build_router(state: AppState) -> Router {
             post(routes::messages::send_chat_presence),
         )
         .route(
+            "/v1/sessions/{session_id}/contacts",
+            get(routes::messages::list_contacts),
+        )
+        .route(
             "/v1/sessions/{session_id}/contacts/check",
             post(routes::messages::check_whatsapp),
         )
         .route(
             "/v1/sessions/{session_id}/contacts/{jid}",
-            get(routes::messages::get_contact),
+            get(routes::messages::get_contact).put(routes::messages::save_contact),
         )
         .route(
             "/v1/sessions/{session_id}/contacts/{jid}/profile-picture",
