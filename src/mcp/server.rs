@@ -1103,6 +1103,36 @@ impl RelayMcpServer {
         .await
     }
 
+    /// Force a full WhatsApp address-book sync (and history backfill) into the SQLite contacts directory.
+    #[tool(
+        description = "Force a full WhatsApp address-book sync (CriticalUnblockLow) and message-history backfill into the local SQLite contacts table, useful for sessions paired before v0.4.2."
+    )]
+    async fn sync_contacts(
+        &self,
+        Parameters(input): Parameters<SessionIdInput>,
+    ) -> Result<CallToolResult, McpError> {
+        let sid = input.session_id.clone();
+        self.audit_and_wrap(
+            "sync_contacts",
+            Some(&sid),
+            serde_json::json!({ "session_id": sid }),
+            || async {
+                let (backfilled, total_contacts) = self
+                    .service
+                    .sync_contacts(&input.session_id)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({
+                    "session_id": input.session_id,
+                    "backfilled_from_history": backfilled,
+                    "total_contacts": total_contacts,
+                    "status": "synced",
+                }))
+            },
+        )
+        .await
+    }
+
     /// Resolve a WhatsApp contact (@lid, JID, or phone number) to its phone number, canonical JID, and display name.
     #[tool(
         description = "Resolve a WhatsApp @lid, JID, or phone number into canonical phone_number, jid, lid, and push_name using WhatsApp's LID-to-PN mapping and message history."

@@ -6,6 +6,14 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.3] — 2026-11-28
+
+### Added — Full Address-Book Sync for Existing Sessions
+- **Automatic First-Connect Contact Backfill & Full Address-Book Sync:** when an already-paired session upgrades to `v0.4.3` and connects, Relay automatically backfills `contacts` from existing `messages` history and triggers a full `CriticalUnblockLow` WhatsApp address-book snapshot sync whenever no address-book `full_name` entries exist yet — **no QR re-pairing required**.
+- **On-Demand Sync Endpoint & MCP Tool:** added `POST /v1/sessions/{id}/contacts/sync` and MCP `sync_contacts` to refresh the phone's full WhatsApp address book at any time.
+
+---
+
 ## [0.4.2] — 2026-11-28
 
 ### Added — Persistent Contacts Directory & Address-Book Sync

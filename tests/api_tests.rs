@@ -1158,4 +1158,17 @@ async fn v040_phase1_and_phase2_endpoints_work_end_to_end() {
         listed_contacts["contacts"][0]["full_name"],
         "Maria Silva - Cliente VIP"
     );
+
+    let (st, synced) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/contacts/sync"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(synced["status"], "synced");
 }

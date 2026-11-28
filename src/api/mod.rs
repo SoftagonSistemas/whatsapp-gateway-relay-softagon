@@ -128,6 +128,10 @@ pub fn build_router(state: AppState) -> Router {
             get(routes::messages::list_contacts),
         )
         .route(
+            "/v1/sessions/{session_id}/contacts/sync",
+            post(routes::messages::sync_contacts),
+        )
+        .route(
             "/v1/sessions/{session_id}/contacts/check",
             post(routes::messages::check_whatsapp),
         )

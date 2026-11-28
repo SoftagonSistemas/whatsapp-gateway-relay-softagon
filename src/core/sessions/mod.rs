@@ -1102,6 +1102,20 @@ impl SessionManager {
         Ok(rec)
     }
 
+    /// Backfill contacts from message history and force a full WhatsApp address-book sync
+    /// (`CriticalUnblockLow`) so previously paired sessions receive all saved contact names.
+    pub async fn sync_contacts(&self, session_id: &str) -> Result<(u64, i64), SessionError> {
+        let _ = self.get_session(session_id).await?;
+        let backfilled = self
+            .db
+            .backfill_contacts_from_messages(session_id)
+            .await
+            .unwrap_or(0);
+        self.engine.sync_contacts(session_id).await?;
+        let total = self.db.count_contacts(session_id).await.unwrap_or(0);
+        Ok((backfilled, total))
+    }
+
     pub async fn fetch_media_from_url(
         &self,
         url: &str,
@@ -1275,6 +1289,17 @@ impl SessionManager {
                         .await;
                 } else if status == SessionConnectionState::Connected {
                     let _ = self.migrate_legacy_lid_history(&session_id).await;
+                    let _ = self.db.backfill_contacts_from_messages(&session_id).await;
+                    if self.db.count_named_contacts(&session_id).await.unwrap_or(0) == 0 {
+                        let engine = Arc::clone(&self.engine);
+                        let sid_clone = session_id.clone();
+                        tokio::spawn(async move {
+                            tokio::time::sleep(Duration::from_secs(3)).await;
+                            if let Err(err) = engine.sync_contacts(&sid_clone).await {
+                                warn!(session_id = %sid_clone, error = %err, "background full contact sync failed");
+                            }
+                        });
+                    }
                 }
             }
             EngineEvent::MessageReceived {

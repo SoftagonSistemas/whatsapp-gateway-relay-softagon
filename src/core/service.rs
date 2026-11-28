@@ -552,6 +552,10 @@ impl RelayService {
             .await
     }
 
+    pub async fn sync_contacts(&self, session_id: &str) -> Result<(u64, i64), SessionError> {
+        self.sessions.sync_contacts(session_id).await
+    }
+
     pub async fn get_message_transcription(
         &self,
         message_id: &str,

@@ -538,6 +538,19 @@ pub async fn save_contact(
     Ok(Json(rec))
 }
 
+pub async fn sync_contacts(
+    State(state): State<AppState>,
+    Path(session_id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let (backfilled, total_contacts) = state.sessions.sync_contacts(&session_id).await?;
+    Ok(Json(serde_json::json!({
+        "session_id": session_id,
+        "backfilled_from_history": backfilled,
+        "total_contacts": total_contacts,
+        "status": "synced",
+    })))
+}
+
 pub async fn get_contact(
     State(state): State<AppState>,
     Path((session_id, jid)): Path<(String, String)>,

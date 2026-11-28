@@ -160,4 +160,58 @@ impl Database {
         };
         Ok(rows)
     }
+
+    /// Count contacts that already have an address-book `full_name` synced for this session.
+    pub async fn count_named_contacts(&self, session_id: &str) -> Result<i64, DbError> {
+        let (count,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM contacts WHERE session_id = ?1 AND full_name IS NOT NULL AND TRIM(full_name) != ''",
+        )
+        .bind(session_id)
+        .fetch_one(self.pool())
+        .await?;
+        Ok(count)
+    }
+
+    pub async fn count_contacts(&self, session_id: &str) -> Result<i64, DbError> {
+        let (count,): (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM contacts WHERE session_id = ?1")
+                .bind(session_id)
+                .fetch_one(self.pool())
+                .await?;
+        Ok(count)
+    }
+
+    /// Backfill `contacts` from existing inbound 1:1 messages in `messages` (push_name, phone, @lid).
+    pub async fn backfill_contacts_from_messages(&self, session_id: &str) -> Result<u64, DbError> {
+        let now = Utc::now().to_rfc3339();
+        let res = sqlx::query(
+            r#"
+            INSERT INTO contacts (session_id, jid, lid, phone_number, push_name, updated_at)
+            SELECT
+                session_id,
+                chat_jid,
+                MAX(NULLIF(TRIM(json_extract(metadata_json, '$.chat_lid')), '')),
+                MAX(NULLIF(TRIM(json_extract(metadata_json, '$.sender_phone')), '')),
+                MAX(NULLIF(TRIM(json_extract(metadata_json, '$.sender_name')), '')),
+                ?2
+            FROM messages
+            WHERE session_id = ?1
+              AND direction = 'inbound'
+              AND chat_jid NOT LIKE '%@g.us'
+              AND chat_jid NOT LIKE '%@newsletter'
+              AND chat_jid != 'status@broadcast'
+            GROUP BY session_id, chat_jid
+            ON CONFLICT(session_id, jid) DO UPDATE SET
+                lid = COALESCE(contacts.lid, excluded.lid),
+                phone_number = COALESCE(contacts.phone_number, excluded.phone_number),
+                push_name = COALESCE(contacts.push_name, excluded.push_name),
+                updated_at = excluded.updated_at
+            "#,
+        )
+        .bind(session_id)
+        .bind(&now)
+        .execute(self.pool())
+        .await?;
+        Ok(res.rows_affected())
+    }
 }

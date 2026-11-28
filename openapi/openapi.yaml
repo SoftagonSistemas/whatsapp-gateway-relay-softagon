@@ -1,7 +1,7 @@
 openapi: 3.2.1
 info:
   title: Softagon Relay API
-  version: 0.4.2
+  version: 0.4.3
   summary: Open-source, self-hosted WhatsApp messaging gateway
   description: |
     Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
@@ -617,6 +617,16 @@ paths:
       responses:
         "200":
           description: List of contacts
+  /v1/sessions/{session_id}/contacts/sync:
+    post:
+      tags: [Sessions]
+      operationId: syncContacts
+      summary: Force a full WhatsApp address-book sync and history backfill into contacts
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Contacts synced
   /v1/sessions/{session_id}/contacts/check:
     post:
       tags: [Sessions]

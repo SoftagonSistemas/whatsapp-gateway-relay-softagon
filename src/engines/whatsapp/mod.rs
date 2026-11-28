@@ -384,6 +384,10 @@ pub trait WhatsAppEngine: Send + Sync {
         })
     }
 
+    async fn sync_contacts(&self, _session_id: &str) -> Result<(), EngineError> {
+        Ok(())
+    }
+
     async fn send_reaction(
         &self,
         _session_id: &str,

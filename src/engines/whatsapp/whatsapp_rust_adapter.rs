@@ -665,6 +665,18 @@ impl WhatsAppEngine for WhatsAppRustEngine {
         Ok(bare.to_string())
     }
 
+    async fn sync_contacts(&self, session_id: &str) -> Result<(), EngineError> {
+        let client = self.connected_client(session_id).await?;
+        client
+            .process_sync_task(whatsapp_rust::sync_task::MajorSyncTask::AppStateSync {
+                name:
+                    whatsapp_rust::wacore::appstate::patch_decode::WAPatchName::CriticalUnblockLow,
+                full_sync: true,
+            })
+            .await;
+        Ok(())
+    }
+
     async fn send_reaction(
         &self,
         session_id: &str,
