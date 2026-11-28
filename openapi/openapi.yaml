@@ -430,6 +430,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Sessions]
+      operationId: saveContact
+      summary: Save or rename a contact in WhatsApp's address book and SQLite contacts table
+      responses:
+        "200":
+          description: Contact saved
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/messages/{message_id}:
     parameters:
       - $ref: "#/components/parameters/MessageId"
