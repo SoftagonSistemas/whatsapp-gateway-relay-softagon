@@ -1119,6 +1119,7 @@ async fn v040_phase1_and_phase2_endpoints_work_end_to_end() {
     .unwrap();
     assert!(metrics_text.contains("softagon_relay_sessions_total 1"));
     assert!(metrics_text.contains("softagon_relay_sessions_connected 1"));
+    assert!(metrics_text.contains("softagon_relay_session_reconnects_total"));
     assert!(metrics_text.contains("softagon_relay_messages_total"));
     assert!(metrics_text.contains("softagon_relay_media_storage_bytes"));
 

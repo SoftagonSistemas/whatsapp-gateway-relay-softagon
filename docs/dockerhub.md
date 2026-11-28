@@ -49,7 +49,7 @@ Measured across **8 continuous hours** of real production traffic (**2026-11-27/
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.4.4
+    image: softagon/relay:0.4.5
     container_name: softagon-relay
     restart: unless-stopped
     ports:

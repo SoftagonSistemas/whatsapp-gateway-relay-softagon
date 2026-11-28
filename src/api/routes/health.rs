@@ -71,6 +71,7 @@ pub async fn metrics(State(state): State<AppState>) -> Response {
         .await
         .unwrap_or(0);
     let (media_objects, media_bytes) = state.db.media_storage_stats().await.unwrap_or((0, 0));
+    let session_reconnects = state.sessions.reconnect_count();
 
     let body = format!(
         "# HELP softagon_relay_sessions_total Total configured WhatsApp sessions.\n\
@@ -79,6 +80,9 @@ pub async fn metrics(State(state): State<AppState>) -> Response {
          # HELP softagon_relay_sessions_connected Currently connected WhatsApp sessions.\n\
          # TYPE softagon_relay_sessions_connected gauge\n\
          softagon_relay_sessions_connected {connected_sessions}\n\
+         # HELP softagon_relay_session_reconnects_total Total WhatsApp session reconnects since process start.\n\
+         # TYPE softagon_relay_session_reconnects_total counter\n\
+         softagon_relay_session_reconnects_total {session_reconnects}\n\
          # HELP softagon_relay_messages_total Total messages stored in SQLite.\n\
          # TYPE softagon_relay_messages_total counter\n\
          softagon_relay_messages_total {total_messages}\n\

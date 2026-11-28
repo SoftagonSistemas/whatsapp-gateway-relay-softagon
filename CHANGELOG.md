@@ -6,6 +6,14 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.5] — 2026-11-28
+
+### Added — Observability Polish
+- **Reconnect Counter Metric (`GET /v1/metrics`):** added `softagon_relay_session_reconnects_total` Prometheus counter tracking WhatsApp session reconnects since process start.
+- **Explicit Media Retention Cleanup Logs:** every hourly `MEDIA_RETENTION_DAYS` sweep now logs `info!(retention_days, expired_found, purged, "media retention cleanup sweep completed")` (and `warn!` on query errors) for clear operational auditing.
+
+---
+
 ## [0.4.4] — 2026-11-28
 
 ### Fixed

@@ -178,19 +178,26 @@ async fn main() -> anyhow::Result<()> {
             loop {
                 let cutoff =
                     (chrono::Utc::now() - chrono::Duration::days(days as i64)).to_rfc3339();
-                if let Ok(expired) = db_ret.list_expired_media_objects(&cutoff, 100).await {
-                    let mut purged = 0usize;
-                    for item in expired {
-                        let _ = media_ret.delete(&item.object_key).await;
-                        if db_ret.mark_media_purged(&item.id).await.is_ok() {
-                            purged += 1;
+                match db_ret.list_expired_media_objects(&cutoff, 100).await {
+                    Ok(expired) => {
+                        let expired_found = expired.len();
+                        let mut purged = 0usize;
+                        for item in expired {
+                            let _ = media_ret.delete(&item.object_key).await;
+                            if db_ret.mark_media_purged(&item.id).await.is_ok() {
+                                purged += 1;
+                            }
                         }
-                    }
-                    if purged > 0 {
                         info!(
-                            purged,
                             retention_days = days,
-                            "purged expired media objects"
+                            expired_found, purged, "media retention cleanup sweep completed"
+                        );
+                    }
+                    Err(err) => {
+                        warn!(
+                            retention_days = days,
+                            error = %err,
+                            "media retention cleanup sweep failed to query expired media"
                         );
                     }
                 }

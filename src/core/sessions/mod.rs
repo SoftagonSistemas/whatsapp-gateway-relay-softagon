@@ -90,6 +90,8 @@ pub struct SessionManager {
     rate_limiter: RateLimiter,
     presence_subscribed: Mutex<std::collections::HashSet<(String, String)>>,
     coalesce_buffers: CoalesceMap,
+    seen_connected: Mutex<std::collections::HashSet<String>>,
+    reconnect_count: std::sync::atomic::AtomicU64,
 }
 
 impl SessionManager {
@@ -115,8 +117,15 @@ impl SessionManager {
             rate_limiter,
             presence_subscribed: Mutex::new(std::collections::HashSet::new()),
             coalesce_buffers: Arc::new(Mutex::new(HashMap::new())),
+            seen_connected: Mutex::new(std::collections::HashSet::new()),
+            reconnect_count: std::sync::atomic::AtomicU64::new(0),
         });
         (manager, event_rx)
+    }
+
+    pub fn reconnect_count(&self) -> u64 {
+        self.reconnect_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn spawn_event_loop(
@@ -1288,6 +1297,13 @@ impl SessionManager {
                         )
                         .await;
                 } else if status == SessionConnectionState::Connected {
+                    {
+                        let mut seen = self.seen_connected.lock().await;
+                        if !seen.insert(session_id.clone()) {
+                            self.reconnect_count
+                                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
                     let _ = self.migrate_legacy_lid_history(&session_id).await;
                     let _ = self.db.backfill_contacts_from_messages(&session_id).await;
                     if self.db.count_named_contacts(&session_id).await.unwrap_or(0) == 0 {
