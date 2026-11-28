@@ -50,6 +50,26 @@ EOF
   echo "Created ${ENV_FILE} with a random 256-bit RELAY_API_KEY."
 fi
 
+cat > "${BASE_DIR}/softagon-relay.service" <<EOF
+[Unit]
+Description=Softagon Relay — Self-Hosted WhatsApp Gateway & Local MCP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=${BASE_DIR}
+EnvironmentFile=${ENV_FILE}
+ExecStart=${BIN_DIR}/softagon-relay serve
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=default.target
+EOF
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/ensure-running.sh" ]]; then
   cp "${SCRIPT_DIR}/ensure-running.sh" "${BASE_DIR}/ensure-running.sh"

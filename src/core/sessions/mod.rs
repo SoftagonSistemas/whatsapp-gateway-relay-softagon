@@ -391,7 +391,11 @@ impl SessionManager {
             .await?;
 
         let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
-        let canonical_chat_jid = normalize_outbound_chat_jid(to);
+        let (canonical_chat_jid, chat_lid) = self.resolve_outbound_chat_jid(session_id, to).await;
+        let meta_str = match chat_lid {
+            Some(ref lid) => serde_json::json!({ "chat_lid": lid }).to_string(),
+            None => "{}".to_string(),
+        };
         let record = self
             .db
             .insert_message(NewMessage {
@@ -406,7 +410,7 @@ impl SessionManager {
                 caption: None,
                 media_id: None,
                 status: "sent",
-                metadata_json: "{}",
+                metadata_json: &meta_str,
                 created_at: None,
             })
             .await?;
@@ -507,7 +511,11 @@ impl SessionManager {
             .await?;
 
         let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
-        let canonical_chat_jid = normalize_outbound_chat_jid(to);
+        let (canonical_chat_jid, chat_lid) = self.resolve_outbound_chat_jid(session_id, to).await;
+        let meta_str = match chat_lid {
+            Some(ref lid) => serde_json::json!({ "chat_lid": lid }).to_string(),
+            None => "{}".to_string(),
+        };
         let record = self
             .db
             .insert_message(NewMessage {
@@ -522,7 +530,7 @@ impl SessionManager {
                 caption,
                 media_id: Some(&media_id),
                 status: "sent",
-                metadata_json: "{}",
+                metadata_json: &meta_str,
                 created_at: None,
             })
             .await?;
@@ -544,6 +552,23 @@ impl SessionManager {
             .await;
 
         Ok(record)
+    }
+
+    async fn resolve_outbound_chat_jid(
+        &self,
+        session_id: &str,
+        to: &str,
+    ) -> (String, Option<String>) {
+        let trimmed = to.trim();
+        if trimmed.ends_with("@lid") {
+            if let Ok(contact) = self.get_contact(session_id, trimmed).await
+                && !contact.jid.ends_with("@lid")
+            {
+                return (contact.jid, Some(trimmed.to_string()));
+            }
+            return (trimmed.to_string(), Some(trimmed.to_string()));
+        }
+        (normalize_outbound_chat_jid(trimmed), None)
     }
 
     pub async fn get_message(&self, message_id: &str) -> Result<MessageRecord, SessionError> {

@@ -47,7 +47,7 @@ Measurements recorded on **2026-11-25** against `softagon/relay:0.3.0` (`linux/a
 ```yaml
 services:
   relay:
-    image: softagon/relay:0.3.11
+    image: softagon/relay:0.3.12
     container_name: softagon-relay
     restart: unless-stopped
     ports:
@@ -85,8 +85,9 @@ volumes:
 
 | Tag | Architecture | Description |
 |---|---|---|
-| `latest` | `linux/amd64` | Latest stable release (`0.3.11`) |
+| `latest` | `linux/amd64` | Latest stable release (`0.3.12`) |
 | `0.3` | `linux/amd64` | Latest `0.3.x` release |
+| `0.3.12` | `linux/amd64` | Retroactive `@lid` ↔ phone history unification in `get_chat_messages`, outbound `@lid` canonicalization, `quoted.text` media fallbacks (`[audio]`/`[image]`/`[sticker]`), dynamic `softagon-relay.service` generation in `setup.sh` |
 | `0.3.11` | `linux/amd64` | Unify `@lid` ↔ phone chat history, preserve media messages on download failure, default webhook events to `message.received`/`message.sent`, filter `@newsletter`, eliminate `SQLITE_BUSY`, updated MCP instructions, systemd service & Open Web Console CTA |
 | `0.3.10` | `linux/amd64` | Ignore `status@broadcast` noise, `quoted` + `is_group` + real `created_at` timestamps, live status in `GET /v1/sessions/{id}`, phone/JID on `Connected`, `chat.presence` events |
 | `0.3.9` | `linux/amd64` | Browser auto-language detection on `/pair/{token}`, clean credential wipe when reconnecting `logged_out` sessions, hidden broken-image fix |

@@ -113,9 +113,28 @@ impl RelayService {
         limit: i64,
     ) -> Result<Vec<MessageWithTranscriptionRecord>, SessionError> {
         let _ = self.sessions.get_session(session_id).await?;
+        let trimmed = chat_jid.trim();
+        let (primary, alias) = match self.sessions.get_contact(session_id, trimmed).await {
+            Ok(contact) => {
+                let alt = if trimmed.ends_with("@lid") {
+                    Some(contact.jid.clone())
+                } else {
+                    contact.lid
+                };
+                (
+                    if trimmed.contains('@') {
+                        trimmed.to_string()
+                    } else {
+                        contact.jid
+                    },
+                    alt,
+                )
+            }
+            Err(_) => (trimmed.to_string(), None),
+        };
         Ok(self
             .db
-            .get_chat_messages(session_id, chat_jid, limit)
+            .get_chat_messages_with_alias(session_id, &primary, alias.as_deref(), limit)
             .await?)
     }
 

@@ -6,6 +6,16 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.12] — 2026-11-27
+
+### Fixed
+- **Retroactive `@lid` ↔ Phone History Unification:** `get_chat_messages` now resolves the `@lid` ↔ `{phone}@s.whatsapp.net` pair automatically and queries both JIDs, so even older pre-`0.3.11` `@lid` messages appear unified when searching by phone number (and vice versa).
+- **Outbound `@lid` Canonicalization:** `send_text` and `send_media` now resolve `@lid` recipients via `get_contact` before storing `chat_jid` in SQLite (preserving the original `@lid` in `metadata_json.chat_lid`), preventing split threads when replying directly to an `@lid`.
+- **Media Placeholders in `quoted.text`:** when a user replies to an audio, image, video, document, sticker, location, or contact without text/caption, `quoted.text` now falls back to `[audio]`, `[image]`, `[video]`, `[document]`, `[sticker]`, `[location]`, or `[contact]` instead of `null`.
+- **Dynamic Systemd Unit Generation:** `integrations/grok-bot/setup.sh` now writes `${RELAY_HOME}/softagon-relay.service` using the actual installation directory instead of a hardcoded path.
+
+---
+
 ## [0.3.11] — 2026-11-27
 
 ### Added

@@ -878,6 +878,27 @@ fn extract_quoted_message(msg: &wa::Message) -> Option<crate::engines::whatsapp:
                     .as_option()
                     .and_then(|d| d.caption.clone().or_else(|| d.file_name.clone()))
             })
+            .or_else(|| {
+                if inner.audio_message.as_option().is_some() {
+                    Some("[audio]".to_string())
+                } else if inner.image_message.as_option().is_some() {
+                    Some("[image]".to_string())
+                } else if inner.video_message.as_option().is_some() {
+                    Some("[video]".to_string())
+                } else if inner.document_message.as_option().is_some() {
+                    Some("[document]".to_string())
+                } else if inner.sticker_message.as_option().is_some() {
+                    Some("[sticker]".to_string())
+                } else if inner.location_message.as_option().is_some() {
+                    Some("[location]".to_string())
+                } else if inner.contact_message.as_option().is_some()
+                    || inner.contacts_array_message.as_option().is_some()
+                {
+                    Some("[contact]".to_string())
+                } else {
+                    None
+                }
+            })
     });
 
     if stanza_id.is_none() && participant.is_none() && text.is_none() {

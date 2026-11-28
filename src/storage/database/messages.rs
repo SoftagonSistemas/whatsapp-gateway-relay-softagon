@@ -279,7 +279,19 @@ impl Database {
         chat_jid: &str,
         limit: i64,
     ) -> Result<Vec<MessageWithTranscriptionRecord>, DbError> {
+        self.get_chat_messages_with_alias(session_id, chat_jid, None, limit)
+            .await
+    }
+
+    pub async fn get_chat_messages_with_alias(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        alt_chat_jid: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<MessageWithTranscriptionRecord>, DbError> {
         let clamped = limit.clamp(1, 200);
+        let alt = alt_chat_jid.unwrap_or(chat_jid);
         let rows = sqlx::query_as::<_, MessageWithTranscriptionRecord>(
             r#"
             SELECT
@@ -293,14 +305,17 @@ impl Database {
             WHERE m.session_id = ?1
               AND (
                   m.chat_jid = ?2
+                  OR m.chat_jid = ?3
                   OR json_extract(m.metadata_json, '$.chat_lid') = ?2
+                  OR json_extract(m.metadata_json, '$.chat_lid') = ?3
               )
             ORDER BY m.created_at DESC
-            LIMIT ?3
+            LIMIT ?4
             "#,
         )
         .bind(session_id)
         .bind(chat_jid)
+        .bind(alt)
         .bind(clamped)
         .fetch_all(self.pool())
         .await?;
