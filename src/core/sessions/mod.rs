@@ -391,6 +391,7 @@ impl SessionManager {
             .await?;
 
         let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
+        let canonical_chat_jid = normalize_outbound_chat_jid(to);
         let record = self
             .db
             .insert_message(NewMessage {
@@ -398,7 +399,7 @@ impl SessionManager {
                 session_id,
                 external_id: Some(&res.external_message_id),
                 direction: "outbound",
-                chat_jid: to,
+                chat_jid: &canonical_chat_jid,
                 sender_jid: None,
                 message_type: "text",
                 text_body: Some(text),
@@ -506,6 +507,7 @@ impl SessionManager {
             .await?;
 
         let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
+        let canonical_chat_jid = normalize_outbound_chat_jid(to);
         let record = self
             .db
             .insert_message(NewMessage {
@@ -513,7 +515,7 @@ impl SessionManager {
                 session_id,
                 external_id: Some(&res.external_message_id),
                 direction: "outbound",
-                chat_jid: to,
+                chat_jid: &canonical_chat_jid,
                 sender_jid: None,
                 message_type: kind.as_str(),
                 text_body: None,
@@ -851,6 +853,7 @@ impl SessionManager {
                 };
                 let msg_ts = message.timestamp.to_rfc3339();
                 let metadata = serde_json::json!({
+                    "chat_lid": message.chat_lid,
                     "sender_name": message.sender_name,
                     "sender_phone": message.sender_phone,
                     "from_me": message.from_me,
@@ -900,6 +903,7 @@ impl SessionManager {
                                         "external_id": rec.external_id,
                                         "direction": rec.direction,
                                         "chat_jid": rec.chat_jid,
+                                        "chat_lid": message.chat_lid,
                                         "sender_jid": rec.sender_jid,
                                         "sender_name": message.sender_name,
                                         "sender_phone": message.sender_phone,
@@ -1000,6 +1004,19 @@ impl SessionManager {
                     .await;
             }
         }
+    }
+}
+
+fn normalize_outbound_chat_jid(to: &str) -> String {
+    let trimmed = to.trim();
+    if trimmed.contains('@') {
+        return trimmed.to_string();
+    }
+    let digits: String = trimmed.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.len() >= 7 {
+        format!("{digits}@s.whatsapp.net")
+    } else {
+        trimmed.to_string()
     }
 }
 

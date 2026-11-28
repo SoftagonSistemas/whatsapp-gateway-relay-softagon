@@ -6,6 +6,21 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.3.11] — 2026-11-27
+
+### Added
+- **Systemd Unit & Auto-Detecting `ensure-running.sh`:** added `integrations/grok-bot/softagon-relay.service` and updated `integrations/grok-bot/ensure-running.sh` to auto-detect its installation directory (`SCRIPT_DIR` / `RELAY_HOME` / `APP_PORT`) so it works in any folder (e.g., `/workspace/popy/relay` or `/workspace/softagon-relay`).
+- **"Open Web Console" CTA on `/pair/{token}` Success Screen:** localized link to `/console` after pairing completes.
+
+### Fixed
+- **Unified `@lid` ↔ Phone Conversation History:** 1:1 `@lid` chats are now normalized to `{phone}@s.whatsapp.net` whenever resolved (preserving the original `@lid` in `metadata_json.chat_lid`), outbound `send_text`/`send_media` normalize numeric recipients to `@s.whatsapp.net`, and `get_chat_messages` queries both `chat_jid` and `chat_lid` so client history is never split across two threads.
+- **Keep Inbound Media Messages Even When Download Fails:** `convert_inbound_message` no longer drops `audio`, `image`, `video`, or `document` messages when CDN media download fails — the message is still stored and emitted with `message_type`, `caption`, and `media_id: null`.
+- **Safe Webhook Defaults & `@newsletter` Filtering:** webhooks created with an empty `events` list now default to `["message.received", "message.sent"]` (explicit `"*"` still subscribes to everything), and `@newsletter` channel updates are filtered alongside `status@broadcast`.
+- **Eliminate `SQLITE_BUSY` Contention Under Bursts:** serialized SQLite WAL access through a single pooled connection with a minimum 15s `busy_timeout`, eliminating transient `database is locked` warnings in the transcription worker.
+- **Updated MCP Server Instructions:** `ServerHandler::get_info` now documents all 14 MCP tools.
+
+---
+
 ## [0.3.10] — 2026-11-27
 
 ### Added — Presence Events, Quoted Replies & Group Metadata

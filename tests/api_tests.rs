@@ -746,6 +746,7 @@ async fn contacts_mark_read_media_url_and_live_health() {
             softagon_relay::engines::whatsapp::InboundMessage {
                 external_id: "wamid.lid_msg_1".to_string(),
                 chat_jid: "123456789012345@lid".to_string(),
+                chat_lid: Some("123456789012345@lid".to_string()),
                 sender_jid: Some("123456789012345@lid".to_string()),
                 sender_name: Some("Ana Paula".to_string()),
                 sender_phone: Some("5511977776666".to_string()),

@@ -114,6 +114,7 @@ pub struct QuotedMessage {
 pub struct InboundMessage {
     pub external_id: String,
     pub chat_jid: String,
+    pub chat_lid: Option<String>,
     pub sender_jid: Option<String>,
     pub sender_name: Option<String>,
     pub sender_phone: Option<String>,

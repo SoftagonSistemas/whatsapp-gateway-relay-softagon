@@ -88,6 +88,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             InboundMessage {
                 external_id: "wamid.in1".to_string(),
                 chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                chat_lid: None,
                 sender_jid: Some("551199999999@s.whatsapp.net".to_string()),
                 sender_name: Some("Maria Clara".to_string()),
                 sender_phone: Some("551199999999".to_string()),
@@ -115,6 +116,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             InboundMessage {
                 external_id: "wamid.phone_reply_1".to_string(),
                 chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                chat_lid: None,
                 sender_jid: Some("551100000000@s.whatsapp.net".to_string()),
                 sender_name: Some("Atendimento Loja".to_string()),
                 sender_phone: Some("551100000000".to_string()),
@@ -138,6 +140,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             InboundMessage {
                 external_id: "wamid.phone_reply_1".to_string(),
                 chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                chat_lid: None,
                 sender_jid: Some("551100000000@s.whatsapp.net".to_string()),
                 sender_name: Some("Atendimento Loja".to_string()),
                 sender_phone: Some("551100000000".to_string()),
@@ -161,6 +164,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             InboundMessage {
                 external_id: "wamid.hist1".to_string(),
                 chat_jid: "551199999999@s.whatsapp.net".to_string(),
+                chat_lid: None,
                 sender_jid: Some("551199999999@s.whatsapp.net".to_string()),
                 sender_name: Some("Maria Clara".to_string()),
                 sender_phone: Some("551199999999".to_string()),

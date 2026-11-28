@@ -564,6 +564,10 @@ impl WhatsAppEngine for WhatsAppRustEngine {
     }
 }
 
+fn is_ignored_jid(jid: &whatsapp_rust::Jid) -> bool {
+    jid.is_status_broadcast() || jid.to_string().ends_with("@newsletter")
+}
+
 async fn handle_wa_event(
     session_id: &str,
     event: Arc<Event>,
@@ -681,7 +685,7 @@ async fn handle_wa_event(
         }
         Event::Messages(batch) => {
             for item in batch.iter() {
-                if item.info.source.chat.is_status_broadcast() {
+                if is_ignored_jid(&item.info.source.chat) {
                     continue;
                 }
                 if let Some(inbound) =
@@ -697,7 +701,7 @@ async fn handle_wa_event(
             }
         }
         Event::Receipt(receipt) => {
-            if receipt.source.chat.is_status_broadcast() {
+            if is_ignored_jid(&receipt.source.chat) {
                 return;
             }
             let ack_status = format!("{:?}", receipt.r#type).to_ascii_lowercase();
@@ -714,7 +718,7 @@ async fn handle_wa_event(
             }
         }
         Event::ChatPresence(cp) => {
-            if cp.source.chat.is_status_broadcast() {
+            if is_ignored_jid(&cp.source.chat) {
                 return;
             }
             let state = match (cp.state, cp.media) {
@@ -736,7 +740,7 @@ async fn handle_wa_event(
                 .await;
         }
         Event::Presence(p) => {
-            if p.from.is_status_broadcast() {
+            if is_ignored_jid(&p.from) {
                 return;
             }
             let state = if p.unavailable {
@@ -926,12 +930,36 @@ async fn convert_inbound_message(
     }
     let from_me = info.source.is_from_me;
     let is_group = info.source.is_group || chat_jid.ends_with("@g.us");
+    let mut chat_lid: Option<String> = None;
+    let mut chat_jid = chat_jid;
+    if !is_group && info.source.chat.is_lid() {
+        chat_lid = Some(chat_jid.clone());
+        let resolved_chat_pn = info
+            .source
+            .recipient_alt
+            .as_ref()
+            .and_then(|j| extract_phone_from_jid(&j.to_string()))
+            .or_else(|| if !from_me { sender_phone.clone() } else { None });
+        let resolved_chat_pn = match resolved_chat_pn {
+            Some(pn) => Some(pn),
+            None => client
+                .get_lid_pn_entry(&info.source.chat)
+                .await
+                .ok()
+                .flatten()
+                .map(|e| e.phone_number.to_string())
+                .filter(|s| !s.is_empty()),
+        };
+        if let Some(pn) = resolved_chat_pn {
+            chat_jid = format!("{pn}@s.whatsapp.net");
+        }
+    }
     let quoted = extract_quoted_message(msg);
     let timestamp = info.timestamp;
     let is_history_sync = (Utc::now() - timestamp).num_seconds() > 300;
 
     if let Some(audio) = msg.audio_message.as_option() {
-        let bytes = download_media_bytes(client, audio).await?;
+        let bytes_opt = download_media_bytes(client, audio).await;
         let mime = audio
             .mimetype
             .clone()
@@ -940,6 +968,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -950,7 +979,7 @@ async fn convert_inbound_message(
             message_type: "audio".to_string(),
             text_body: None,
             caption: None,
-            media: Some(InboundMedia {
+            media: bytes_opt.map(|bytes| InboundMedia {
                 kind: MediaKind::Audio,
                 mime_type: mime,
                 filename: None,
@@ -962,10 +991,11 @@ async fn convert_inbound_message(
     }
 
     if let Some(image) = msg.image_message.as_option() {
-        let bytes = download_media_bytes(client, image).await?;
+        let bytes_opt = download_media_bytes(client, image).await;
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -976,7 +1006,7 @@ async fn convert_inbound_message(
             message_type: "image".to_string(),
             text_body: None,
             caption: image.caption.clone(),
-            media: Some(InboundMedia {
+            media: bytes_opt.map(|bytes| InboundMedia {
                 kind: MediaKind::Image,
                 mime_type: image
                     .mimetype
@@ -991,10 +1021,11 @@ async fn convert_inbound_message(
     }
 
     if let Some(video) = msg.video_message.as_option() {
-        let bytes = download_media_bytes(client, video).await?;
+        let bytes_opt = download_media_bytes(client, video).await;
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1005,7 +1036,7 @@ async fn convert_inbound_message(
             message_type: "video".to_string(),
             text_body: None,
             caption: video.caption.clone(),
-            media: Some(InboundMedia {
+            media: bytes_opt.map(|bytes| InboundMedia {
                 kind: MediaKind::Video,
                 mime_type: video
                     .mimetype
@@ -1020,10 +1051,11 @@ async fn convert_inbound_message(
     }
 
     if let Some(doc) = msg.document_message.as_option() {
-        let bytes = download_media_bytes(client, doc).await?;
+        let bytes_opt = download_media_bytes(client, doc).await;
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1034,7 +1066,7 @@ async fn convert_inbound_message(
             message_type: "document".to_string(),
             text_body: None,
             caption: doc.caption.clone(),
-            media: Some(InboundMedia {
+            media: bytes_opt.map(|bytes| InboundMedia {
                 kind: MediaKind::Document,
                 mime_type: doc
                     .mimetype
@@ -1052,6 +1084,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1071,6 +1104,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1100,6 +1134,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1119,6 +1154,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1138,6 +1174,7 @@ async fn convert_inbound_message(
         return Some(InboundMessage {
             external_id,
             chat_jid,
+            chat_lid,
             sender_jid,
             sender_name,
             sender_phone,
@@ -1162,6 +1199,7 @@ async fn convert_inbound_message(
     text_body.map(|text| InboundMessage {
         external_id,
         chat_jid,
+        chat_lid,
         sender_jid,
         sender_name,
         sender_phone,

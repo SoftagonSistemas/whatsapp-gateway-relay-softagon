@@ -725,7 +725,7 @@ impl ServerHandler for RelayMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(
-                "Softagon Relay local WhatsApp MCP server. Discover sessions with list_sessions, inspect recent conversations with list_chats/search_messages/get_chat_messages, read audio transcriptions with get_message_transcription, and send WhatsApp messages with send_text_message.",
+                "Softagon Relay local WhatsApp MCP server. Manage sessions with list_sessions/create_session/get_session_status, pair without login via create_pairing_link (auto-renewing QR) or request_pair_code (8-digit code), inspect conversations with list_chats/search_messages/get_chat_messages/get_message_transcription, resolve @lid contacts with get_contact, send read receipts with mark_read, and send messages with send_text_message/send_media_message (always pass idempotency_key).",
             )
     }
 }

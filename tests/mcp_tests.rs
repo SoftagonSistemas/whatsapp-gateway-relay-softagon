@@ -263,6 +263,7 @@ async fn mcp_agent_workflow_finds_joao_sends_message_and_audits_blocks() {
             InboundMessage {
                 external_id: "wamid_joao_1".to_string(),
                 chat_jid: "5511988887777@s.whatsapp.net".to_string(),
+                chat_lid: None,
                 sender_jid: Some("5511988887777@s.whatsapp.net".to_string()),
                 sender_name: Some("João Silva".to_string()),
                 sender_phone: Some("5511988887777".to_string()),

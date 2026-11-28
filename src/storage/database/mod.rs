@@ -51,11 +51,12 @@ impl Database {
             .journal_mode(journal_mode)
             .synchronous(SqliteSynchronous::Normal)
             .foreign_keys(true)
-            .busy_timeout(Duration::from_millis(cfg.busy_timeout_ms));
+            .busy_timeout(Duration::from_millis(cfg.busy_timeout_ms.max(15_000)));
 
-        let max_connections = if path_str == ":memory:" { 1 } else { 8 };
+        // Serialize SQLite access through a single pooled connection in WAL mode
+        // to eliminate transient SQLITE_BUSY (code 5) lock contention under bursts.
         let pool = SqlitePoolOptions::new()
-            .max_connections(max_connections)
+            .max_connections(1)
             .connect_with(options)
             .await?;
 

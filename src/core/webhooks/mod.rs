@@ -149,7 +149,7 @@ impl WebhookService {
     ) -> Result<WebhookView, WebhookError> {
         validate_webhook_url(url)?;
         let normalized_events = if events.is_empty() {
-            vec!["*".to_string()]
+            vec!["message.received".to_string(), "message.sent".to_string()]
         } else {
             validate_event_types(&events)?;
             events

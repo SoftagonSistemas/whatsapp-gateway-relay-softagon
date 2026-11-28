@@ -290,7 +290,11 @@ impl Database {
                 m.status, m.metadata_json, m.created_at
             FROM messages m
             LEFT JOIN transcriptions t ON t.message_id = m.id
-            WHERE m.session_id = ?1 AND m.chat_jid = ?2
+            WHERE m.session_id = ?1
+              AND (
+                  m.chat_jid = ?2
+                  OR json_extract(m.metadata_json, '$.chat_lid') = ?2
+              )
             ORDER BY m.created_at DESC
             LIMIT ?3
             "#,
