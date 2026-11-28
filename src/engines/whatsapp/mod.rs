@@ -81,6 +81,7 @@ pub enum MediaKind {
     Video,
     Audio,
     Document,
+    Sticker,
 }
 
 impl MediaKind {
@@ -90,6 +91,7 @@ impl MediaKind {
             Self::Video => "video",
             Self::Audio => "audio",
             Self::Document => "document",
+            Self::Sticker => "sticker",
         }
     }
 }
@@ -165,12 +167,27 @@ pub enum EngineEvent {
         state: String,
         last_seen: Option<DateTime<Utc>>,
     },
+    MessageEdited {
+        session_id: String,
+        chat_jid: String,
+        external_id: String,
+        new_text: String,
+        timestamp: DateTime<Utc>,
+    },
+    MessageRevoked {
+        session_id: String,
+        chat_jid: String,
+        external_id: String,
+        sender_jid: Option<String>,
+        timestamp: DateTime<Utc>,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct SendTextParams {
     pub to: String,
     pub text: String,
+    pub reply_to_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -181,6 +198,71 @@ pub struct SendMediaParams {
     pub filename: Option<String>,
     pub caption: Option<String>,
     pub data: Bytes,
+    pub as_voice_note: bool,
+    pub reply_to_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendReactionParams {
+    pub chat_jid: String,
+    pub message_external_id: String,
+    pub emoji: String,
+    pub from_me: bool,
+    pub participant: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendLocationParams {
+    pub to: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub name: Option<String>,
+    pub address: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SendContactParams {
+    pub to: String,
+    pub display_name: String,
+    pub vcard: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChatPresenceState {
+    Composing,
+    Recording,
+    Paused,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfilePictureInfo {
+    pub id: String,
+    pub url: String,
+    pub direct_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WhatsAppCheckResult {
+    pub jid: String,
+    pub phone_number: Option<String>,
+    pub is_registered: bool,
+    pub is_business: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupParticipantInfo {
+    pub jid: String,
+    pub phone_number: Option<String>,
+    pub is_admin: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupInfoView {
+    pub jid: String,
+    pub subject: String,
+    pub participant_count: usize,
+    pub participants: Vec<GroupParticipantInfo>,
 }
 
 #[derive(Debug, Clone)]
@@ -267,6 +349,106 @@ pub trait WhatsAppEngine: Send + Sync {
             lid: None,
             phone_number: None,
             push_name: None,
+        })
+    }
+
+    async fn send_reaction(
+        &self,
+        _session_id: &str,
+        _params: SendReactionParams,
+    ) -> Result<SendResult, EngineError> {
+        Ok(SendResult {
+            external_message_id: format!("wamid.{}", uuid::Uuid::now_v7()),
+        })
+    }
+
+    async fn send_chat_presence(
+        &self,
+        _session_id: &str,
+        _chat_jid: &str,
+        _state: ChatPresenceState,
+    ) -> Result<(), EngineError> {
+        Ok(())
+    }
+
+    async fn send_location(
+        &self,
+        _session_id: &str,
+        _params: SendLocationParams,
+    ) -> Result<SendResult, EngineError> {
+        Ok(SendResult {
+            external_message_id: format!("wamid.{}", uuid::Uuid::now_v7()),
+        })
+    }
+
+    async fn send_contact(
+        &self,
+        _session_id: &str,
+        _params: SendContactParams,
+    ) -> Result<SendResult, EngineError> {
+        Ok(SendResult {
+            external_message_id: format!("wamid.{}", uuid::Uuid::now_v7()),
+        })
+    }
+
+    async fn edit_message(
+        &self,
+        _session_id: &str,
+        _chat_jid: &str,
+        _external_message_id: &str,
+        _new_text: &str,
+    ) -> Result<String, EngineError> {
+        Ok(format!("wamid.{}", uuid::Uuid::now_v7()))
+    }
+
+    async fn revoke_message(
+        &self,
+        _session_id: &str,
+        _chat_jid: &str,
+        _external_message_id: &str,
+    ) -> Result<(), EngineError> {
+        Ok(())
+    }
+
+    async fn is_on_whatsapp(
+        &self,
+        _session_id: &str,
+        phones: &[String],
+    ) -> Result<Vec<WhatsAppCheckResult>, EngineError> {
+        Ok(phones
+            .iter()
+            .map(|p| WhatsAppCheckResult {
+                jid: format!("{p}@s.whatsapp.net"),
+                phone_number: Some(p.clone()),
+                is_registered: true,
+                is_business: false,
+            })
+            .collect())
+    }
+
+    async fn get_profile_picture(
+        &self,
+        _session_id: &str,
+        _jid_or_phone: &str,
+        _preview: bool,
+    ) -> Result<Option<ProfilePictureInfo>, EngineError> {
+        Ok(None)
+    }
+
+    async fn list_groups(&self, _session_id: &str) -> Result<Vec<GroupInfoView>, EngineError> {
+        Ok(Vec::new())
+    }
+
+    async fn get_group_info(
+        &self,
+        _session_id: &str,
+        group_jid: &str,
+    ) -> Result<GroupInfoView, EngineError> {
+        Ok(GroupInfoView {
+            jid: group_jid.to_string(),
+            subject: String::new(),
+            participant_count: 0,
+            participants: Vec::new(),
         })
     }
 }

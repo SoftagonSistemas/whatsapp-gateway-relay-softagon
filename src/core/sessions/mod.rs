@@ -352,6 +352,16 @@ impl SessionManager {
         to: &str,
         text: &str,
     ) -> Result<MessageRecord, SessionError> {
+        self.send_text_with_reply(session_id, to, text, None).await
+    }
+
+    pub async fn send_text_with_reply(
+        &self,
+        session_id: &str,
+        to: &str,
+        text: &str,
+        reply_to_id: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
         let session = self.get_session(session_id).await?;
         if session.status == SessionConnectionState::LoggedOut.as_str() {
             let detail = match session.status_reason.as_deref() {
@@ -386,6 +396,7 @@ impl SessionManager {
                 SendTextParams {
                     to: to.to_string(),
                     text: text.to_string(),
+                    reply_to_id: reply_to_id.map(ToString::to_string),
                 },
             )
             .await?;
@@ -443,6 +454,25 @@ impl SessionManager {
         filename: Option<&str>,
         caption: Option<&str>,
         data: Bytes,
+    ) -> Result<MessageRecord, SessionError> {
+        self.send_media_with_options(
+            session_id, to, kind, mime_type, filename, caption, data, false, None,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_media_with_options(
+        &self,
+        session_id: &str,
+        to: &str,
+        kind: MediaKind,
+        mime_type: &str,
+        filename: Option<&str>,
+        caption: Option<&str>,
+        data: Bytes,
+        as_voice_note: bool,
+        reply_to_id: Option<&str>,
     ) -> Result<MessageRecord, SessionError> {
         let session = self.get_session(session_id).await?;
         if session.status == SessionConnectionState::LoggedOut.as_str() {
@@ -506,6 +536,8 @@ impl SessionManager {
                     filename: filename.map(ToString::to_string),
                     caption: caption.map(ToString::to_string),
                     data,
+                    as_voice_note,
+                    reply_to_id: reply_to_id.map(ToString::to_string),
                 },
             )
             .await?;
@@ -576,6 +608,267 @@ impl SessionManager {
             .get_message(message_id)
             .await?
             .ok_or_else(|| SessionError::MessageNotFound(message_id.to_string()))
+    }
+
+    pub async fn get_media_bytes(
+        &self,
+        media_id: &str,
+    ) -> Result<(crate::storage::database::media::MediaObjectRecord, Bytes), SessionError> {
+        let rec = self
+            .db
+            .get_media_object(media_id)
+            .await?
+            .ok_or_else(|| SessionError::NotFound(format!("media {media_id}")))?;
+        if rec.retention_state == "purged" {
+            return Err(SessionError::NotFound(format!(
+                "media {media_id} has been purged by retention policy"
+            )));
+        }
+        let bytes = self.media.get(&rec.object_key).await?;
+        Ok((rec, bytes))
+    }
+
+    pub async fn send_reaction(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        message_external_id: &str,
+        emoji: &str,
+        from_me: bool,
+        participant: Option<&str>,
+    ) -> Result<String, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        let res = self
+            .engine
+            .send_reaction(
+                session_id,
+                crate::engines::whatsapp::SendReactionParams {
+                    chat_jid: chat_jid.to_string(),
+                    message_external_id: message_external_id.to_string(),
+                    emoji: emoji.to_string(),
+                    from_me,
+                    participant: participant.map(ToString::to_string),
+                },
+            )
+            .await?;
+        Ok(res.external_message_id)
+    }
+
+    pub async fn send_chat_presence(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        state: crate::engines::whatsapp::ChatPresenceState,
+    ) -> Result<(), SessionError> {
+        let _ = self.get_session(session_id).await?;
+        self.engine
+            .send_chat_presence(session_id, chat_jid, state)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn send_location(
+        &self,
+        session_id: &str,
+        to: &str,
+        latitude: f64,
+        longitude: f64,
+        name: Option<&str>,
+        address: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        if !self.rate_limiter.check(session_id).await {
+            return Err(SessionError::RateLimited(session_id.to_string()));
+        }
+        let res = self
+            .engine
+            .send_location(
+                session_id,
+                crate::engines::whatsapp::SendLocationParams {
+                    to: to.to_string(),
+                    latitude,
+                    longitude,
+                    name: name.map(ToString::to_string),
+                    address: address.map(ToString::to_string),
+                },
+            )
+            .await?;
+        let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
+        let (canonical_chat_jid, chat_lid) = self.resolve_outbound_chat_jid(session_id, to).await;
+        let summary = match name {
+            Some(n) if !n.trim().is_empty() => format!("{n} ({latitude:.6}, {longitude:.6})"),
+            _ => format!("{latitude:.6}, {longitude:.6}"),
+        };
+        let meta_str = serde_json::json!({
+            "chat_lid": chat_lid,
+            "latitude": latitude,
+            "longitude": longitude,
+            "name": name,
+            "address": address,
+        })
+        .to_string();
+        let record = self
+            .db
+            .insert_message(NewMessage {
+                id: &msg_id,
+                session_id,
+                external_id: Some(&res.external_message_id),
+                direction: "outbound",
+                chat_jid: &canonical_chat_jid,
+                sender_jid: None,
+                message_type: "location",
+                text_body: Some(&summary),
+                caption: None,
+                media_id: None,
+                status: "sent",
+                metadata_json: &meta_str,
+                created_at: None,
+            })
+            .await?;
+        Ok(record)
+    }
+
+    pub async fn send_contact(
+        &self,
+        session_id: &str,
+        to: &str,
+        display_name: &str,
+        phone_number: Option<&str>,
+        vcard: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        if !self.rate_limiter.check(session_id).await {
+            return Err(SessionError::RateLimited(session_id.to_string()));
+        }
+        let vcard_str = match vcard.map(str::trim).filter(|s| !s.is_empty()) {
+            Some(v) => v.to_string(),
+            None => {
+                let digits: String = phone_number
+                    .unwrap_or("")
+                    .chars()
+                    .filter(|c| c.is_ascii_digit())
+                    .collect();
+                if digits.is_empty() {
+                    return Err(SessionError::BadRequest(
+                        "either vcard or phone_number is required".into(),
+                    ));
+                }
+                format!(
+                    "BEGIN:VCARD\nVERSION:3.0\nFN:{display_name}\nTEL;type=CELL;type=VOICE;waid={digits}:+{digits}\nEND:VCARD"
+                )
+            }
+        };
+        let res = self
+            .engine
+            .send_contact(
+                session_id,
+                crate::engines::whatsapp::SendContactParams {
+                    to: to.to_string(),
+                    display_name: display_name.to_string(),
+                    vcard: vcard_str,
+                },
+            )
+            .await?;
+        let msg_id = format!("msg_{}", uuid::Uuid::now_v7());
+        let (canonical_chat_jid, chat_lid) = self.resolve_outbound_chat_jid(session_id, to).await;
+        let meta_str = serde_json::json!({ "chat_lid": chat_lid }).to_string();
+        let record = self
+            .db
+            .insert_message(NewMessage {
+                id: &msg_id,
+                session_id,
+                external_id: Some(&res.external_message_id),
+                direction: "outbound",
+                chat_jid: &canonical_chat_jid,
+                sender_jid: None,
+                message_type: "contact",
+                text_body: Some(display_name),
+                caption: None,
+                media_id: None,
+                status: "sent",
+                metadata_json: &meta_str,
+                created_at: None,
+            })
+            .await?;
+        Ok(record)
+    }
+
+    pub async fn edit_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+        new_text: &str,
+    ) -> Result<String, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        if new_text.trim().is_empty() {
+            return Err(SessionError::BadRequest("new_text cannot be empty".into()));
+        }
+        let edit_id = self
+            .engine
+            .edit_message(session_id, chat_jid, external_message_id, new_text)
+            .await?;
+        let _ = self
+            .db
+            .update_message_text_by_external_id(session_id, external_message_id, new_text)
+            .await;
+        Ok(edit_id)
+    }
+
+    pub async fn revoke_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+    ) -> Result<(), SessionError> {
+        let _ = self.get_session(session_id).await?;
+        self.engine
+            .revoke_message(session_id, chat_jid, external_message_id)
+            .await?;
+        let _ = self
+            .db
+            .mark_message_revoked_by_external_id(session_id, external_message_id)
+            .await;
+        Ok(())
+    }
+
+    pub async fn is_on_whatsapp(
+        &self,
+        session_id: &str,
+        phones: &[String],
+    ) -> Result<Vec<crate::engines::whatsapp::WhatsAppCheckResult>, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        Ok(self.engine.is_on_whatsapp(session_id, phones).await?)
+    }
+
+    pub async fn get_profile_picture(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        preview: bool,
+    ) -> Result<Option<crate::engines::whatsapp::ProfilePictureInfo>, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        Ok(self
+            .engine
+            .get_profile_picture(session_id, jid_or_phone, preview)
+            .await?)
+    }
+
+    pub async fn list_groups(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<crate::engines::whatsapp::GroupInfoView>, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        Ok(self.engine.list_groups(session_id).await?)
+    }
+
+    pub async fn get_group_info(
+        &self,
+        session_id: &str,
+        group_jid: &str,
+    ) -> Result<crate::engines::whatsapp::GroupInfoView, SessionError> {
+        let _ = self.get_session(session_id).await?;
+        Ok(self.engine.get_group_info(session_id, group_jid).await?)
     }
 
     pub async fn mark_read(
@@ -913,6 +1206,33 @@ impl SessionManager {
                 match saved {
                     Ok(rec) => {
                         if !message.is_history_sync {
+                            let mut inline_transcription: Option<String> = None;
+                            let should_transcribe = !message.from_me
+                                && is_audio
+                                && self.config.transcription.enabled
+                                && media_id_opt.is_some();
+                            if should_transcribe
+                                && let Err(err) = self.request_transcription(&rec.id, None).await
+                            {
+                                warn!(message_id = %rec.id, error = %err, "failed to enqueue voice transcription");
+                            } else if should_transcribe
+                                && self.config.transcription.inline_wait_seconds > 0
+                            {
+                                let deadline = tokio::time::Instant::now()
+                                    + std::time::Duration::from_secs(
+                                        self.config.transcription.inline_wait_seconds.min(30),
+                                    );
+                                while tokio::time::Instant::now() < deadline {
+                                    if let Ok(Some(tx)) = self.db.get_transcription(&rec.id).await
+                                        && (tx.status == "completed" || tx.status == "failed")
+                                    {
+                                        inline_transcription = tx.text;
+                                        break;
+                                    }
+                                    tokio::time::sleep(std::time::Duration::from_millis(350)).await;
+                                }
+                            }
+
                             let event_type = if message.from_me {
                                 "message.sent"
                             } else {
@@ -942,18 +1262,10 @@ impl SessionManager {
                                         "text": rec.text_body,
                                         "caption": rec.caption,
                                         "media_id": rec.media_id,
+                                        "transcription": inline_transcription,
                                     }),
                                 )
                                 .await;
-
-                            if !message.from_me
-                                && is_audio
-                                && self.config.transcription.enabled
-                                && media_id_opt.is_some()
-                                && let Err(err) = self.request_transcription(&rec.id, None).await
-                            {
-                                warn!(message_id = %rec.id, error = %err, "failed to enqueue voice transcription");
-                            }
                         }
                     }
                     Err(err) => {
@@ -1024,6 +1336,62 @@ impl SessionManager {
                             "sender_jid": sender_jid,
                             "state": state,
                             "last_seen": last_seen.map(|t| t.to_rfc3339()),
+                        }),
+                    )
+                    .await;
+            }
+            EngineEvent::MessageEdited {
+                session_id,
+                chat_jid,
+                external_id,
+                new_text,
+                timestamp,
+            } => {
+                let message_id = self
+                    .db
+                    .update_message_text_by_external_id(&session_id, &external_id, &new_text)
+                    .await
+                    .ok()
+                    .flatten();
+                let _ = self
+                    .events
+                    .publish(
+                        "message.edited",
+                        &session_id,
+                        serde_json::json!({
+                            "message_id": message_id,
+                            "external_id": external_id,
+                            "chat_jid": chat_jid,
+                            "text": new_text,
+                            "timestamp": timestamp.to_rfc3339(),
+                        }),
+                    )
+                    .await;
+            }
+            EngineEvent::MessageRevoked {
+                session_id,
+                chat_jid,
+                external_id,
+                sender_jid,
+                timestamp,
+            } => {
+                let message_id = self
+                    .db
+                    .mark_message_revoked_by_external_id(&session_id, &external_id)
+                    .await
+                    .ok()
+                    .flatten();
+                let _ = self
+                    .events
+                    .publish(
+                        "message.revoked",
+                        &session_id,
+                        serde_json::json!({
+                            "message_id": message_id,
+                            "external_id": external_id,
+                            "chat_jid": chat_jid,
+                            "sender_jid": sender_jid,
+                            "timestamp": timestamp.to_rfc3339(),
                         }),
                     )
                     .await;

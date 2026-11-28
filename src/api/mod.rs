@@ -11,7 +11,7 @@ use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::http::header;
 use axum::middleware;
-use axum::routing::{get, post};
+use axum::routing::{get, patch, post};
 use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 use tower_http::trace::TraceLayer;
 
@@ -100,13 +100,51 @@ pub fn build_router(state: AppState) -> Router {
             post(routes::messages::send_media),
         )
         .route(
+            "/v1/sessions/{session_id}/messages/reaction",
+            post(routes::messages::send_reaction),
+        )
+        .route(
+            "/v1/sessions/{session_id}/messages/location",
+            post(routes::messages::send_location),
+        )
+        .route(
+            "/v1/sessions/{session_id}/messages/contact",
+            post(routes::messages::send_contact),
+        )
+        .route(
+            "/v1/sessions/{session_id}/messages/{message_id}",
+            patch(routes::messages::edit_message).delete(routes::messages::revoke_message),
+        )
+        .route(
             "/v1/sessions/{session_id}/chats/read",
             post(routes::messages::mark_read),
+        )
+        .route(
+            "/v1/sessions/{session_id}/chats/presence",
+            post(routes::messages::send_chat_presence),
+        )
+        .route(
+            "/v1/sessions/{session_id}/contacts/check",
+            post(routes::messages::check_whatsapp),
         )
         .route(
             "/v1/sessions/{session_id}/contacts/{jid}",
             get(routes::messages::get_contact),
         )
+        .route(
+            "/v1/sessions/{session_id}/contacts/{jid}/profile-picture",
+            get(routes::messages::get_profile_picture),
+        )
+        .route(
+            "/v1/sessions/{session_id}/groups",
+            get(routes::messages::list_groups),
+        )
+        .route(
+            "/v1/sessions/{session_id}/groups/{group_jid}",
+            get(routes::messages::get_group_info),
+        )
+        .route("/v1/media/{media_id}", get(routes::messages::get_media))
+        .route("/v1/metrics", get(routes::health::metrics))
         .route(
             "/v1/messages/{message_id}",
             get(routes::messages::get_message),

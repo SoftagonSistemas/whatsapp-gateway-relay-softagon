@@ -45,6 +45,7 @@ pub struct AppConfig {
     pub docs_enabled: bool,
     pub docs_public: bool,
     pub media_max_upload_bytes: usize,
+    pub media_retention_days: u64,
     pub session_rate_limit_per_minute: u32,
     pub sqlite: SqliteConfig,
     pub media: MediaConfig,
@@ -218,6 +219,7 @@ pub struct TranscriptionConfig {
     pub max_queue: usize,
     pub timeout_seconds: u64,
     pub delete_temp_audio: bool,
+    pub inline_wait_seconds: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -368,6 +370,8 @@ impl AppConfig {
         let tx_preload = parse_bool(&lookup, "TRANSCRIPTION_PRELOAD", false)?;
         let tx_idle_unload = parse_u64(&lookup, "TRANSCRIPTION_IDLE_UNLOAD_SECONDS", 180)?;
         let tx_threads = parse_usize(&lookup, "TRANSCRIPTION_THREADS", 1)?;
+        let tx_inline_wait = parse_u64(&lookup, "TRANSCRIPTION_INLINE_WAIT_SECONDS", 0)?;
+        let media_retention_days = parse_u64(&lookup, "MEDIA_RETENTION_DAYS", 0)?;
         let tx_workers = parse_usize(&lookup, "TRANSCRIPTION_WORKERS", 1)?;
         let tx_max_queue = parse_usize(&lookup, "TRANSCRIPTION_MAX_QUEUE", 20)?;
         let tx_timeout = parse_u64(&lookup, "TRANSCRIPTION_TIMEOUT_SECONDS", 180)?;
@@ -444,6 +448,7 @@ impl AppConfig {
             docs_enabled,
             docs_public,
             media_max_upload_bytes,
+            media_retention_days,
             session_rate_limit_per_minute,
             sqlite: SqliteConfig {
                 relay_database_path,
@@ -465,6 +470,7 @@ impl AppConfig {
                 max_queue: tx_max_queue,
                 timeout_seconds: tx_timeout,
                 delete_temp_audio: tx_delete_temp,
+                inline_wait_seconds: tx_inline_wait,
             },
             webhooks: WebhookConfig {
                 delivery_timeout_seconds: webhook_timeout,

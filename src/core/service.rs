@@ -158,11 +158,29 @@ impl RelayService {
         text: &str,
         idempotency_key: Option<&str>,
     ) -> Result<MessageRecord, SessionError> {
+        self.send_text_message_with_reply(session_id, to, text, None, idempotency_key)
+            .await
+    }
+
+    pub async fn send_text_message_with_reply(
+        &self,
+        session_id: &str,
+        to: &str,
+        text: &str,
+        reply_to_message_id: Option<&str>,
+        idempotency_key: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
         let key = idempotency_key.map(str::trim).filter(|k| !k.is_empty());
         let req_hash = if key.is_some() {
             use sha2::{Digest, Sha256};
             let mut h = Sha256::new();
-            h.update(format!("text:{to}:{text}").as_bytes());
+            h.update(
+                format!(
+                    "text:{to}:{text}:{}",
+                    reply_to_message_id.unwrap_or_default()
+                )
+                .as_bytes(),
+            );
             Some(hex::encode(h.finalize()))
         } else {
             None
@@ -181,7 +199,10 @@ impl RelayService {
             }
         }
 
-        let record = self.sessions.send_text(session_id, to, text).await?;
+        let record = self
+            .sessions
+            .send_text_with_reply(session_id, to, text, reply_to_message_id)
+            .await?;
 
         if let (Some(k), Some(hash)) = (key, req_hash.as_deref())
             && let Ok(json_body) = serde_json::to_string(&record)
@@ -208,6 +229,37 @@ impl RelayService {
         media_url: Option<&str>,
         idempotency_key: Option<&str>,
     ) -> Result<MessageRecord, SessionError> {
+        self.send_media_message_with_options(
+            session_id,
+            to,
+            kind,
+            mime_type,
+            filename,
+            caption,
+            data_base64,
+            media_url,
+            false,
+            None,
+            idempotency_key,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_media_message_with_options(
+        &self,
+        session_id: &str,
+        to: &str,
+        kind: crate::engines::whatsapp::MediaKind,
+        mime_type: Option<&str>,
+        filename: Option<&str>,
+        caption: Option<&str>,
+        data_base64: Option<&str>,
+        media_url: Option<&str>,
+        as_voice_note: bool,
+        reply_to_message_id: Option<&str>,
+        idempotency_key: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
         let key = idempotency_key.map(str::trim).filter(|k| !k.is_empty());
         let source_sig = media_url
             .map(|u| format!("url:{u}"))
@@ -216,7 +268,14 @@ impl RelayService {
         let req_hash = if key.is_some() {
             use sha2::{Digest, Sha256};
             let mut h = Sha256::new();
-            h.update(format!("media:{to}:{}:{source_sig}", kind.as_str()).as_bytes());
+            h.update(
+                format!(
+                    "media:{to}:{}:{source_sig}:{as_voice_note}:{}",
+                    kind.as_str(),
+                    reply_to_message_id.unwrap_or_default()
+                )
+                .as_bytes(),
+            );
             Some(hex::encode(h.finalize()))
         } else {
             None
@@ -278,11 +337,12 @@ impl RelayService {
                 crate::engines::whatsapp::MediaKind::Document => {
                     "application/octet-stream".to_string()
                 }
+                crate::engines::whatsapp::MediaKind::Sticker => "image/webp".to_string(),
             });
 
         let record = self
             .sessions
-            .send_media(
+            .send_media_with_options(
                 session_id,
                 to,
                 kind,
@@ -290,6 +350,8 @@ impl RelayService {
                 effective_filename.as_deref(),
                 caption,
                 bytes,
+                as_voice_note,
+                reply_to_message_id,
             )
             .await?;
 
@@ -303,6 +365,135 @@ impl RelayService {
         }
 
         Ok(record)
+    }
+
+    pub async fn send_reaction(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        message_external_id: &str,
+        emoji: &str,
+        from_me: bool,
+        participant: Option<&str>,
+    ) -> Result<String, SessionError> {
+        self.sessions
+            .send_reaction(
+                session_id,
+                chat_jid,
+                message_external_id,
+                emoji,
+                from_me,
+                participant,
+            )
+            .await
+    }
+
+    pub async fn send_chat_presence(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        state: crate::engines::whatsapp::ChatPresenceState,
+    ) -> Result<(), SessionError> {
+        self.sessions
+            .send_chat_presence(session_id, chat_jid, state)
+            .await
+    }
+
+    pub async fn send_location(
+        &self,
+        session_id: &str,
+        to: &str,
+        latitude: f64,
+        longitude: f64,
+        name: Option<&str>,
+        address: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
+        self.sessions
+            .send_location(session_id, to, latitude, longitude, name, address)
+            .await
+    }
+
+    pub async fn send_contact(
+        &self,
+        session_id: &str,
+        to: &str,
+        display_name: &str,
+        phone_number: Option<&str>,
+        vcard: Option<&str>,
+    ) -> Result<MessageRecord, SessionError> {
+        self.sessions
+            .send_contact(session_id, to, display_name, phone_number, vcard)
+            .await
+    }
+
+    pub async fn edit_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+        new_text: &str,
+    ) -> Result<String, SessionError> {
+        self.sessions
+            .edit_message(session_id, chat_jid, external_message_id, new_text)
+            .await
+    }
+
+    pub async fn revoke_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+    ) -> Result<(), SessionError> {
+        self.sessions
+            .revoke_message(session_id, chat_jid, external_message_id)
+            .await
+    }
+
+    pub async fn is_on_whatsapp(
+        &self,
+        session_id: &str,
+        phones: &[String],
+    ) -> Result<Vec<crate::engines::whatsapp::WhatsAppCheckResult>, SessionError> {
+        self.sessions.is_on_whatsapp(session_id, phones).await
+    }
+
+    pub async fn get_profile_picture(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        preview: bool,
+    ) -> Result<Option<crate::engines::whatsapp::ProfilePictureInfo>, SessionError> {
+        self.sessions
+            .get_profile_picture(session_id, jid_or_phone, preview)
+            .await
+    }
+
+    pub async fn list_groups(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<crate::engines::whatsapp::GroupInfoView>, SessionError> {
+        self.sessions.list_groups(session_id).await
+    }
+
+    pub async fn get_group_info(
+        &self,
+        session_id: &str,
+        group_jid: &str,
+    ) -> Result<crate::engines::whatsapp::GroupInfoView, SessionError> {
+        self.sessions.get_group_info(session_id, group_jid).await
+    }
+
+    pub async fn get_media_bytes(
+        &self,
+        media_id: &str,
+    ) -> Result<
+        (
+            crate::storage::database::media::MediaObjectRecord,
+            bytes::Bytes,
+        ),
+        SessionError,
+    > {
+        self.sessions.get_media_bytes(media_id).await
     }
 
     pub async fn mark_read(

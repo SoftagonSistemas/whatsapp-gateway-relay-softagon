@@ -425,4 +425,61 @@ impl Database {
         .await?;
         Ok(row)
     }
+
+    pub async fn update_message_text_by_external_id(
+        &self,
+        session_id: &str,
+        external_id: &str,
+        new_text: &str,
+    ) -> Result<Option<String>, DbError> {
+        let now = Utc::now().to_rfc3339();
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT id FROM messages WHERE session_id = ?1 AND external_id = ?2 LIMIT 1",
+        )
+        .bind(session_id)
+        .bind(external_id)
+        .fetch_optional(self.pool())
+        .await?;
+        let Some((id,)) = row else {
+            return Ok(None);
+        };
+        sqlx::query("UPDATE messages SET text_body = ?1, updated_at = ?2 WHERE id = ?3")
+            .bind(new_text)
+            .bind(&now)
+            .bind(&id)
+            .execute(self.pool())
+            .await?;
+        Ok(Some(id))
+    }
+
+    pub async fn mark_message_revoked_by_external_id(
+        &self,
+        session_id: &str,
+        external_id: &str,
+    ) -> Result<Option<String>, DbError> {
+        let now = Utc::now().to_rfc3339();
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT id FROM messages WHERE session_id = ?1 AND external_id = ?2 LIMIT 1",
+        )
+        .bind(session_id)
+        .bind(external_id)
+        .fetch_optional(self.pool())
+        .await?;
+        let Some((id,)) = row else {
+            return Ok(None);
+        };
+        sqlx::query("UPDATE messages SET status = 'revoked', updated_at = ?1 WHERE id = ?2")
+            .bind(&now)
+            .bind(&id)
+            .execute(self.pool())
+            .await?;
+        Ok(Some(id))
+    }
+
+    pub async fn count_messages_total(&self) -> Result<i64, DbError> {
+        let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM messages")
+            .fetch_one(self.pool())
+            .await?;
+        Ok(count)
+    }
 }

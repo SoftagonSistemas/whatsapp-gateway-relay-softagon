@@ -1,7 +1,7 @@
 openapi: 3.2.1
 info:
   title: Softagon Relay API
-  version: 0.3.12
+  version: 0.4.0
   summary: Open-source, self-hosted WhatsApp messaging gateway
   description: |
     Softagon Relay exposes a versioned HTTP API for managing WhatsApp Web sessions,
@@ -491,6 +491,162 @@ paths:
           $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+  /v1/metrics:
+    get:
+      tags: [Health]
+      operationId: getMetrics
+      summary: Prometheus text-format metrics
+      responses:
+        "200":
+          description: Prometheus metrics payload
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/media/{media_id}:
+    get:
+      tags: [Messages]
+      operationId: downloadMedia
+      summary: Download stored media bytes by media_id
+      parameters:
+        - name: media_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Raw binary media payload
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/messages/reaction:
+    post:
+      tags: [Messages]
+      operationId: sendReaction
+      summary: Send or remove an emoji reaction on a message
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "201":
+          description: Reaction sent
+  /v1/sessions/{session_id}/messages/location:
+    post:
+      tags: [Messages]
+      operationId: sendLocation
+      summary: Send a geographic location pin
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "201":
+          description: Location sent
+  /v1/sessions/{session_id}/messages/contact:
+    post:
+      tags: [Messages]
+      operationId: sendContact
+      summary: Send a vCard contact card
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "201":
+          description: Contact card sent
+  /v1/sessions/{session_id}/messages/{message_id}:
+    patch:
+      tags: [Messages]
+      operationId: editMessage
+      summary: Edit a previously sent text message
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: message_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Message edited
+    delete:
+      tags: [Messages]
+      operationId: revokeMessage
+      summary: Revoke (delete for everyone) a previously sent message
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: message_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: chat_jid
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Message revoked
+  /v1/sessions/{session_id}/chats/presence:
+    post:
+      tags: [Messages]
+      operationId: sendChatPresence
+      summary: Send typing, recording, or paused presence indicator
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Presence sent
+  /v1/sessions/{session_id}/contacts/check:
+    post:
+      tags: [Sessions]
+      operationId: checkWhatsApp
+      summary: Check whether phone numbers are registered on WhatsApp
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Registration check results
+  /v1/sessions/{session_id}/contacts/{jid}/profile-picture:
+    get:
+      tags: [Sessions]
+      operationId: getProfilePicture
+      summary: Fetch contact or group profile picture URL
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: jid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Profile picture metadata
+  /v1/sessions/{session_id}/groups:
+    get:
+      tags: [Sessions]
+      operationId: listGroups
+      summary: List WhatsApp groups this session participates in
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: List of groups
+  /v1/sessions/{session_id}/groups/{group_jid}:
+    get:
+      tags: [Sessions]
+      operationId: getGroupInfo
+      summary: Get metadata and participants for a WhatsApp group
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: group_jid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group metadata
   /v1/webhooks:
     get:
       tags: [Webhooks]

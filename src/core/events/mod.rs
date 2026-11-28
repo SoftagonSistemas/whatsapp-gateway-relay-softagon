@@ -11,6 +11,8 @@ pub const ALL_EVENT_TYPES: &[&str] = &[
     "session.status",
     "message.received",
     "message.sent",
+    "message.edited",
+    "message.revoked",
     "message.ack",
     "message.transcription.completed",
     "message.transcription.failed",

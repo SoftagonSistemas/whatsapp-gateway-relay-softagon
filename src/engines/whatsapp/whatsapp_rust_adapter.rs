@@ -64,6 +64,20 @@ impl WhatsAppRustEngine {
         let db_file = dir.join(format!("{sanitized}.db"));
         Ok(db_file.to_string_lossy().to_string())
     }
+
+    async fn connected_client(
+        &self,
+        session_id: &str,
+    ) -> Result<Arc<whatsapp_rust::Client>, EngineError> {
+        let guard = self.sessions.read().await;
+        let Some(active) = guard.get(session_id) else {
+            return Err(EngineError::SessionNotFound(session_id.to_string()));
+        };
+        if *active.status.read().await != SessionConnectionState::Connected {
+            return Err(EngineError::NotConnected(session_id.to_string()));
+        }
+        Ok(active.handle.client())
+    }
 }
 
 fn parse_recipient_jid(to: &str) -> Result<Jid, EngineError> {
@@ -364,9 +378,30 @@ impl WhatsAppEngine for WhatsAppRustEngine {
         };
 
         let to = resolve_recipient_jid(&client, &params.to).await?;
-        let msg = wa::Message {
-            conversation: Some(params.text),
-            ..Default::default()
+        let msg = if let Some(reply_id) = params
+            .reply_to_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            wa::Message {
+                extended_text_message: wa::message::ExtendedTextMessage {
+                    text: Some(params.text),
+                    context_info: wa::ContextInfo {
+                        stanza_id: Some(reply_id.to_string()),
+                        ..Default::default()
+                    }
+                    .into(),
+                    ..Default::default()
+                }
+                .into(),
+                ..Default::default()
+            }
+        } else {
+            wa::Message {
+                conversation: Some(params.text),
+                ..Default::default()
+            }
         };
         let res = client
             .send_message(to, msg)
@@ -400,12 +435,23 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             MediaKind::Video => MediaType::Video,
             MediaKind::Audio => MediaType::Audio,
             MediaKind::Document => MediaType::Document,
+            MediaKind::Sticker => MediaType::Sticker,
         };
 
         let upload = client
             .upload(params.data.to_vec(), media_type, UploadOptions::default())
             .await
             .map_err(|e| EngineError::Media(format!("media upload failed: {e}")))?;
+
+        let ctx_info = params
+            .reply_to_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|id| wa::ContextInfo {
+                stanza_id: Some(id.to_string()),
+                ..Default::default()
+            });
 
         let msg = match params.kind {
             MediaKind::Image => wa::Message {
@@ -418,6 +464,7 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                     file_enc_sha256: Some(upload.file_enc_sha256.to_vec()),
                     file_sha256: Some(upload.file_sha256.to_vec()),
                     file_length: Some(upload.file_length),
+                    context_info: ctx_info.into(),
                     ..Default::default()
                 }
                 .into(),
@@ -433,6 +480,7 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                     file_enc_sha256: Some(upload.file_enc_sha256.to_vec()),
                     file_sha256: Some(upload.file_sha256.to_vec()),
                     file_length: Some(upload.file_length),
+                    context_info: ctx_info.into(),
                     ..Default::default()
                 }
                 .into(),
@@ -447,7 +495,8 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                     file_enc_sha256: Some(upload.file_enc_sha256.to_vec()),
                     file_sha256: Some(upload.file_sha256.to_vec()),
                     file_length: Some(upload.file_length),
-                    ptt: Some(false),
+                    ptt: Some(params.as_voice_note),
+                    context_info: ctx_info.into(),
                     ..Default::default()
                 }
                 .into(),
@@ -464,6 +513,22 @@ impl WhatsAppEngine for WhatsAppRustEngine {
                     file_enc_sha256: Some(upload.file_enc_sha256.to_vec()),
                     file_sha256: Some(upload.file_sha256.to_vec()),
                     file_length: Some(upload.file_length),
+                    context_info: ctx_info.into(),
+                    ..Default::default()
+                }
+                .into(),
+                ..Default::default()
+            },
+            MediaKind::Sticker => wa::Message {
+                sticker_message: wa::message::StickerMessage {
+                    mimetype: Some(params.mime_type),
+                    url: Some(upload.url),
+                    direct_path: Some(upload.direct_path),
+                    media_key: Some(upload.media_key.to_vec()),
+                    file_enc_sha256: Some(upload.file_enc_sha256.to_vec()),
+                    file_sha256: Some(upload.file_sha256.to_vec()),
+                    file_length: Some(upload.file_length),
+                    context_info: ctx_info.into(),
                     ..Default::default()
                 }
                 .into(),
@@ -560,6 +625,258 @@ impl WhatsAppEngine for WhatsAppRustEngine {
             lid,
             phone_number,
             push_name: None,
+        })
+    }
+
+    async fn send_reaction(
+        &self,
+        session_id: &str,
+        params: crate::engines::whatsapp::SendReactionParams,
+    ) -> Result<SendResult, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let chat = resolve_recipient_jid(&client, &params.chat_jid).await?;
+        let target_key = wa::MessageKey {
+            remote_jid: Some(chat.to_string()),
+            from_me: Some(params.from_me),
+            id: Some(params.message_external_id),
+            participant: params.participant,
+        };
+        let res = client
+            .send_reaction(chat, target_key, &params.emoji)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("send_reaction failed: {e}")))?;
+        Ok(SendResult {
+            external_message_id: res.message_id,
+        })
+    }
+
+    async fn send_chat_presence(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        state: crate::engines::whatsapp::ChatPresenceState,
+    ) -> Result<(), EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let chat = resolve_recipient_jid(&client, chat_jid).await?;
+        let res = match state {
+            crate::engines::whatsapp::ChatPresenceState::Composing => {
+                client.chatstate().send_composing(&chat).await
+            }
+            crate::engines::whatsapp::ChatPresenceState::Recording => {
+                client.chatstate().send_recording(&chat).await
+            }
+            crate::engines::whatsapp::ChatPresenceState::Paused => {
+                client.chatstate().send_paused(&chat).await
+            }
+        };
+        res.map_err(|e| EngineError::Protocol(format!("send_chat_presence failed: {e}")))
+    }
+
+    async fn send_location(
+        &self,
+        session_id: &str,
+        params: crate::engines::whatsapp::SendLocationParams,
+    ) -> Result<SendResult, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let to = resolve_recipient_jid(&client, &params.to).await?;
+        let msg = wa::Message {
+            location_message: wa::message::LocationMessage {
+                degrees_latitude: Some(params.latitude),
+                degrees_longitude: Some(params.longitude),
+                name: params.name,
+                address: params.address,
+                ..Default::default()
+            }
+            .into(),
+            ..Default::default()
+        };
+        let res = client
+            .send_message(to, msg)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("send_location failed: {e}")))?;
+        Ok(SendResult {
+            external_message_id: res.message_id,
+        })
+    }
+
+    async fn send_contact(
+        &self,
+        session_id: &str,
+        params: crate::engines::whatsapp::SendContactParams,
+    ) -> Result<SendResult, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let to = resolve_recipient_jid(&client, &params.to).await?;
+        let msg = wa::Message {
+            contact_message: wa::message::ContactMessage {
+                display_name: Some(params.display_name),
+                vcard: Some(params.vcard),
+                ..Default::default()
+            }
+            .into(),
+            ..Default::default()
+        };
+        let res = client
+            .send_message(to, msg)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("send_contact failed: {e}")))?;
+        Ok(SendResult {
+            external_message_id: res.message_id,
+        })
+    }
+
+    async fn edit_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+        new_text: &str,
+    ) -> Result<String, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let to = resolve_recipient_jid(&client, chat_jid).await?;
+        let new_msg = wa::Message {
+            conversation: Some(new_text.to_string()),
+            ..Default::default()
+        };
+        client
+            .edit_message(to, external_message_id, new_msg)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("edit_message failed: {e}")))
+    }
+
+    async fn revoke_message(
+        &self,
+        session_id: &str,
+        chat_jid: &str,
+        external_message_id: &str,
+    ) -> Result<(), EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let to = resolve_recipient_jid(&client, chat_jid).await?;
+        client
+            .revoke_message(
+                to,
+                external_message_id,
+                whatsapp_rust::send::RevokeType::Sender,
+            )
+            .await
+            .map_err(|e| EngineError::Protocol(format!("revoke_message failed: {e}")))
+    }
+
+    async fn is_on_whatsapp(
+        &self,
+        session_id: &str,
+        phones: &[String],
+    ) -> Result<Vec<crate::engines::whatsapp::WhatsAppCheckResult>, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let mut jids = Vec::with_capacity(phones.len());
+        for raw in phones {
+            let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+            if digits.len() >= 7 {
+                jids.push(Jid::pn(&digits));
+            }
+        }
+        let results = client
+            .contacts()
+            .is_on_whatsapp(&jids)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("is_on_whatsapp failed: {e}")))?;
+        Ok(results
+            .into_iter()
+            .map(|r| {
+                let phone = r
+                    .pn_jid
+                    .as_ref()
+                    .and_then(|j| extract_phone_from_jid(&j.to_string()))
+                    .or_else(|| extract_phone_from_jid(&r.jid.to_string()));
+                crate::engines::whatsapp::WhatsAppCheckResult {
+                    jid: r.jid.to_string(),
+                    phone_number: phone,
+                    is_registered: r.is_registered,
+                    is_business: r.is_business,
+                }
+            })
+            .collect())
+    }
+
+    async fn get_profile_picture(
+        &self,
+        session_id: &str,
+        jid_or_phone: &str,
+        preview: bool,
+    ) -> Result<Option<crate::engines::whatsapp::ProfilePictureInfo>, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let jid = resolve_recipient_jid(&client, jid_or_phone).await?;
+        let pic = client
+            .contacts()
+            .get_profile_picture(&jid, preview)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("get_profile_picture failed: {e}")))?;
+        Ok(pic.map(|p| crate::engines::whatsapp::ProfilePictureInfo {
+            id: p.id,
+            url: p.url,
+            direct_path: p.direct_path,
+        }))
+    }
+
+    async fn list_groups(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<crate::engines::whatsapp::GroupInfoView>, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let map = client
+            .groups()
+            .get_participating()
+            .await
+            .map_err(|e| EngineError::Protocol(format!("list_groups failed: {e}")))?;
+        Ok(map
+            .into_values()
+            .map(|g| crate::engines::whatsapp::GroupInfoView {
+                jid: g.id.to_string(),
+                subject: g.subject,
+                participant_count: g.participants.len(),
+                participants: g
+                    .participants
+                    .into_iter()
+                    .map(|p| crate::engines::whatsapp::GroupParticipantInfo {
+                        jid: p.jid.to_string(),
+                        phone_number: p
+                            .phone_number
+                            .as_ref()
+                            .and_then(|j| extract_phone_from_jid(&j.to_string())),
+                        is_admin: p.is_admin(),
+                    })
+                    .collect(),
+            })
+            .collect())
+    }
+
+    async fn get_group_info(
+        &self,
+        session_id: &str,
+        group_jid: &str,
+    ) -> Result<crate::engines::whatsapp::GroupInfoView, EngineError> {
+        let client = self.connected_client(session_id).await?;
+        let jid = resolve_recipient_jid(&client, group_jid).await?;
+        let g = client
+            .groups()
+            .get_metadata(&jid)
+            .await
+            .map_err(|e| EngineError::Protocol(format!("get_group_info failed: {e}")))?;
+        Ok(crate::engines::whatsapp::GroupInfoView {
+            jid: g.id.to_string(),
+            subject: g.subject,
+            participant_count: g.participants.len(),
+            participants: g
+                .participants
+                .into_iter()
+                .map(|p| crate::engines::whatsapp::GroupParticipantInfo {
+                    jid: p.jid.to_string(),
+                    phone_number: p
+                        .phone_number
+                        .as_ref()
+                        .and_then(|j| extract_phone_from_jid(&j.to_string())),
+                    is_admin: p.is_admin(),
+                })
+                .collect(),
         })
     }
 }
@@ -687,6 +1004,48 @@ async fn handle_wa_event(
             for item in batch.iter() {
                 if is_ignored_jid(&item.info.source.chat) {
                     continue;
+                }
+                let unwrapped = unwrap_message_content(item.message.as_ref());
+                // Detect message edits & revokes via protocol_message / edited_message
+                if let Some(proto) = unwrapped.protocol_message.as_option() {
+                    let target_id = proto.key.as_option().and_then(|k| k.id.clone());
+                    if let Some(ext_id) = target_id {
+                        if let Some(edited) = proto.edited_message.as_option() {
+                            let inner = unwrap_message_content(edited);
+                            let new_text = inner
+                                .conversation
+                                .clone()
+                                .or_else(|| {
+                                    inner
+                                        .extended_text_message
+                                        .as_option()
+                                        .and_then(|e| e.text.clone())
+                                })
+                                .unwrap_or_default();
+                            let _ = tx
+                                .send(EngineEvent::MessageEdited {
+                                    session_id: session_id.to_string(),
+                                    chat_jid: item.info.source.chat.to_string(),
+                                    external_id: ext_id,
+                                    new_text,
+                                    timestamp: item.info.timestamp,
+                                })
+                                .await;
+                            continue;
+                        }
+                        if proto.r#type == Some(wa::message::protocol_message::Type::REVOKE) {
+                            let _ = tx
+                                .send(EngineEvent::MessageRevoked {
+                                    session_id: session_id.to_string(),
+                                    chat_jid: item.info.source.chat.to_string(),
+                                    external_id: ext_id,
+                                    sender_jid: Some(item.info.source.sender.to_string()),
+                                    timestamp: item.info.timestamp,
+                                })
+                                .await;
+                            continue;
+                        }
+                    }
                 }
                 if let Some(inbound) =
                     convert_inbound_message(item.message.as_ref(), &item.info, &client).await

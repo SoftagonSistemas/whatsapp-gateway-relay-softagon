@@ -21,11 +21,12 @@ use softagon_relay::storage::media::{MediaStorage, ObjectStoreMediaStorage};
 use softagon_relay::transcription::whisper::build_transcription_engine;
 use softagon_relay::transcription::worker::TranscriptionWorkerPool;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum RunMode {
     Serve,
     McpStdio,
     McpHttp,
+    Backup(Option<String>),
 }
 
 fn parse_cli_mode() -> anyhow::Result<RunMode> {
@@ -39,18 +40,21 @@ fn parse_cli_mode() -> anyhow::Result<RunMode> {
                 anyhow::bail!("unknown mcp option '{flag}'; expected --stdio (default) or --http")
             }
         },
+        Some("backup") => Ok(RunMode::Backup(args.get(1).cloned())),
         Some("--version" | "-V" | "version") => {
             println!("softagon-relay {}", env!("CARGO_PKG_VERSION"));
             std::process::exit(0);
         }
         Some("--help" | "-h" | "help") => {
             eprintln!(
-                "Softagon Relay v{}\n\nUSAGE:\n  softagon-relay [serve]          Run REST API + Web Console (and optional MCP HTTP if MCP_HTTP_ENABLED=true)\n  softagon-relay mcp [--stdio]    Run local MCP server over STDIO (default local mode)\n  softagon-relay mcp --http       Run local MCP Streamable HTTP server on 127.0.0.1\n  softagon-relay --version        Print version information",
+                "Softagon Relay v{}\n\nUSAGE:\n  softagon-relay [serve]          Run REST API + Web Console (and optional MCP HTTP if MCP_HTTP_ENABLED=true)\n  softagon-relay mcp [--stdio]    Run local MCP server over STDIO (default local mode)\n  softagon-relay mcp --http       Run local MCP Streamable HTTP server on 127.0.0.1\n  softagon-relay backup [path]    Create a hot SQLite online backup of relay.db (WAL-safe)\n  softagon-relay --version        Print version information",
                 env!("CARGO_PKG_VERSION")
             );
             std::process::exit(0);
         }
-        Some(other) => anyhow::bail!("unknown subcommand '{other}'; expected 'serve' or 'mcp'"),
+        Some(other) => {
+            anyhow::bail!("unknown subcommand '{other}'; expected 'serve', 'mcp', or 'backup'")
+        }
     }
 }
 
@@ -78,6 +82,26 @@ async fn main() -> anyhow::Result<()> {
     config.ensure_directories()?;
 
     let db = Database::connect(&config.sqlite).await?;
+
+    if let RunMode::Backup(dest_opt) = mode {
+        let dest = dest_opt.unwrap_or_else(|| {
+            let ts = chrono::Utc::now().format("%Y%m%d-%H%M%S");
+            config
+                .data_dir
+                .join(format!("relay-backup-{ts}.db"))
+                .to_string_lossy()
+                .to_string()
+        });
+        if std::path::Path::new(&dest).exists() {
+            let _ = std::fs::remove_file(&dest);
+        }
+        sqlx::query("VACUUM INTO ?1")
+            .bind(&dest)
+            .execute(db.pool())
+            .await?;
+        println!("Backup created at {dest}");
+        return Ok(());
+    }
     let media: Arc<dyn MediaStorage> =
         Arc::new(ObjectStoreMediaStorage::from_config(&config.media)?);
     let wa_engine: Arc<dyn WhatsAppEngine> = Arc::new(WhatsAppRustEngine::new(
@@ -144,6 +168,46 @@ async fn main() -> anyhow::Result<()> {
         Vec::new()
     };
 
+    let _retention_handle = if run_background_workers && config.media_retention_days > 0 {
+        let db_ret = db.clone();
+        let media_ret = media.clone();
+        let days = config.media_retention_days;
+        let mut sd = shutdown_rx.clone();
+        Some(tokio::spawn(async move {
+            info!(retention_days = days, "media retention cleaner started");
+            loop {
+                let cutoff =
+                    (chrono::Utc::now() - chrono::Duration::days(days as i64)).to_rfc3339();
+                if let Ok(expired) = db_ret.list_expired_media_objects(&cutoff, 100).await {
+                    let mut purged = 0usize;
+                    for item in expired {
+                        let _ = media_ret.delete(&item.object_key).await;
+                        if db_ret.mark_media_purged(&item.id).await.is_ok() {
+                            purged += 1;
+                        }
+                    }
+                    if purged > 0 {
+                        info!(
+                            purged,
+                            retention_days = days,
+                            "purged expired media objects"
+                        );
+                    }
+                }
+                tokio::select! {
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(3600)) => {}
+                    _ = sd.changed() => {
+                        if *sd.borrow() {
+                            break;
+                        }
+                    }
+                }
+            }
+        }))
+    } else {
+        None
+    };
+
     // In `mcp --stdio` mode, only restore WhatsApp WebSocket sessions when explicitly running
     // standalone (MCP_RESTORE_SESSIONS=true). By default `mcp --stdio` avoids kicking an active
     // `serve` container off WhatsApp Web.
@@ -152,6 +216,7 @@ async fn main() -> anyhow::Result<()> {
         RunMode::McpStdio => std::env::var("MCP_RESTORE_SESSIONS")
             .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "true" | "1" | "yes"))
             .unwrap_or(false),
+        RunMode::Backup(_) => false,
     };
 
     if should_restore_sessions {
@@ -227,6 +292,7 @@ async fn main() -> anyhow::Result<()> {
                 let _ = h.await;
             }
         }
+        RunMode::Backup(_) => unreachable!(),
     }
 
     let _ = shutdown_tx.send(true);

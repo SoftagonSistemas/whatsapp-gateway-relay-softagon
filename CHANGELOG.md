@@ -6,6 +6,35 @@ All notable changes to **Softagon Relay** are documented in this file, following
 
 ---
 
+## [0.4.0] — 2026-11-27
+
+### Added — Full Interactive WhatsApp Messaging, Groups, Contacts & Observability
+- **Rich Outbound Messaging (REST + MCP):**
+  - **Quoted Replies (`reply_to_message_id`):** reply/quote any existing WhatsApp message on both `send_text` and `send_media`.
+  - **Reactions (`POST /v1/sessions/{id}/messages/reaction` & MCP `send_reaction`):** react with any emoji or remove a reaction (`emoji: ""`).
+  - **Chat Presence (`POST /v1/sessions/{id}/chats/presence` & MCP `send_chat_presence`):** send typing (`composing`), recording audio (`recording`), or `paused` indicators.
+  - **Voice Notes (`as_voice_note: true`):** send `audio` messages as WhatsApp Push-To-Talk (PTT) voice notes.
+  - **Stickers (`media_type: "sticker"`):** send WebP stickers via URL or base64.
+  - **Location Pins (`POST /v1/sessions/{id}/messages/location` & MCP `send_location`):** send latitude/longitude pins with optional place name and address.
+  - **Contact Cards (`POST /v1/sessions/{id}/messages/contact` & MCP `send_contact`):** send vCard 3.0 contact cards (auto-generated from `display_name` + `phone_number`, or raw `vcard`).
+  - **Edit & Revoke Messages (`PATCH` / `DELETE /v1/sessions/{id}/messages/{message_id}` & MCP `edit_message` / `revoke_message`):** edit previously sent text messages or delete messages for everyone.
+- **Inbound Edit & Revoke Webhook Events:** new subscribable `message.edited` and `message.revoked` events with automatic SQLite state synchronization.
+- **Contacts & Groups Discovery (REST + MCP):**
+  - `POST /v1/sessions/{id}/contacts/check` & MCP `check_whatsapp`: check whether phone numbers are registered on WhatsApp.
+  - `GET /v1/sessions/{id}/contacts/{jid}/profile-picture` & MCP `get_profile_picture`: fetch contact/group profile picture URLs (`?preview=true` optional).
+  - `GET /v1/sessions/{id}/groups` & `GET /v1/sessions/{id}/groups/{group_jid}` (+ MCP `list_groups` / `get_group_info`): inspect participating groups, subjects, descriptions, and admin/member rosters.
+- **Media Download & Retention:**
+  - `GET /v1/media/{media_id}`: authenticated direct binary download of stored media with proper `Content-Type` and `Content-Disposition`.
+  - `MEDIA_RETENTION_DAYS`: optional automatic hourly purge of expired media files to bound disk usage (`0` = keep forever).
+- **Webhook Rate-Limit Awareness & Inline Audio Transcription:**
+  - Webhook dispatcher now honors HTTP `429 Too Many Requests` + `Retry-After` (clamped `1..=3600s`) without burning retry attempts against upstream rate limits.
+  - `TRANSCRIPTION_INLINE_WAIT_SECONDS`: optional wait window (default `0`) so `message.received` webhooks can include `transcription` inline when local Whisper finishes within the budget.
+- **Operations & Observability:**
+  - `GET /v1/metrics`: Prometheus text-format metrics (`softagon_relay_sessions_total`, `softagon_relay_sessions_connected`, `softagon_relay_messages_total`, `softagon_relay_webhook_deliveries_total`, `softagon_relay_media_objects_active`, `softagon_relay_media_storage_bytes`).
+  - `softagon-relay backup [output-dir]`: online WAL-safe SQLite backup via `VACUUM INTO` for `relay.db` and `whatsapp-sessions.db`.
+
+---
+
 ## [0.3.12] — 2026-11-27
 
 ### Fixed

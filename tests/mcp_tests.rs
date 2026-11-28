@@ -45,6 +45,7 @@ impl McpTestHarness {
             docs_enabled: true,
             docs_public: false,
             media_max_upload_bytes: 5 * 1024 * 1024,
+            media_retention_days: 0,
             session_rate_limit_per_minute: 60,
             sqlite: SqliteConfig {
                 relay_database_path: root.join("relay.db"),
@@ -70,6 +71,7 @@ impl McpTestHarness {
                 max_queue: 10,
                 timeout_seconds: 30,
                 delete_temp_audio: true,
+                inline_wait_seconds: 0,
             },
             webhooks: WebhookConfig {
                 delivery_timeout_seconds: 5,

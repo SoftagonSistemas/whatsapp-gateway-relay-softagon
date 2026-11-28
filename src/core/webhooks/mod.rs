@@ -344,9 +344,21 @@ impl WebhookDispatcher {
             }
             Ok(resp) => {
                 let code = resp.status().as_u16();
-                // Do not retry permanent authentication/authorization rejections (401/403)
+                let retry_after_secs = resp
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|s| s.trim().parse::<u64>().ok())
+                    .map(|s| s.clamp(1, 3600));
+                // Do not retry permanent authentication/authorization rejections (401/403).
+                // On 429 Too Many Requests, honor Retry-After when present.
                 let next = if code == 401 || code == 403 {
                     None
+                } else if code == 429
+                    && let Some(secs) = retry_after_secs
+                    && attempts_after < delivery.max_attempts
+                {
+                    Some(Utc::now() + chrono::Duration::seconds(secs as i64))
                 } else {
                     compute_next_attempt(
                         Utc::now(),

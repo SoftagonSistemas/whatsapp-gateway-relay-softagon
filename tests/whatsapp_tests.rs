@@ -29,6 +29,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
         docs_enabled: false,
         docs_public: false,
         media_max_upload_bytes: 1024 * 1024,
+        media_retention_days: 0,
         session_rate_limit_per_minute: 10,
         sqlite: SqliteConfig {
             relay_database_path: root.join("relay.db"),
@@ -54,6 +55,7 @@ async fn session_manager_handles_inbound_messages_and_logout() {
             max_queue: 10,
             timeout_seconds: 30,
             delete_temp_audio: true,
+            inline_wait_seconds: 0,
         },
         webhooks: WebhookConfig {
             delivery_timeout_seconds: 5,

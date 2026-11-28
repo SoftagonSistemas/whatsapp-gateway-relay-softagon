@@ -155,6 +155,7 @@ async fn transcription_worker_processes_audio_and_cleans_temp_files() {
         max_queue: 10,
         timeout_seconds: 30,
         delete_temp_audio: true,
+        inline_wait_seconds: 0,
     };
 
     let (shutdown_tx, shutdown_rx) = watch::channel(false);

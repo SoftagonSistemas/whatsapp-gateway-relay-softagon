@@ -52,6 +52,7 @@ impl TestHarness {
             docs_enabled: true,
             docs_public,
             media_max_upload_bytes: 5 * 1024 * 1024,
+            media_retention_days: 0,
             session_rate_limit_per_minute: 60,
             sqlite: SqliteConfig {
                 relay_database_path: root.join("relay.db"),
@@ -77,6 +78,7 @@ impl TestHarness {
                 max_queue: 10,
                 timeout_seconds: 30,
                 delete_temp_audio: true,
+                inline_wait_seconds: 0,
             },
             webhooks: WebhookConfig {
                 delivery_timeout_seconds: 5,
@@ -818,4 +820,304 @@ async fn contacts_mark_read_media_url_and_live_health() {
         )
         .await;
     assert_eq!(st_bad_url, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn v040_phase1_and_phase2_endpoints_work_end_to_end() {
+    let app = TestHarness::new(false).await;
+
+    let (st, sess) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/sessions")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(json!({ "name": "v040-test" }).to_string()))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    let sid = sess["id"].as_str().unwrap().to_string();
+    app.engine
+        .simulate_connected(&sid, "551100000002", "551100000002@s.whatsapp.net")
+        .await;
+    tokio::time::sleep(std::time::Duration::from_millis(40)).await;
+
+    // 1. Send text with reply_to_message_id
+    let (st, msg) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/text"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511988887777",
+                        "text": "Respondendo sua mensagem!",
+                        "reply_to_message_id": "wamid.orig_1"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    let ext_id = msg["external_id"].as_str().unwrap().to_string();
+
+    // 2. Reaction
+    let (st, react) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/reaction"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "chat_jid": "5511988887777@s.whatsapp.net",
+                        "message_id": ext_id,
+                        "emoji": "👍"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    assert_eq!(react["emoji"], "👍");
+
+    // 3. Chat presence (composing / recording / paused)
+    let (st, pres) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/chats/presence"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "chat_jid": "5511988887777@s.whatsapp.net",
+                        "state": "composing"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(pres["state"], "composing");
+
+    // 4. Send location
+    let (st, loc) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/location"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511988887777",
+                        "latitude": -23.55052,
+                        "longitude": -46.63331,
+                        "name": "Praça da Sé"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    assert_eq!(loc["message_type"], "location");
+
+    // 5. Send contact
+    let (st, ctc) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/contact"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511988887777",
+                        "display_name": "Suporte Softagon",
+                        "phone_number": "5511999990000"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    assert_eq!(ctc["message_type"], "contact");
+
+    // 6. Send voice note (PTT) + sticker + download via GET /v1/media/{media_id}
+    let (st, voice) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/media"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511988887777",
+                        "media_type": "audio",
+                        "as_voice_note": true,
+                        "data_base64": "T2dnUw=="
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    let media_id = voice["media_id"].as_str().unwrap().to_string();
+
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/v1/media/{media_id}"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let downloaded = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(&downloaded[..], b"OggS");
+
+    let (st, sticker) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/messages/media"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "to": "5511988887777",
+                        "media_type": "sticker",
+                        "data_base64": "UklGRg=="
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::CREATED);
+    assert_eq!(sticker["message_type"], "sticker");
+
+    // 7. Edit & revoke message
+    let (st, edit) = app
+        .request(
+            Request::builder()
+                .method("PATCH")
+                .uri(format!("/v1/sessions/{sid}/messages/{ext_id}"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({
+                        "chat_jid": "5511988887777@s.whatsapp.net",
+                        "text": "Mensagem corrigida!"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(edit["status"], "edited");
+
+    let (st, rev) = app
+        .request(
+            Request::builder()
+                .method("DELETE")
+                .uri(format!(
+                    "/v1/sessions/{sid}/messages/{ext_id}?chat_jid=5511988887777@s.whatsapp.net"
+                ))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(rev["status"], "revoked");
+
+    // 8. Check WhatsApp, profile picture, groups
+    let (st, chk) = app
+        .request(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/v1/sessions/{sid}/contacts/check"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({ "phones": ["5511988887777"] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(chk["results"][0]["is_registered"], true);
+
+    let (st, pic) = app
+        .request(
+            Request::builder()
+                .uri(format!(
+                    "/v1/sessions/{sid}/contacts/5511988887777@s.whatsapp.net/profile-picture?preview=true"
+                ))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert!(pic.get("picture").is_some());
+
+    let (st, groups) = app
+        .request(
+            Request::builder()
+                .uri(format!("/v1/sessions/{sid}/groups"))
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(st, StatusCode::OK);
+    assert!(groups["groups"].is_array());
+
+    // 9. Prometheus metrics endpoint
+    let resp = app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/v1/metrics")
+                .header(header::AUTHORIZATION, app.auth_header())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let metrics_text = String::from_utf8(
+        axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap()
+            .to_vec(),
+    )
+    .unwrap();
+    assert!(metrics_text.contains("softagon_relay_sessions_total 1"));
+    assert!(metrics_text.contains("softagon_relay_sessions_connected 1"));
+    assert!(metrics_text.contains("softagon_relay_messages_total"));
+    assert!(metrics_text.contains("softagon_relay_media_storage_bytes"));
 }
